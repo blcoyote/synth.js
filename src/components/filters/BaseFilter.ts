@@ -175,6 +175,13 @@ export abstract class BaseFilter implements AudioComponent {
   }
 
   /**
+   * Get the internal BiquadFilterNode for visualization or advanced use
+   */
+  public getFilterNode(): BiquadFilterNode {
+    return this.filterNode;
+  }
+
+  /**
    * Get the frequency response of the filter
    * Useful for visualization
    */

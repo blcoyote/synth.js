@@ -52,11 +52,28 @@ class MockAudioContext {
   createBiquadFilter() {
     return {
       type: 'lowpass',
-      frequency: { value: 350, setValueAtTime: vi.fn() },
-      Q: { value: 1, setValueAtTime: vi.fn() },
+      frequency: { 
+        value: 350, 
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+      Q: { 
+        value: 1, 
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
       gain: { value: 0 },
       connect: vi.fn(),
       disconnect: vi.fn(),
+      getFrequencyResponse: vi.fn((frequencyArray, magResponseOutput, phaseResponseOutput) => {
+        // Mock frequency response (simple lowpass approximation)
+        for (let i = 0; i < frequencyArray.length; i++) {
+          magResponseOutput[i] = 1.0;
+          phaseResponseOutput[i] = 0.0;
+        }
+      }),
     };
   }
 

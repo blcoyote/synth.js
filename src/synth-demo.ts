@@ -14,6 +14,8 @@ import {
 import type { BaseOscillator } from './components/oscillators/BaseOscillator';
 import { ADSREnvelope } from './components/envelopes';
 import { LFO } from './components/modulation';
+import { Lowpass12Filter, Lowpass24Filter } from './components/filters';
+import { Visualizer } from './utils';
 
 // Voice represents a single note being played
 interface Voice {
@@ -21,8 +23,8 @@ interface Voice {
   oscillators: Array<{
     oscillator: BaseOscillator;
     panNode: StereoPannerNode;
+    envelope: ADSREnvelope;
   }>;
-  envelope: ADSREnvelope;
   isActive: boolean;
   releaseTimeout?: number;
 }
@@ -42,13 +44,37 @@ const activeVoices: Map<number, Voice> = new Map(); // noteIndex -> Voice
 let initialized = false;
 let masterBus: ReturnType<typeof BusManager.prototype.getMasterBus>;
 let vibrato: LFO | null = null;
+let masterFilter: BiquadFilterNode | Lowpass12Filter | Lowpass24Filter | null = null;
+let currentCustomFilter: Lowpass12Filter | Lowpass24Filter | null = null;
+let analyser: AnalyserNode | null = null;
+let analyser1: AnalyserNode | null = null; // For oscillator 1 waveform
+let analyser2: AnalyserNode | null = null; // For oscillator 2 waveform
+let filterVisualizer: Visualizer | null = null;
+let waveformVisualizer1: Visualizer | null = null;
+let waveformVisualizer2: Visualizer | null = null;
 
-// Envelope settings (shared across all voices)
+// Filter settings
+const filterSettings = {
+  enabled: true,
+  type: 'lowpass' as BiquadFilterType | 'lowpass12' | 'lowpass24',
+  cutoff: 2000,
+  resonance: 1.0,
+};
+
+// Envelope settings (one per oscillator)
 const envelopeSettings = {
-  attack: 0.01,
-  decay: 0.1,
-  sustain: 0.7,
-  release: 0.3,
+  1: {
+    attack: 0.01,
+    decay: 0.1,
+    sustain: 0.7,
+    release: 0.3,
+  },
+  2: {
+    attack: 0.01,
+    decay: 0.1,
+    sustain: 0.7,
+    release: 0.3,
+  },
 };
 
 // Note frequencies (C2 to C4)
@@ -80,22 +106,44 @@ const notes = [
   { note: 'C4', freq: 261.63, key: 'I', white: true },
 ];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const initBtn = document.getElementById('initBtn') as HTMLButtonElement;
 
-  initBtn.addEventListener('click', async () => {
-    if (initialized) return;
+  // Auto-initialize on page load
+  if (initialized) return;
 
-    initBtn.disabled = true;
-    initBtn.textContent = 'Initializing...';
+  initBtn.disabled = true;
+  initBtn.textContent = 'Initializing...';
 
-    try {
-      const engine = AudioEngine.getInstance();
-      await engine.initialize({ latencyHint: 'interactive' });
+  try {
+    const engine = AudioEngine.getInstance();
+    await engine.initialize({ latencyHint: 'interactive' });
 
       const busManager = BusManager.getInstance();
       busManager.initialize();
       masterBus = busManager.getMasterBus();
+
+      // Create intermediate gain nodes for each oscillator with analysers
+      const context = engine.getContext();
+      const osc1Bus = context.createGain();
+      const osc2Bus = context.createGain();
+      
+      analyser1 = context.createAnalyser();
+      analyser1.fftSize = 2048;
+      analyser2 = context.createAnalyser();
+      analyser2.fftSize = 2048;
+      
+      // Connect: osc1Bus -> analyser1 -> masterBus
+      osc1Bus.connect(analyser1);
+      analyser1.connect(masterBus.getInputNode());
+      
+      // Connect: osc2Bus -> analyser2 -> masterBus
+      osc2Bus.connect(analyser2);
+      analyser2.connect(masterBus.getInputNode());
+      
+      // Store these buses globally so oscillators can connect to them
+      (window as unknown as Record<string, GainNode>).osc1Bus = osc1Bus;
+      (window as unknown as Record<string, GainNode>).osc2Bus = osc2Bus;
 
       // Create LFO for vibrato (shared across all voices)
       vibrato = new LFO({
@@ -123,10 +171,46 @@ document.addEventListener('DOMContentLoaded', () => {
         pan: 0,
       });
 
+      // Create master filter and analyser
+      const audioEngine = AudioEngine.getInstance();
+      
+      // Create initial filter (basic lowpass)
+      if (filterSettings.type === 'lowpass12') {
+        currentCustomFilter = new Lowpass12Filter(filterSettings.cutoff);
+        currentCustomFilter.setParameter('resonance', filterSettings.resonance);
+        masterFilter = currentCustomFilter;
+      } else if (filterSettings.type === 'lowpass24') {
+        currentCustomFilter = new Lowpass24Filter(filterSettings.cutoff);
+        currentCustomFilter.setParameter('resonance', filterSettings.resonance);
+        masterFilter = currentCustomFilter;
+      } else {
+        currentCustomFilter = null;
+        masterFilter = audioEngine.createBiquadFilter(filterSettings.type as BiquadFilterType);
+        masterFilter.frequency.value = filterSettings.cutoff;
+        masterFilter.Q.value = filterSettings.resonance;
+      }
+
+      // Create analyser for visualization
+      analyser = audioEngine.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.8;
+
+      // Signal chain: master bus -> filter -> analyser -> destination
+      if (currentCustomFilter) {
+        masterBus.connect(currentCustomFilter.getInputNode());
+        currentCustomFilter.getOutputNode().connect(analyser);
+      } else if (masterFilter) {
+        masterBus.connect(masterFilter as BiquadFilterNode);
+        (masterFilter as BiquadFilterNode).connect(analyser);
+      }
+      analyser.connect(audioEngine.getDestination());
+
       setupOscillatorControls();
       setupEnvelopeControls();
       setupLFOControls();
+      setupFilterControls();
       setupKeyboard();
+      setupWaveformVisualizer();
       setupMasterControls();
       setupKnobs(); // Create knobs last, after all other setup
 
@@ -138,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
       initBtn.disabled = false;
       initBtn.textContent = 'Initialize Audio System';
     }
-  });
 });
 
 function setupKnobs() {
@@ -296,36 +379,62 @@ function setupKnobs() {
 }
 
 function setupEnvelopeControls() {
-  // Attack
-  const attackSlider = document.getElementById('env-attack') as HTMLInputElement;
-  const attackValue = document.getElementById('env-attack-value') as HTMLSpanElement;
-  attackSlider.addEventListener('input', () => {
-    envelopeSettings.attack = parseFloat(attackSlider.value) / 1000;
-    attackValue.textContent = `${attackSlider.value}ms`;
+  // Envelope 1
+  const env1AttackSlider = document.getElementById('env1-attack') as HTMLInputElement;
+  const env1AttackValue = document.getElementById('env1-attack-value') as HTMLSpanElement;
+  env1AttackSlider.addEventListener('input', () => {
+    envelopeSettings[1].attack = parseFloat(env1AttackSlider.value) / 1000;
+    env1AttackValue.textContent = `${env1AttackSlider.value}ms`;
   });
 
-  // Decay
-  const decaySlider = document.getElementById('env-decay') as HTMLInputElement;
-  const decayValue = document.getElementById('env-decay-value') as HTMLSpanElement;
-  decaySlider.addEventListener('input', () => {
-    envelopeSettings.decay = parseFloat(decaySlider.value) / 1000;
-    decayValue.textContent = `${decaySlider.value}ms`;
+  const env1DecaySlider = document.getElementById('env1-decay') as HTMLInputElement;
+  const env1DecayValue = document.getElementById('env1-decay-value') as HTMLSpanElement;
+  env1DecaySlider.addEventListener('input', () => {
+    envelopeSettings[1].decay = parseFloat(env1DecaySlider.value) / 1000;
+    env1DecayValue.textContent = `${env1DecaySlider.value}ms`;
   });
 
-  // Sustain
-  const sustainSlider = document.getElementById('env-sustain') as HTMLInputElement;
-  const sustainValue = document.getElementById('env-sustain-value') as HTMLSpanElement;
-  sustainSlider.addEventListener('input', () => {
-    envelopeSettings.sustain = parseFloat(sustainSlider.value) / 100;
-    sustainValue.textContent = `${sustainSlider.value}%`;
+  const env1SustainSlider = document.getElementById('env1-sustain') as HTMLInputElement;
+  const env1SustainValue = document.getElementById('env1-sustain-value') as HTMLSpanElement;
+  env1SustainSlider.addEventListener('input', () => {
+    envelopeSettings[1].sustain = parseFloat(env1SustainSlider.value) / 100;
+    env1SustainValue.textContent = `${env1SustainSlider.value}%`;
   });
 
-  // Release
-  const releaseSlider = document.getElementById('env-release') as HTMLInputElement;
-  const releaseValue = document.getElementById('env-release-value') as HTMLSpanElement;
-  releaseSlider.addEventListener('input', () => {
-    envelopeSettings.release = parseFloat(releaseSlider.value) / 1000;
-    releaseValue.textContent = `${releaseSlider.value}ms`;
+  const env1ReleaseSlider = document.getElementById('env1-release') as HTMLInputElement;
+  const env1ReleaseValue = document.getElementById('env1-release-value') as HTMLSpanElement;
+  env1ReleaseSlider.addEventListener('input', () => {
+    envelopeSettings[1].release = parseFloat(env1ReleaseSlider.value) / 1000;
+    env1ReleaseValue.textContent = `${env1ReleaseSlider.value}ms`;
+  });
+
+  // Envelope 2
+  const env2AttackSlider = document.getElementById('env2-attack') as HTMLInputElement;
+  const env2AttackValue = document.getElementById('env2-attack-value') as HTMLSpanElement;
+  env2AttackSlider.addEventListener('input', () => {
+    envelopeSettings[2].attack = parseFloat(env2AttackSlider.value) / 1000;
+    env2AttackValue.textContent = `${env2AttackSlider.value}ms`;
+  });
+
+  const env2DecaySlider = document.getElementById('env2-decay') as HTMLInputElement;
+  const env2DecayValue = document.getElementById('env2-decay-value') as HTMLSpanElement;
+  env2DecaySlider.addEventListener('input', () => {
+    envelopeSettings[2].decay = parseFloat(env2DecaySlider.value) / 1000;
+    env2DecayValue.textContent = `${env2DecaySlider.value}ms`;
+  });
+
+  const env2SustainSlider = document.getElementById('env2-sustain') as HTMLInputElement;
+  const env2SustainValue = document.getElementById('env2-sustain-value') as HTMLSpanElement;
+  env2SustainSlider.addEventListener('input', () => {
+    envelopeSettings[2].sustain = parseFloat(env2SustainSlider.value) / 100;
+    env2SustainValue.textContent = `${env2SustainSlider.value}%`;
+  });
+
+  const env2ReleaseSlider = document.getElementById('env2-release') as HTMLInputElement;
+  const env2ReleaseValue = document.getElementById('env2-release-value') as HTMLSpanElement;
+  env2ReleaseSlider.addEventListener('input', () => {
+    envelopeSettings[2].release = parseFloat(env2ReleaseSlider.value) / 1000;
+    env2ReleaseValue.textContent = `${env2ReleaseSlider.value}ms`;
   });
 }
 
@@ -374,6 +483,205 @@ function setupLFOControls() {
       powerIndicator.classList.add('on');
     }
   });
+}
+
+function setupFilterControls() {
+  const typeSelect = document.getElementById('filter-type') as HTMLSelectElement;
+  const cutoffSlider = document.getElementById('filter-cutoff') as HTMLInputElement;
+  const cutoffValue = document.getElementById('filter-cutoff-value') as HTMLSpanElement;
+  const resonanceSlider = document.getElementById('filter-resonance') as HTMLInputElement;
+  const resonanceValue = document.getElementById('filter-resonance-value') as HTMLSpanElement;
+  const toggleBtn = document.getElementById('filter-toggle') as HTMLButtonElement;
+  const powerIndicator = document.getElementById('filter-power') as HTMLDivElement;
+
+  // Initialize filter visualizer (only shows filter response)
+  const filterCanvas = document.getElementById('audio-visualizer') as HTMLCanvasElement;
+  let filterNodeForViz: BiquadFilterNode | null = null;
+  if (currentCustomFilter instanceof Lowpass24Filter) {
+    filterNodeForViz = currentCustomFilter.getCascadedFrequencyResponse();
+  } else if (currentCustomFilter) {
+    filterNodeForViz = currentCustomFilter.getFilterNode();
+  } else {
+    filterNodeForViz = masterFilter as BiquadFilterNode | null;
+  }
+  filterVisualizer = new Visualizer({
+    canvas: filterCanvas,
+    filterNode: filterNodeForViz,
+    analyserNode: null, // No waveform needed
+    filterEnabled: filterSettings.enabled,
+    cutoffFrequency: filterSettings.cutoff,
+    sampleRate: AudioEngine.getInstance().getSampleRate(),
+    showFilter: true,
+    showWaveform: false // Only show filter response
+  });
+  filterVisualizer.start();
+
+  // Initialize slider to logarithmic value
+  cutoffSlider.value = Math.log(filterSettings.cutoff).toString();
+  const initialFreqDisplay = filterSettings.cutoff >= 1000 
+    ? `${(filterSettings.cutoff / 1000).toFixed(2)} kHz`
+    : `${Math.round(filterSettings.cutoff)} Hz`;
+  cutoffValue.textContent = initialFreqDisplay;
+
+  // Filter type
+  typeSelect.addEventListener('change', () => {
+    if (!masterFilter || !analyser) return;
+    const newType = typeSelect.value as BiquadFilterType | 'lowpass12' | 'lowpass24';
+    filterSettings.type = newType;
+    
+    // Disconnect old filter
+    masterBus.disconnect();
+    if (currentCustomFilter) {
+      currentCustomFilter.disconnect();
+    } else if (masterFilter) {
+      (masterFilter as BiquadFilterNode).disconnect();
+    }
+    
+    // Create new filter
+    const audioEngine = AudioEngine.getInstance();
+    if (newType === 'lowpass12') {
+      currentCustomFilter = new Lowpass12Filter(filterSettings.cutoff);
+      currentCustomFilter.setParameter('resonance', filterSettings.resonance);
+      masterFilter = currentCustomFilter;
+      masterBus.connect(currentCustomFilter.getInputNode());
+      currentCustomFilter.getOutputNode().connect(analyser);
+    } else if (newType === 'lowpass24') {
+      currentCustomFilter = new Lowpass24Filter(filterSettings.cutoff);
+      currentCustomFilter.setParameter('resonance', filterSettings.resonance);
+      masterFilter = currentCustomFilter;
+      masterBus.connect(currentCustomFilter.getInputNode());
+      currentCustomFilter.getOutputNode().connect(analyser);
+    } else {
+      currentCustomFilter = null;
+      masterFilter = audioEngine.createBiquadFilter(newType as BiquadFilterType);
+      (masterFilter as BiquadFilterNode).frequency.value = filterSettings.cutoff;
+      (masterFilter as BiquadFilterNode).Q.value = filterSettings.resonance;
+      masterBus.connect(masterFilter as BiquadFilterNode);
+      (masterFilter as BiquadFilterNode).connect(analyser);
+    }
+    
+    // Update filter visualizer filter node
+    if (filterVisualizer) {
+      let newFilterNode: BiquadFilterNode | null = null;
+      if (currentCustomFilter instanceof Lowpass24Filter) {
+        newFilterNode = currentCustomFilter.getCascadedFrequencyResponse();
+      } else if (currentCustomFilter) {
+        newFilterNode = currentCustomFilter.getFilterNode();
+      } else {
+        newFilterNode = masterFilter as BiquadFilterNode | null;
+      }
+      filterVisualizer.updateConfig({ filterNode: newFilterNode });
+    }
+  });
+
+  // Cutoff frequency (logarithmic scale)
+  cutoffSlider.addEventListener('input', () => {
+    if (!masterFilter || !filterVisualizer) return;
+    
+    // Convert from logarithmic slider value to frequency
+    // Slider range: log(20) to log(20000) ≈ 2.996 to 9.903
+    const logValue = parseFloat(cutoffSlider.value);
+    filterSettings.cutoff = Math.exp(logValue); // e^x to get actual frequency
+    
+    if (currentCustomFilter) {
+      currentCustomFilter.setParameter('cutoff', filterSettings.cutoff);
+    } else {
+      (masterFilter as BiquadFilterNode).frequency.value = filterSettings.cutoff;
+    }
+    
+    // Format frequency display nicely
+    const freqDisplay = filterSettings.cutoff >= 1000 
+      ? `${(filterSettings.cutoff / 1000).toFixed(2)} kHz`
+      : `${Math.round(filterSettings.cutoff)} Hz`;
+    cutoffValue.textContent = freqDisplay;
+    filterVisualizer.updateConfig({ cutoffFrequency: filterSettings.cutoff });
+  });
+
+  // Resonance (Q)
+  resonanceSlider.addEventListener('input', () => {
+    if (!masterFilter) return;
+    filterSettings.resonance = parseFloat(resonanceSlider.value) / 10;
+    
+    if (currentCustomFilter) {
+      currentCustomFilter.setParameter('resonance', filterSettings.resonance);
+    } else {
+      (masterFilter as BiquadFilterNode).Q.value = filterSettings.resonance;
+    }
+    
+    resonanceValue.textContent = filterSettings.resonance.toFixed(1);
+  });
+
+  // Toggle filter
+  toggleBtn.addEventListener('click', () => {
+    if (!masterFilter || !filterVisualizer) return;
+
+    filterSettings.enabled = !filterSettings.enabled;
+
+    if (filterSettings.enabled) {
+      // Re-insert filter in chain
+      masterBus.disconnect();
+      if (currentCustomFilter) {
+        masterBus.connect(currentCustomFilter.getInputNode());
+        currentCustomFilter.getOutputNode().connect(analyser!);
+      } else {
+        masterBus.connect(masterFilter as BiquadFilterNode);
+        (masterFilter as BiquadFilterNode).connect(analyser!);
+      }
+      
+      toggleBtn.textContent = 'Disable Filter';
+      toggleBtn.classList.add('active');
+      powerIndicator.classList.add('on');
+    } else {
+      // Bypass filter
+      masterBus.disconnect();
+      if (currentCustomFilter) {
+        currentCustomFilter.disconnect();
+      } else {
+        (masterFilter as BiquadFilterNode).disconnect();
+      }
+      masterBus.connect(analyser!);
+      
+      toggleBtn.textContent = 'Enable Filter';
+      toggleBtn.classList.remove('active');
+      powerIndicator.classList.remove('on');
+    }
+    
+    filterVisualizer.updateConfig({ filterEnabled: filterSettings.enabled });
+  });
+}
+
+function setupWaveformVisualizer() {
+  // Setup waveform visualizer for Oscillator 1
+  const waveformCanvas1 = document.getElementById('oscillator-waveform') as HTMLCanvasElement;
+  if (waveformCanvas1 && analyser1) {
+    waveformVisualizer1 = new Visualizer({
+      canvas: waveformCanvas1,
+      filterNode: null, // No filter response needed
+      analyserNode: analyser1,
+      filterEnabled: false,
+      cutoffFrequency: 0,
+      sampleRate: AudioEngine.getInstance().getSampleRate(),
+      showFilter: false, // Only show waveform
+      showWaveform: true
+    });
+    waveformVisualizer1.start();
+  }
+
+  // Setup waveform visualizer for Oscillator 2
+  const waveformCanvas2 = document.getElementById('oscillator2-waveform') as HTMLCanvasElement;
+  if (waveformCanvas2 && analyser2) {
+    waveformVisualizer2 = new Visualizer({
+      canvas: waveformCanvas2,
+      filterNode: null, // No filter response needed
+      analyserNode: analyser2,
+      filterEnabled: false,
+      cutoffFrequency: 0,
+      sampleRate: AudioEngine.getInstance().getSampleRate(),
+      showFilter: false, // Only show waveform
+      showWaveform: true
+    });
+    waveformVisualizer2.start();
+  }
 }
 
 function setupKeyboard() {
@@ -502,12 +810,11 @@ function playNote(noteIndex: number) {
   const voice: Voice = {
     noteIndex,
     oscillators: [],
-    envelope: new ADSREnvelope(envelopeSettings),
     isActive: true,
   };
 
   // Create oscillators for each enabled config
-  oscillatorConfigs.forEach((config) => {
+  oscillatorConfigs.forEach((config, oscNum) => {
     if (config.enabled) {
       const noteData = notes[noteIndex];
       const freq = noteData.freq * Math.pow(2, config.octave);
@@ -547,21 +854,27 @@ function playNote(noteIndex: number) {
       const panNode = engine.getContext().createStereoPanner();
       panNode.pan.value = config.pan;
 
-      // Signal chain: oscillator -> pan -> envelope
+      // Create envelope for this oscillator
+      const envelope = new ADSREnvelope(envelopeSettings[oscNum as 1 | 2]);
+
+      // Get the appropriate oscillator bus
+      const oscBus = oscNum === 1 
+        ? (window as unknown as Record<string, GainNode>).osc1Bus
+        : (window as unknown as Record<string, GainNode>).osc2Bus;
+
+      // Signal chain: oscillator -> pan -> envelope -> oscillator bus (-> analyser -> master bus)
       oscillator.connect(panNode);
-      panNode.connect(voice.envelope.getInputNode());
+      panNode.connect(envelope.getInputNode());
+      envelope.connect(oscBus);
 
       oscillator.start();
 
-      voice.oscillators.push({ oscillator, panNode });
+      // Trigger the envelope
+      envelope.trigger(1.0);
+
+      voice.oscillators.push({ oscillator, panNode, envelope });
     }
   });
-
-  // Connect voice envelope to master bus
-  voice.envelope.connect(masterBus.getInputNode());
-
-  // Trigger the envelope
-  voice.envelope.trigger(1.0);
 
   // Store the voice
   activeVoices.set(noteIndex, voice);
@@ -580,14 +893,16 @@ function releaseNote(noteIndex: number) {
     return;
   }
 
-  // Trigger envelope release
-  voice.envelope.triggerRelease();
+  // Trigger envelope release for all oscillator envelopes
+  voice.oscillators.forEach(({ envelope }) => {
+    envelope.triggerRelease();
+  });
 
-  // Schedule cleanup after release phase
-  const releaseTime = envelopeSettings.release;
+  // Schedule cleanup after release phase (use longest release time)
+  const maxReleaseTime = Math.max(envelopeSettings[1].release, envelopeSettings[2].release);
   voice.releaseTimeout = window.setTimeout(() => {
     cleanupVoice(noteIndex);
-  }, releaseTime * 1000 + 50);
+  }, maxReleaseTime * 1000 + 50);
 
   // Visual feedback
   const keyElements = (window as unknown as Record<string, Map<number, HTMLDivElement>>).keyElements;
@@ -608,14 +923,12 @@ function cleanupVoice(noteIndex: number) {
     clearTimeout(voice.releaseTimeout);
   }
 
-  // Stop all oscillators
-  voice.oscillators.forEach(({ oscillator, panNode }) => {
+  // Stop all oscillators and disconnect envelopes
+  voice.oscillators.forEach(({ oscillator, panNode, envelope }) => {
     oscillator.stop();
     panNode.disconnect();
+    envelope.disconnect();
   });
-
-  // Disconnect envelope
-  voice.envelope.disconnect();
 
   // Remove from active voices
   activeVoices.delete(noteIndex);

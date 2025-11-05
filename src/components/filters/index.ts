@@ -3,7 +3,8 @@
  */
 
 export { BaseFilter } from './BaseFilter';
-export { LowpassFilter } from './LowpassFilter';
+export { LowpassFilter, Lowpass12Filter } from './LowpassFilter';
+export { Lowpass24Filter } from './Lowpass24Filter';
 export { HighpassFilter } from './HighpassFilter';
 export { BandpassFilter } from './BandpassFilter';
 export { NotchFilter } from './NotchFilter';
