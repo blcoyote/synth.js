@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filter Test - Modular Synthesizer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+      opacity: 0.9;
+    }
+
+    .init-section {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .control-panel {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .oscillator-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 15px;
+    }
+
+    .filter-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .filter-card:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .filter-card.active {
+      border-color: #4ade80;
+      box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+    }
+
+    .filter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .filter-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .filter-desc {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+
+    .control-group {
+      margin-bottom: 10px;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+
+    .control-value {
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+      border: none;
+    }
+
+    button {
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: rgba(74, 222, 128, 0.3);
+      border-color: rgba(74, 222, 128, 0.5);
+    }
+
+    button.active {
+      background: rgba(74, 222, 128, 0.5);
+      border-color: rgba(74, 222, 128, 0.8);
+    }
+
+    .info-box {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 15px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button-group button {
+      flex: 1;
+      min-width: 120px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎚️ Filter Test Lab</h1>
+    <p class="subtitle">Shape your sound with classic filter types</p>
+
+    <div class="init-section">
+      <button id="initBtn" class="primary" style="padding: 15px 40px; font-size: 1.1rem;">
+        Initialize Audio System
+      </button>
+    </div>
+
+    <div class="control-panel">
+      <div class="section-title">🎹 Oscillator Source</div>
+      <div class="oscillator-controls">
+        <div class="control-group">
+          <div class="control-label">
+            <span>Waveform</span>
+            <span class="control-value" id="waveform-value">Sawtooth</span>
+          </div>
+          <div class="button-group">
+            <button class="wave-btn active" data-wave="sawtooth">Saw</button>
+            <button class="wave-btn" data-wave="square">Square</button>
+            <button class="wave-btn" data-wave="sine">Sine</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Frequency</span>
+            <span class="control-value" id="osc-freq-value">110 Hz</span>
+          </div>
+          <input type="range" id="osc-freq" min="50" max="500" value="110" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Volume</span>
+            <span class="control-value" id="osc-vol-value">50%</span>
+          </div>
+          <input type="range" id="osc-vol" min="0" max="100" value="50" step="1">
+        </div>
+        <div class="control-group">
+          <button id="playBtn" class="primary" style="width: 100%; padding: 12px;">▶ Play Sound</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-bottom: 15px;">🔊 Filters (Click to activate)</div>
+    <div class="filters-grid">
+      <!-- Lowpass Filter -->
+      <div class="filter-card" id="lowpass-card">
+        <div class="filter-header">
+          <div class="filter-title">Lowpass</div>
+          <button class="filter-toggle" data-filter="lowpass">OFF</button>
+        </div>
+        <div class="filter-desc">Removes high frequencies. Classic warm, dark sound.</div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Cutoff</span>
+            <span class="control-value" id="lowpass-freq">1000 Hz</span>
+          </div>
+          <input type="range" id="lowpass-freq-slider" min="50" max="5000" value="1000" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Resonance</span>
+            <span class="control-value" id="lowpass-res">1.0</span>
+          </div>
+          <input type="range" id="lowpass-res-slider" min="0" max="100" value="5" step="1">
+        </div>
+      </div>
+
+      <!-- Highpass Filter -->
+      <div class="filter-card" id="highpass-card">
+        <div class="filter-header">
+          <div class="filter-title">Highpass</div>
+          <button class="filter-toggle" data-filter="highpass">OFF</button>
+        </div>
+        <div class="filter-desc">Removes low frequencies. Thin, bright sound.</div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Cutoff</span>
+            <span class="control-value" id="highpass-freq">1000 Hz</span>
+          </div>
+          <input type="range" id="highpass-freq-slider" min="50" max="5000" value="1000" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Resonance</span>
+            <span class="control-value" id="highpass-res">1.0</span>
+          </div>
+          <input type="range" id="highpass-res-slider" min="0" max="100" value="5" step="1">
+        </div>
+      </div>
+
+      <!-- Bandpass Filter -->
+      <div class="filter-card" id="bandpass-card">
+        <div class="filter-header">
+          <div class="filter-title">Bandpass</div>
+          <button class="filter-toggle" data-filter="bandpass">OFF</button>
+        </div>
+        <div class="filter-desc">Only specific frequency range passes. Phone-like effect.</div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Center</span>
+            <span class="control-value" id="bandpass-freq">1000 Hz</span>
+          </div>
+          <input type="range" id="bandpass-freq-slider" min="200" max="5000" value="1000" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Width (Q)</span>
+            <span class="control-value" id="bandpass-res">5.0</span>
+          </div>
+          <input type="range" id="bandpass-res-slider" min="0" max="100" value="30" step="1">
+        </div>
+      </div>
+
+      <!-- Notch Filter -->
+      <div class="filter-card" id="notch-card">
+        <div class="filter-header">
+          <div class="filter-title">Notch</div>
+          <button class="filter-toggle" data-filter="notch">OFF</button>
+        </div>
+        <div class="filter-desc">Removes specific frequency. Phaser-like effect.</div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Center</span>
+            <span class="control-value" id="notch-freq">1000 Hz</span>
+          </div>
+          <input type="range" id="notch-freq-slider" min="200" max="5000" value="1000" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Width (Q)</span>
+            <span class="control-value" id="notch-res">10.0</span>
+          </div>
+          <input type="range" id="notch-res-slider" min="0" max="100" value="50" step="1">
+        </div>
+      </div>
+
+      <!-- Peaking Filter -->
+      <div class="filter-card" id="peaking-card">
+        <div class="filter-header">
+          <div class="filter-title">Peaking EQ</div>
+          <button class="filter-toggle" data-filter="peaking">OFF</button>
+        </div>
+        <div class="filter-desc">Boost or cut specific frequency. EQ control.</div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Frequency</span>
+            <span class="control-value" id="peaking-freq">1000 Hz</span>
+          </div>
+          <input type="range" id="peaking-freq-slider" min="200" max="5000" value="1000" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Gain</span>
+            <span class="control-value" id="peaking-gain">0 dB</span>
+          </div>
+          <input type="range" id="peaking-gain-slider" min="-20" max="20" value="0" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Q</span>
+            <span class="control-value" id="peaking-res">1.0</span>
+          </div>
+          <input type="range" id="peaking-res-slider" min="0" max="100" value="5" step="1">
+        </div>
+      </div>
+
+      <!-- Lowshelf Filter -->
+      <div class="filter-card" id="lowshelf-card">
+        <div class="filter-header">
+          <div class="filter-title">Lowshelf</div>
+          <button class="filter-toggle" data-filter="lowshelf">OFF</button>
+        </div>
+        <div class="filter-desc">Boost/cut bass. Tone shaping.</div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Frequency</span>
+            <span class="control-value" id="lowshelf-freq">200 Hz</span>
+          </div>
+          <input type="range" id="lowshelf-freq-slider" min="50" max="1000" value="200" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Gain</span>
+            <span class="control-value" id="lowshelf-gain">0 dB</span>
+          </div>
+          <input type="range" id="lowshelf-gain-slider" min="-20" max="20" value="0" step="1">
+        </div>
+      </div>
+
+      <!-- Highshelf Filter -->
+      <div class="filter-card" id="highshelf-card">
+        <div class="filter-header">
+          <div class="filter-title">Highshelf</div>
+          <button class="filter-toggle" data-filter="highshelf">OFF</button>
+        </div>
+        <div class="filter-desc">Boost/cut treble. Air and presence.</div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Frequency</span>
+            <span class="control-value" id="highshelf-freq">3000 Hz</span>
+          </div>
+          <input type="range" id="highshelf-freq-slider" min="1000" max="10000" value="3000" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Gain</span>
+            <span class="control-value" id="highshelf-gain">0 dB</span>
+          </div>
+          <input type="range" id="highshelf-gain-slider" min="-20" max="20" value="0" step="1">
+        </div>
+      </div>
+
+      <!-- Allpass Filter -->
+      <div class="filter-card" id="allpass-card">
+        <div class="filter-header">
+          <div class="filter-title">Allpass</div>
+          <button class="filter-toggle" data-filter="allpass">OFF</button>
+        </div>
+        <div class="filter-desc">Phase shift only. Phaser building block.</div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Frequency</span>
+            <span class="control-value" id="allpass-freq">1000 Hz</span>
+          </div>
+          <input type="range" id="allpass-freq-slider" min="200" max="5000" value="1000" step="1">
+        </div>
+        <div class="control-group">
+          <div class="control-label">
+            <span>Q</span>
+            <span class="control-value" id="allpass-res">1.0</span>
+          </div>
+          <input type="range" id="allpass-res-slider" min="0" max="100" value="5" step="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <h3>📚 Filter Guide</h3>
+      <p>
+        <strong>Lowpass:</strong> Classic synth filter. Higher resonance creates "squelch" effect.<br>
+        <strong>Highpass:</strong> Remove bass/rumble. Good for thin, airy sounds.<br>
+        <strong>Bandpass:</strong> Isolate frequency range. Great for vocal formants and wah effects.<br>
+        <strong>Notch:</strong> Remove specific problem frequency. Phaser effects when swept.<br>
+        <strong>Peaking:</strong> Surgical EQ. Boost presence or cut harshness.<br>
+        <strong>Shelving:</strong> Broad bass/treble control. Natural-sounding tone shaping.
+      </p>
+    </div>
+  </div>
+
+  <script type="module" src="/src/filter-demo.ts"></script>
+</body>
+</html>
