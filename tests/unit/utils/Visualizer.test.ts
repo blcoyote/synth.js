@@ -31,6 +31,7 @@ describe('Visualizer', () => {
       beginPath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
+      closePath: vi.fn(),
       stroke: vi.fn(),
       fill: vi.fn(),
       fillText: vi.fn(),
@@ -39,6 +40,9 @@ describe('Visualizer', () => {
       save: vi.fn(),
       restore: vi.fn(),
       translate: vi.fn(),
+      createLinearGradient: vi.fn(() => ({
+        addColorStop: vi.fn(),
+      })),
     } as unknown as CanvasRenderingContext2D;
 
     // Mock getContext

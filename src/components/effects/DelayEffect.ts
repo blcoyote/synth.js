@@ -27,7 +27,7 @@ export class DelayEffect extends BaseEffect {
     super('Delay Effect', 'delay');
     
     this.delayTime = delayTime;
-    this.feedback = feedback;
+    this.feedback = Math.min(feedback, 0.9); // Ensure feedback never exceeds 0.9
     
     // Create delay nodes
     this.delayNode = this.engine.createDelay(2.0); // Max 2 seconds

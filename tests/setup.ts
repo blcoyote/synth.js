@@ -18,7 +18,12 @@ class MockAudioContext {
   createOscillator() {
     return {
       type: 'sine',
-      frequency: { value: 440, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+      frequency: { 
+        value: 440, 
+        setValueAtTime: vi.fn(), 
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
       detune: { value: 0 },
       connect: vi.fn(),
       disconnect: vi.fn(),
@@ -88,7 +93,12 @@ class MockAudioContext {
 
   createDelay(maxDelayTime = 1) {
     return {
-      delayTime: { value: 0, setValueAtTime: vi.fn() },
+      delayTime: { 
+        value: 0, 
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
       connect: vi.fn(),
       disconnect: vi.fn(),
     };

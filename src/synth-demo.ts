@@ -15,7 +15,7 @@ import type { BaseOscillator } from './components/oscillators/BaseOscillator';
 import { ADSREnvelope } from './components/envelopes';
 import { LFO } from './components/modulation';
 import { Lowpass12Filter, Lowpass24Filter } from './components/filters';
-import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect } from './components/effects';
+import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect, ShimmerEffect } from './components/effects';
 import { Visualizer } from './utils';
 
 // Voice represents a single note being played
@@ -79,33 +79,45 @@ const envelopeSettings = {
   },
 };
 
-// Note frequencies (C2 to C4)
+// Note frequencies (C2 to C5) - Danish keyboard layout
 const notes = [
-  { note: 'C2', freq: 65.41, key: 'Z', white: true },
-  { note: 'C#2', freq: 69.30, key: 'S', white: false },
-  { note: 'D2', freq: 73.42, key: 'X', white: true },
-  { note: 'D#2', freq: 77.78, key: 'D', white: false },
-  { note: 'E2', freq: 82.41, key: 'C', white: true },
-  { note: 'F2', freq: 87.31, key: 'V', white: true },
-  { note: 'F#2', freq: 92.50, key: 'G', white: false },
-  { note: 'G2', freq: 98.00, key: 'B', white: true },
-  { note: 'G#2', freq: 103.83, key: 'H', white: false },
-  { note: 'A2', freq: 110.00, key: 'N', white: true },
-  { note: 'A#2', freq: 116.54, key: 'J', white: false },
-  { note: 'B2', freq: 123.47, key: 'M', white: true },
-  { note: 'C3', freq: 130.81, key: 'Q', white: true },
-  { note: 'C#3', freq: 138.59, key: '2', white: false },
-  { note: 'D3', freq: 146.83, key: 'W', white: true },
-  { note: 'D#3', freq: 155.56, key: '3', white: false },
-  { note: 'E3', freq: 164.81, key: 'E', white: true },
-  { note: 'F3', freq: 174.61, key: 'R', white: true },
-  { note: 'F#3', freq: 185.00, key: '5', white: false },
-  { note: 'G3', freq: 196.00, key: 'T', white: true },
-  { note: 'G#3', freq: 207.65, key: '6', white: false },
-  { note: 'A3', freq: 220.00, key: 'Y', white: true },
-  { note: 'A#3', freq: 233.08, key: '7', white: false },
-  { note: 'B3', freq: 246.94, key: 'U', white: true },
-  { note: 'C4', freq: 261.63, key: 'I', white: true },
+  { note: 'C2', freq: 65.41, key: '<', white: true },  // Bottom row start
+  { note: 'C#2', freq: 69.30, key: 'A', white: false },
+  { note: 'D2', freq: 73.42, key: 'Z', white: true },
+  { note: 'D#2', freq: 77.78, key: 'S', white: false },
+  { note: 'E2', freq: 82.41, key: 'X', white: true },
+  { note: 'F2', freq: 87.31, key: 'C', white: true },
+  { note: 'F#2', freq: 92.50, key: 'F', white: false },
+  { note: 'G2', freq: 98.00, key: 'V', white: true },
+  { note: 'G#2', freq: 103.83, key: 'G', white: false },
+  { note: 'A2', freq: 110.00, key: 'B', white: true },
+  { note: 'A#2', freq: 116.54, key: 'H', white: false },
+  { note: 'B2', freq: 123.47, key: 'N', white: true },
+  { note: 'C3', freq: 130.81, key: 'M', white: true },
+  { note: 'C#3', freq: 138.59, key: 'K', white: false },
+  { note: 'D3', freq: 146.83, key: ',', white: true },
+  { note: 'D#3', freq: 155.56, key: 'L', white: false },
+  { note: 'E3', freq: 164.81, key: '.', white: true },
+  { note: 'F3', freq: 174.61, key: '-', white: true },
+  { note: 'F#3', freq: 185.00, key: null, white: false },
+  { note: 'G3', freq: 196.00, key: 'Q', white: true },  // Top letter row
+  { note: 'G#3', freq: 207.65, key: '2', white: false },
+  { note: 'A3', freq: 220.00, key: 'W', white: true },
+  { note: 'A#3', freq: 233.08, key: '3', white: false },
+  { note: 'B3', freq: 246.94, key: 'E', white: true },
+  { note: 'C4', freq: 261.63, key: 'R', white: true },
+  { note: 'C#4', freq: 277.18, key: '5', white: false },
+  { note: 'D4', freq: 293.66, key: 'T', white: true },
+  { note: 'D#4', freq: 311.13, key: '6', white: false },
+  { note: 'E4', freq: 329.63, key: 'Y', white: true },
+  { note: 'F4', freq: 349.23, key: 'U', white: true },
+  { note: 'F#4', freq: 369.99, key: '8', white: false },
+  { note: 'G4', freq: 392.00, key: 'I', white: true },
+  { note: 'G#4', freq: 415.30, key: '9', white: false },
+  { note: 'A4', freq: 440.00, key: 'O', white: true },
+  { note: 'A#4', freq: 466.16, key: '0', white: false },
+  { note: 'B4', freq: 493.88, key: 'P', white: true },
+  { note: 'C5', freq: 523.25, key: 'Å', white: true },
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -625,28 +637,28 @@ function setupFilterControls() {
     filterSettings.enabled = !filterSettings.enabled;
 
     if (filterSettings.enabled) {
-      // Re-insert filter in chain
+      // Re-insert filter in chain: masterBus -> filter -> effectsChain -> analyser
       masterBus.disconnect();
       if (currentCustomFilter) {
         masterBus.connect(currentCustomFilter.getInputNode());
-        currentCustomFilter.getOutputNode().connect(analyser!);
+        currentCustomFilter.getOutputNode().connect(effectsChain!.getInput());
       } else {
         masterBus.connect(masterFilter as BiquadFilterNode);
-        (masterFilter as BiquadFilterNode).connect(analyser!);
+        (masterFilter as BiquadFilterNode).connect(effectsChain!.getInput());
       }
       
       toggleBtn.textContent = 'Disable Filter';
       toggleBtn.classList.add('active');
       powerIndicator.classList.add('on');
     } else {
-      // Bypass filter
+      // Bypass filter: masterBus -> effectsChain -> analyser
       masterBus.disconnect();
       if (currentCustomFilter) {
         currentCustomFilter.disconnect();
       } else {
         (masterFilter as BiquadFilterNode).disconnect();
       }
-      masterBus.connect(analyser!);
+      masterBus.connect(effectsChain!.getInput());
       
       toggleBtn.textContent = 'Enable Filter';
       toggleBtn.classList.remove('active');
@@ -704,6 +716,7 @@ function setupEffectsChain() {
   document.getElementById('add-reverb')?.addEventListener('click', () => addEffect('reverb'));
   document.getElementById('add-distortion')?.addEventListener('click', () => addEffect('distortion'));
   document.getElementById('add-chorus')?.addEventListener('click', () => addEffect('chorus'));
+  document.getElementById('add-shimmer')?.addEventListener('click', () => addEffect('shimmer'));
 
   // Bypass chain toggle
   effectsToggle.addEventListener('click', () => {
@@ -721,7 +734,7 @@ function setupEffectsChain() {
     }
   });
 
-  function addEffect(type: 'delay' | 'reverb' | 'distortion' | 'chorus') {
+  function addEffect(type: 'delay' | 'reverb' | 'distortion' | 'chorus' | 'shimmer') {
     if (!effectsChain) return;
 
     let effect;
@@ -741,6 +754,10 @@ function setupEffectsChain() {
       case 'chorus':
         effect = new ChorusEffect(1.5, 0.5);
         effect.setParameter('mix', 0.5);
+        break;
+      case 'shimmer':
+        effect = new ShimmerEffect(0.7, 0.6);
+        effect.setParameter('mix', 0.6);
         break;
     }
 
@@ -860,22 +877,20 @@ function setupKeyboard() {
       keyDiv.classList.add('key', 'white');
       keyDiv.style.left = `${whiteKeyIndex * 62}px`;
       
-      // Create note name label
+      // Create combined note and keyboard key label
       const noteLabel = document.createElement('div');
       noteLabel.classList.add('key-label');
       noteLabel.style.fontWeight = 'bold';
       noteLabel.style.fontSize = '14px';
-      noteLabel.textContent = noteData.note;
+      
+      // Combine note and keyboard key in one line
+      if (noteData.key) {
+        noteLabel.innerHTML = `${noteData.note}<br><span style="font-size: 10px; opacity: 0.6;">${noteData.key}</span>`;
+      } else {
+        noteLabel.textContent = noteData.note;
+      }
+      
       keyDiv.appendChild(noteLabel);
-
-      // Create keyboard shortcut label
-      const keyLabel = document.createElement('div');
-      keyLabel.classList.add('key-label');
-      keyLabel.style.fontSize = '11px';
-      keyLabel.style.opacity = '0.6';
-      keyLabel.style.marginTop = '4px';
-      keyLabel.textContent = noteData.key;
-      keyDiv.appendChild(keyLabel);
 
       keyDiv.addEventListener('mousedown', () => playNote(index));
       keyDiv.addEventListener('mouseup', () => releaseNote(index));
@@ -910,22 +925,20 @@ function setupKeyboard() {
       // Offset: 62px (white key width) - 20px (half of black key) = 42px from left edge
       keyDiv.style.left = `${prevWhiteKeyPos * 62 + 42}px`;
       
-      // Create note name label
+      // Create combined note and keyboard key label
       const noteLabel = document.createElement('div');
       noteLabel.classList.add('key-label');
       noteLabel.style.fontWeight = 'bold';
       noteLabel.style.fontSize = '11px';
-      noteLabel.textContent = noteData.note;
+      
+      // Combine note and keyboard key in one line
+      if (noteData.key) {
+        noteLabel.innerHTML = `${noteData.note}<br><span style="font-size: 9px; opacity: 0.7;">${noteData.key}</span>`;
+      } else {
+        noteLabel.textContent = noteData.note;
+      }
+      
       keyDiv.appendChild(noteLabel);
-
-      // Create keyboard shortcut label
-      const keyLabel = document.createElement('div');
-      keyLabel.classList.add('key-label');
-      keyLabel.style.fontSize = '10px';
-      keyLabel.style.opacity = '0.7';
-      keyLabel.style.marginTop = '2px';
-      keyLabel.textContent = noteData.key;
-      keyDiv.appendChild(keyLabel);
 
       keyDiv.addEventListener('mousedown', () => playNote(index));
       keyDiv.addEventListener('mouseup', () => releaseNote(index));
@@ -937,7 +950,7 @@ function setupKeyboard() {
   });
 
   // Computer keyboard support
-  const keyMap = new Map(notes.map((n, i) => [n.key.toLowerCase(), i]));
+  const keyMap = new Map(notes.filter(n => n.key !== null).map(n => [n.key!.toLowerCase(), notes.indexOf(n)]));
   const pressedKeys = new Set<string>();
 
   document.addEventListener('keydown', (e) => {
@@ -963,9 +976,9 @@ function setupKeyboard() {
 }
 
 function playNote(noteIndex: number) {
-  // Don't play if note is already active
+  // If note is still releasing, clean it up first to allow retrigger
   if (activeVoices.has(noteIndex)) {
-    return;
+    cleanupVoice(noteIndex);
   }
 
   // Create a new voice for this note

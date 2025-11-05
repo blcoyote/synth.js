@@ -30,53 +30,30 @@ export class ReverbEffect extends BaseEffect {
     
     this.decay = decay;
     
-    // Create a simple reverb using multiple delays
-    // (Schroeder reverb - comb filters + allpass filters)
-    const combDelayTimes = [0.037, 0.041, 0.043, 0.047]; // Prime-based delays
-    const allpassDelayTimes = [0.007, 0.011];
+    // Create a simple multi-tap delay reverb (safer than feedback loops)
+    // Multiple delays at different times create reverb effect
+    const delayTimes = [0.023, 0.029, 0.031, 0.037, 0.041, 0.043, 0.047, 0.053];
     
     // Create decay control
-    this.decayGain = this.engine.createGain(this.decay);
+    this.decayGain = this.engine.createGain(1.0);
     
-    // Create comb filters (feedback delays)
-    let lastNode: AudioNode = this.inputGain;
-    
-    for (const delayTime of combDelayTimes) {
-      const delay = this.engine.createDelay(0.1);
-      const gain = this.engine.createGain(0.5);
+    // Create multiple parallel delays (no feedback - prevents runaway)
+    for (let i = 0; i < delayTimes.length; i++) {
+      const delay = this.engine.createDelay(0.2);
+      const gain = this.engine.createGain(this.decay * (0.8 - i * 0.08)); // Decreasing amplitude
       
-      delay.delayTime.value = delayTime;
+      delay.delayTime.value = delayTimes[i];
       
-      // Connect: input -> delay -> gain -> back to delay (feedback)
-      lastNode.connect(delay);
+      // Simple parallel routing: input -> delay -> gain -> output
+      this.inputGain.connect(delay);
       delay.connect(gain);
-      gain.connect(delay);
+      gain.connect(this.decayGain);
       
       this.delays.push(delay);
       this.gains.push(gain);
-      
-      lastNode = delay;
     }
     
-    // Create allpass filters (phase-shifting delays)
-    for (const delayTime of allpassDelayTimes) {
-      const delay = this.engine.createDelay(0.1);
-      const gain = this.engine.createGain(0.7);
-      
-      delay.delayTime.value = delayTime;
-      
-      lastNode.connect(delay);
-      delay.connect(gain);
-      gain.connect(delay);
-      
-      this.delays.push(delay);
-      this.gains.push(gain);
-      
-      lastNode = delay;
-    }
-    
-    // Connect final output through decay control
-    lastNode.connect(this.decayGain);
+    // Connect to wet path
     this.connectWetPath(this.decayGain);
     
     // Set initial mix to 30% (typical for reverb)
@@ -90,10 +67,10 @@ export class ReverbEffect extends BaseEffect {
       case 'decay':
       case 'time': {
         this.decay = Math.max(0, Math.min(1, value));
-        // Adjust feedback gains for decay time
-        const feedbackGain = this.decay * 0.84; // Scale to prevent runaway
-        this.gains.forEach(gain => {
-          gain.gain.linearRampToValueAtTime(feedbackGain, now + 0.01);
+        // Adjust gains for each tap - decreasing amplitude for later taps
+        this.gains.forEach((gain, i) => {
+          const amplitude = this.decay * (0.8 - i * 0.08);
+          gain.gain.linearRampToValueAtTime(amplitude, now + 0.01);
         });
         break;
       }
