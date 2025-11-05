@@ -137,7 +137,7 @@ export class Visualizer {
   }
 
   /**
-   * Draw filter frequency response
+   * Draw filter frequency response with superimposed FFT spectrum
    */
   private drawFilterResponse(x: number, y: number, width: number, height: number): void {
     if (!this.filterNode) return;
@@ -148,12 +148,82 @@ export class Visualizer {
     // Draw grid
     this.drawGrid(width, height, 4);
 
-    // Draw frequency response curve
-    this.ctx.strokeStyle = this.filterEnabled ? this.COLORS.filterActive : this.COLORS.filterInactive;
-    this.ctx.lineWidth = 2;
-    this.ctx.beginPath();
-
     const nyquist = this.sampleRate / 2;
+
+    // Draw FFT spectrum if analyser is available
+    if (this.analyserNode) {
+      const bufferLength = this.analyserNode.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      this.analyserNode.getByteFrequencyData(dataArray);
+
+      // Draw spectrum as filled area with gradient
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, height);
+      
+      for (let i = 0; i < width; i++) {
+        // Map canvas x position to frequency (logarithmic scale)
+        const freq = 20 * Math.pow(nyquist / 20, i / width);
+        
+        // Map frequency to FFT bin with linear interpolation
+        const exactBin = (freq / nyquist) * bufferLength;
+        const binIndex = Math.floor(exactBin);
+        const binFraction = exactBin - binIndex;
+        
+        if (binIndex < bufferLength - 1) {
+          // Linear interpolation between adjacent bins for smoother display
+          const value1 = dataArray[binIndex];
+          const value2 = dataArray[binIndex + 1];
+          const interpolatedValue = value1 + (value2 - value1) * binFraction;
+          
+          // Map 0-255 to canvas height (inverted, with some scaling)
+          const barHeight = (interpolatedValue / 255) * height * 0.85;
+          this.ctx.lineTo(i, height - barHeight);
+        }
+      }
+      
+      // Complete the path
+      this.ctx.lineTo(width, height);
+      this.ctx.closePath();
+      
+      // Fill with gradient
+      const gradient = this.ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, 'rgba(102, 126, 234, 0.6)');
+      gradient.addColorStop(0.5, 'rgba(102, 126, 234, 0.4)');
+      gradient.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fill();
+      
+      // Draw outline with glow
+      this.ctx.strokeStyle = 'rgba(102, 126, 234, 0.8)';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.shadowBlur = 8;
+      this.ctx.shadowColor = 'rgba(102, 126, 234, 0.6)';
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, height);
+      for (let i = 0; i < width; i++) {
+        const freq = 20 * Math.pow(nyquist / 20, i / width);
+        const exactBin = (freq / nyquist) * bufferLength;
+        const binIndex = Math.floor(exactBin);
+        const binFraction = exactBin - binIndex;
+        
+        if (binIndex < bufferLength - 1) {
+          const value1 = dataArray[binIndex];
+          const value2 = dataArray[binIndex + 1];
+          const interpolatedValue = value1 + (value2 - value1) * binFraction;
+          const barHeight = (interpolatedValue / 255) * height * 0.85;
+          this.ctx.lineTo(i, height - barHeight);
+        }
+      }
+      this.ctx.stroke();
+      
+      // Reset shadow
+      this.ctx.shadowBlur = 0;
+    }
+
+    // Draw filter response curve on top
+    this.ctx.strokeStyle = this.filterEnabled ? this.COLORS.filterActive : this.COLORS.filterInactive;
+    this.ctx.lineWidth = 3;
+    this.ctx.beginPath();
 
     for (let i = 0; i < width; i++) {
       // Logarithmic frequency scale (20 Hz to Nyquist)
@@ -192,9 +262,22 @@ export class Visualizer {
     // Draw labels
     this.ctx.fillStyle = this.COLORS.text;
     this.ctx.font = '10px monospace';
-    this.ctx.fillText('Filter Response', this.PADDING, this.PADDING + 10);
+    
+    // Draw spectrum legend
+    if (this.analyserNode) {
+      this.ctx.fillStyle = 'rgba(102, 126, 234, 0.8)';
+      this.ctx.fillRect(this.PADDING, this.PADDING, 10, 10);
+      this.ctx.fillStyle = this.COLORS.text;
+      this.ctx.fillText('Spectrum', this.PADDING + 15, this.PADDING + 9);
+      
+      this.ctx.fillStyle = this.COLORS.filterActive;
+      this.ctx.fillRect(this.PADDING + 90, this.PADDING, 10, 10);
+      this.ctx.fillStyle = this.COLORS.text;
+      this.ctx.fillText('Filter', this.PADDING + 105, this.PADDING + 9);
+    }
+    
     this.ctx.fillText('20Hz', this.PADDING, height - this.PADDING);
-    this.ctx.fillText(`${Math.round(this.cutoffFrequency)}Hz`, cutoffX + 5, this.PADDING + 10);
+    this.ctx.fillText(`${Math.round(this.cutoffFrequency)}Hz`, cutoffX + 5, this.PADDING + 22);
     this.ctx.fillText(`${Math.round(nyquist)}Hz`, width - 60, height - this.PADDING);
 
     this.ctx.restore();

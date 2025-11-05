@@ -4,7 +4,7 @@
  */
 
 import { AudioEngine } from './core';
-import { BusManager } from './bus';
+import { BusManager, EffectsChain } from './bus';
 import {
   SineOscillator,
   SawtoothOscillator,
@@ -15,6 +15,7 @@ import type { BaseOscillator } from './components/oscillators/BaseOscillator';
 import { ADSREnvelope } from './components/envelopes';
 import { LFO } from './components/modulation';
 import { Lowpass12Filter, Lowpass24Filter } from './components/filters';
+import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect } from './components/effects';
 import { Visualizer } from './utils';
 
 // Voice represents a single note being played
@@ -43,6 +44,7 @@ const oscillatorConfigs: Map<number, OscillatorConfig> = new Map();
 const activeVoices: Map<number, Voice> = new Map(); // noteIndex -> Voice
 let initialized = false;
 let masterBus: ReturnType<typeof BusManager.prototype.getMasterBus>;
+let effectsChain: EffectsChain | null = null;
 let vibrato: LFO | null = null;
 let masterFilter: BiquadFilterNode | Lowpass12Filter | Lowpass24Filter | null = null;
 let currentCustomFilter: Lowpass12Filter | Lowpass24Filter | null = null;
@@ -192,23 +194,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Create analyser for visualization
       analyser = audioEngine.createAnalyser();
-      analyser.fftSize = 2048;
-      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 8192; // Increased for better frequency resolution
+      analyser.smoothingTimeConstant = 0.75; // Slightly reduced for more responsive display
 
-      // Signal chain: master bus -> filter -> analyser -> destination
+      // Create effects chain
+      effectsChain = new EffectsChain();
+
+      // Signal chain: master bus -> filter -> effects chain -> analyser -> destination
       if (currentCustomFilter) {
         masterBus.connect(currentCustomFilter.getInputNode());
-        currentCustomFilter.getOutputNode().connect(analyser);
+        currentCustomFilter.getOutputNode().connect(effectsChain.getInput());
       } else if (masterFilter) {
         masterBus.connect(masterFilter as BiquadFilterNode);
-        (masterFilter as BiquadFilterNode).connect(analyser);
+        (masterFilter as BiquadFilterNode).connect(effectsChain.getInput());
       }
+      effectsChain.getOutput().connect(analyser);
       analyser.connect(audioEngine.getDestination());
 
       setupOscillatorControls();
       setupEnvelopeControls();
       setupLFOControls();
       setupFilterControls();
+      setupEffectsChain();
       setupKeyboard();
       setupWaveformVisualizer();
       setupMasterControls();
@@ -507,7 +514,7 @@ function setupFilterControls() {
   filterVisualizer = new Visualizer({
     canvas: filterCanvas,
     filterNode: filterNodeForViz,
-    analyserNode: null, // No waveform needed
+    analyserNode: analyser, // Pass analyser to show frequency spectrum
     filterEnabled: filterSettings.enabled,
     cutoffFrequency: filterSettings.cutoff,
     sampleRate: AudioEngine.getInstance().getSampleRate(),
@@ -681,6 +688,161 @@ function setupWaveformVisualizer() {
       showWaveform: true
     });
     waveformVisualizer2.start();
+  }
+}
+
+function setupEffectsChain() {
+  if (!effectsChain) return;
+
+  const effectsList = document.getElementById('effects-list') as HTMLDivElement;
+  const effectsCount = document.getElementById('effects-count') as HTMLSpanElement;
+  const effectsToggle = document.getElementById('effects-toggle') as HTMLButtonElement;
+  const effectsPower = document.getElementById('effects-power') as HTMLDivElement;
+
+  // Add effect buttons
+  document.getElementById('add-delay')?.addEventListener('click', () => addEffect('delay'));
+  document.getElementById('add-reverb')?.addEventListener('click', () => addEffect('reverb'));
+  document.getElementById('add-distortion')?.addEventListener('click', () => addEffect('distortion'));
+  document.getElementById('add-chorus')?.addEventListener('click', () => addEffect('chorus'));
+
+  // Bypass chain toggle
+  effectsToggle.addEventListener('click', () => {
+    const bypassed = effectsChain!.isChainBypassed();
+    effectsChain!.bypassChain(!bypassed);
+    
+    if (bypassed) {
+      effectsToggle.classList.add('active');
+      effectsToggle.textContent = 'Bypass Effects Chain';
+      effectsPower.classList.add('on');
+    } else {
+      effectsToggle.classList.remove('active');
+      effectsToggle.textContent = 'Enable Effects Chain';
+      effectsPower.classList.remove('on');
+    }
+  });
+
+  function addEffect(type: 'delay' | 'reverb' | 'distortion' | 'chorus') {
+    if (!effectsChain) return;
+
+    let effect;
+    switch (type) {
+      case 'delay':
+        effect = new DelayEffect(0.3, 0.4);
+        effect.setParameter('mix', 0.5);
+        break;
+      case 'reverb':
+        effect = new ReverbEffect(2.0);
+        effect.setParameter('mix', 0.3);
+        break;
+      case 'distortion':
+        effect = new DistortionEffect(10);
+        effect.setParameter('mix', 0.5);
+        break;
+      case 'chorus':
+        effect = new ChorusEffect(1.5, 0.5);
+        effect.setParameter('mix', 0.5);
+        break;
+    }
+
+    effectsChain.addEffect(effect);
+    renderEffectsList();
+  }
+
+  function renderEffectsList() {
+    if (!effectsChain) return;
+
+    const effects = effectsChain.getEffects();
+    effectsCount.textContent = effects.length.toString();
+
+    if (effects.length === 0) {
+      effectsList.innerHTML = '<div style="color: #666; text-align: center; font-size: 0.85rem;">No effects added</div>';
+      return;
+    }
+
+    effectsList.innerHTML = '';
+
+    effects.forEach((slot, index) => {
+      const effectDiv = document.createElement('div');
+      effectDiv.className = 'effect-slot' + (slot.bypassed ? ' bypassed' : '');
+
+      const effectName = slot.effect.getName();
+      const params = slot.effect.getParameters();
+
+      effectDiv.innerHTML = `
+        <div class="effect-header">
+          <div class="effect-name">${index + 1}. ${effectName}</div>
+          <div class="effect-controls">
+            <button class="effect-btn" data-action="bypass" data-id="${slot.id}">
+              ${slot.bypassed ? 'Enable' : 'Bypass'}
+            </button>
+            <button class="effect-btn danger" data-action="remove" data-id="${slot.id}">Remove</button>
+          </div>
+        </div>
+        <div class="effect-parameters">
+          ${params.map(param => {
+            const currentValue = slot.effect.getParameter(param.name);
+            return `
+            <div class="effect-param">
+              <div class="effect-param-label">
+                <span>${param.name}</span>
+                <span class="effect-param-value" id="param-${slot.id}-${param.name}">${currentValue.toFixed(2)}</span>
+              </div>
+              <input type="range" 
+                data-effect-id="${slot.id}" 
+                data-param-name="${param.name}"
+                min="${param.min}" 
+                max="${param.max}" 
+                step="0.01" 
+                value="${currentValue}">
+            </div>
+          `}).join('')}
+        </div>
+      `;
+
+      effectsList.appendChild(effectDiv);
+    });
+
+    // Add event listeners for controls
+    effectsList.querySelectorAll('[data-action="bypass"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.target as HTMLButtonElement;
+        const id = target.getAttribute('data-id')!;
+        const slot = effectsChain!.getEffects().find(s => s.id === id);
+        if (slot) {
+          effectsChain!.bypassEffect(id, !slot.bypassed);
+          renderEffectsList();
+        }
+      });
+    });
+
+    effectsList.querySelectorAll('[data-action="remove"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.target as HTMLButtonElement;
+        const id = target.getAttribute('data-id')!;
+        effectsChain!.removeEffect(id);
+        renderEffectsList();
+      });
+    });
+
+    effectsList.querySelectorAll('input[type="range"]').forEach(slider => {
+      slider.addEventListener('input', (e) => {
+        const target = e.target as HTMLInputElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const paramName = target.getAttribute('data-param-name')!;
+        const value = parseFloat(target.value);
+
+        const effect = effectsChain!.getEffect(effectId);
+        if (effect) {
+          effect.setParameter(paramName, value);
+          
+          // Update display
+          const valueDisplay = document.getElementById(`param-${effectId}-${paramName}`);
+          if (valueDisplay) {
+            valueDisplay.textContent = value.toFixed(2);
+          }
+        }
+      });
+    });
   }
 }
 

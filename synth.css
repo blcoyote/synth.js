@@ -611,3 +611,94 @@ select:focus {
   transition: width 0.1s ease;
   box-shadow: 0 0 8px currentColor;
 }
+
+/* Effects Chain Styles */
+.effect-slot {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border: 2px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.effect-slot:hover {
+  border-color: #667eea;
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+.effect-slot.bypassed {
+  opacity: 0.5;
+  border-color: #4b5563;
+}
+
+.effect-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.effect-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.effect-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.effect-btn {
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #b0b0b0;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.effect-btn:hover {
+  border-color: #667eea;
+  color: #e0e0e0;
+}
+
+.effect-btn.danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.effect-parameters {
+  display: grid;
+  gap: 8px;
+}
+
+.effect-param {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.effect-param-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b0b0b0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.effect-param-value {
+  color: #4ade80;
+  font-weight: 700;
+}
