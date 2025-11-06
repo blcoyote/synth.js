@@ -1,6 +1,7 @@
 /**
- * Professional Synthesizer Interface Demo
- * Multiple oscillators with keyboard control
+ * Modular Synthesizer
+ * Full-featured synthesizer with multiple oscillators, effects chain,
+ * step sequencer, and real-time parameter control
  */
 
 import { AudioEngine } from './core';

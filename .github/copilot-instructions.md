@@ -7,8 +7,8 @@ A learning journey in building a modular synthesizer with reusable components an
 
 ### Terminal Usage
 - PowerShell is now available and working correctly
-- Use standard PowerShell or cmd.exe for terminal commands
-- Note: Avoid bash-style syntax (&&) - use PowerShell or cmd syntax
+- Use standard PowerShell for terminal commands
+- Note: Avoid bash-style syntax (&&) - use PowerShell
 
 ## Core Principles
 
