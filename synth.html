@@ -536,8 +536,28 @@
           <h2>🎛️ Filter & Effects</h2>
         </div>
 
-        <!-- Filter -->
-        <div class="module" data-type="filter">
+      <!-- Master Section -->
+      <div class="module" data-type="master" style="margin-top: 0;">
+        <div class="module-header collapsible" data-collapse="master">
+          <div class="module-title">
+            <span class="module-icon">🎚️</span>
+            Master Output
+          </div>
+          <span class="collapse-icon">▼</span>
+        </div>
+        <div class="oscillator-controls collapsible-content" id="master-content">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Master Volume</span>
+              <span class="control-value" id="master-volume-value">80%</span>
+            </div>
+            <input type="range" id="master-volume" min="0" max="100" value="80" step="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="module" data-type="filter">
         <div class="module-header collapsible" data-collapse="filter">
           <div class="module-title">
             <span class="module-icon">🔊</span>
@@ -548,7 +568,6 @@
             <span class="collapse-icon">▼</span>
           </div>
         </div>
-        
         <div class="oscillator-controls collapsible-content" id="filter-content">
           <div class="control-group">
             <div class="control-label">
@@ -567,7 +586,6 @@
               <option value="allpass">Allpass</option>
             </select>
           </div>
-
           <div class="control-row">
             <div class="control-group">
               <div class="control-label">
@@ -577,7 +595,6 @@
               <!-- Logarithmic scale: min=log(20)≈2.996, max=log(20000)≈9.903 -->
               <input type="range" id="filter-cutoff" min="2.996" max="9.903" value="7.600" step="0.001">
             </div>
-
             <div class="control-group">
               <div class="control-label">
                 <span>Resonance</span>
@@ -586,14 +603,12 @@
               <input type="range" id="filter-resonance" min="1" max="200" value="10" step="1">
             </div>
           </div>
-
           <div class="control-group" style="margin-top: 15px;">
             <div class="control-label">
               <span>Filter Response & Spectrum</span>
             </div>
             <canvas id="audio-visualizer" width="400" height="240" style="width: 100%; height: 240px; background: #0a0a0a; border-radius: 8px; border: 2px solid #1a1a1a;"></canvas>
           </div>
-
           <button class="toggle-btn active" id="filter-toggle">Disable Filter</button>
         </div>
       </div>
@@ -610,7 +625,6 @@
             <span class="collapse-icon">▼</span>
           </div>
         </div>
-
         <div class="oscillator-controls collapsible-content" id="effects-content">
           <!-- Add Effect Controls -->
           <div class="control-group">
@@ -625,7 +639,6 @@
               <button class="waveform-btn" id="add-shimmer">+ Shimmer</button>
             </div>
           </div>
-
           <!-- Effects List Container -->
           <div class="control-group" style="margin-top: 15px;">
             <div class="control-label">
@@ -636,29 +649,8 @@
               <div style="color: #666; text-align: center; font-size: 0.85rem;">No effects added</div>
             </div>
           </div>
-
           <!-- Chain Bypass Toggle -->
           <button class="toggle-btn active" id="effects-toggle">Bypass Effects Chain</button>
-        </div>
-      </div>
-
-      <!-- Master Section -->
-      <div class="module" data-type="master" style="margin-top: 20px;">
-        <div class="module-header collapsible" data-collapse="master">
-          <div class="module-title">
-            <span class="module-icon">🎚️</span>
-            Master Output
-          </div>
-          <span class="collapse-icon">▼</span>
-        </div>
-        <div class="oscillator-controls collapsible-content" id="master-content">
-          <div class="control-group">
-            <div class="control-label">
-              <span>Master Volume</span>
-              <span class="control-value" id="master-volume-value">80%</span>
-            </div>
-            <input type="range" id="master-volume" min="0" max="100" value="80" step="1">
-          </div>
         </div>
       </div>
 
