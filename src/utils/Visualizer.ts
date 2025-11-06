@@ -30,6 +30,8 @@ export class Visualizer {
   private readonly FILTER_HEIGHT_RATIO = 0.5; // Top half for filter response
   private readonly WAVEFORM_HEIGHT_RATIO = 0.5; // Bottom half for waveform
   private readonly PADDING = 10;
+  private readonly TARGET_FPS = 15; // Aggressive throttle to 15fps to prevent audio glitches
+  private lastFrameTime: number = 0;
 
   // Color scheme
   private readonly COLORS = {
@@ -42,6 +44,13 @@ export class Visualizer {
     text: '#6ee7b7',
     divider: '#2d2d2d'
   };
+
+  // Reusable buffers to avoid garbage collection
+  private frequencyData: Uint8Array | null = null;
+  private waveformData: Uint8Array | null = null;
+  private filterMagResponse: Float32Array = new Float32Array(1);
+  private filterPhaseResponse: Float32Array = new Float32Array(1);
+  private filterFreqArray: Float32Array = new Float32Array(1);
 
   constructor(config: VisualizerConfig) {
     this.canvas = config.canvas;
@@ -88,10 +97,19 @@ export class Visualizer {
   }
 
   /**
-   * Main animation loop
+   * Main animation loop (throttled to 30fps)
    */
   private animate = (): void => {
-    this.draw();
+    const now = performance.now();
+    const deltaTime = now - this.lastFrameTime;
+    const targetInterval = 1000 / this.TARGET_FPS;
+    
+    // Only draw if enough time has passed (throttle to 30fps)
+    if (deltaTime >= targetInterval) {
+      this.draw();
+      this.lastFrameTime = now - (deltaTime % targetInterval);
+    }
+    
     this.animationId = requestAnimationFrame(this.animate);
   };
 
@@ -101,6 +119,11 @@ export class Visualizer {
   private draw(): void {
     const width = this.canvas.width;
     const height = this.canvas.height;
+    
+    // Skip drawing if canvas is too small or not visible
+    if (width < 10 || height < 10) {
+      return;
+    }
 
     // Clear canvas
     this.ctx.fillStyle = this.COLORS.background;
@@ -153,8 +176,13 @@ export class Visualizer {
     // Draw FFT spectrum if analyser is available
     if (this.analyserNode) {
       const bufferLength = this.analyserNode.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      this.analyserNode.getByteFrequencyData(dataArray);
+      
+      // Allocate buffer once, reuse on subsequent calls
+      if (!this.frequencyData || this.frequencyData.length !== bufferLength) {
+        this.frequencyData = new Uint8Array(bufferLength);
+      }
+      
+      this.analyserNode.getByteFrequencyData(this.frequencyData as any);
 
       // Draw spectrum as filled area with gradient
       this.ctx.beginPath();
@@ -171,8 +199,8 @@ export class Visualizer {
         
         if (binIndex < bufferLength - 1) {
           // Linear interpolation between adjacent bins for smoother display
-          const value1 = dataArray[binIndex];
-          const value2 = dataArray[binIndex + 1];
+          const value1 = this.frequencyData[binIndex];
+          const value2 = this.frequencyData[binIndex + 1];
           const interpolatedValue = value1 + (value2 - value1) * binFraction;
           
           // Map 0-255 to canvas height (inverted, with some scaling)
@@ -207,8 +235,8 @@ export class Visualizer {
         const binFraction = exactBin - binIndex;
         
         if (binIndex < bufferLength - 1) {
-          const value1 = dataArray[binIndex];
-          const value2 = dataArray[binIndex + 1];
+          const value1 = this.frequencyData[binIndex];
+          const value2 = this.frequencyData[binIndex + 1];
           const interpolatedValue = value1 + (value2 - value1) * binFraction;
           const barHeight = (interpolatedValue / 255) * height * 0.85;
           this.ctx.lineTo(i, height - barHeight);
@@ -229,15 +257,13 @@ export class Visualizer {
       // Logarithmic frequency scale (20 Hz to Nyquist)
       const freq = 20 * Math.pow(nyquist / 20, i / width);
 
-      // Calculate filter magnitude response
-      const magResponse = new Float32Array(1);
-      const phaseResponse = new Float32Array(1);
-      const freqArray = new Float32Array([freq]);
+      // Calculate filter magnitude response (reuse arrays)
+      this.filterFreqArray[0] = freq;
 
-      this.filterNode.getFrequencyResponse(freqArray, magResponse, phaseResponse);
+      this.filterNode.getFrequencyResponse(this.filterFreqArray as any, this.filterMagResponse as any, this.filterPhaseResponse as any);
 
       // Convert to dB and map to canvas height
-      const db = 20 * Math.log10(Math.max(magResponse[0], 0.00001));
+      const db = 20 * Math.log10(Math.max(this.filterMagResponse[0], 0.00001));
       const plotY = height / 2 - (db * height) / 60; // -30dB to +30dB range
       const clampedY = Math.max(0, Math.min(height, plotY));
 
@@ -294,8 +320,13 @@ export class Visualizer {
 
     // Get time domain data
     const bufferLength = this.analyserNode.fftSize;
-    const dataArray = new Uint8Array(bufferLength);
-    this.analyserNode.getByteTimeDomainData(dataArray);
+    
+    // Allocate buffer once, reuse on subsequent calls
+    if (!this.waveformData || this.waveformData.length !== bufferLength) {
+      this.waveformData = new Uint8Array(bufferLength);
+    }
+    
+    this.analyserNode.getByteTimeDomainData(this.waveformData as any);
 
     // Draw center line
     this.ctx.strokeStyle = this.COLORS.grid;
@@ -314,7 +345,7 @@ export class Visualizer {
     let plotX = 0;
 
     for (let i = 0; i < bufferLength; i++) {
-      const v = dataArray[i] / 128.0;
+      const v = this.waveformData[i] / 128.0;
       const plotY = (v * height) / 2;
 
       if (i === 0) {

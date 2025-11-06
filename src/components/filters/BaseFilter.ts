@@ -37,10 +37,11 @@ export abstract class BaseFilter implements AudioComponent {
     this.filterNode = this.engine.createBiquadFilter(type);
     this.outputGain = this.engine.createGain(1.0);
     
-    // Set initial filter parameters
-    this.filterNode.frequency.value = this.frequency;
-    this.filterNode.Q.value = this.resonance;
-    this.filterNode.gain.value = this.gain;
+    // Set initial filter parameters using setTargetAtTime to avoid discontinuities
+    const now = this.engine.getCurrentTime();
+    this.filterNode.frequency.setTargetAtTime(this.frequency, now, 0.001);
+    this.filterNode.Q.setTargetAtTime(this.resonance, now, 0.001);
+    this.filterNode.gain.setTargetAtTime(this.gain, now, 0.001);
     
     // Connect: input -> filter -> output
     this.inputGain.connect(this.filterNode);
@@ -69,20 +70,27 @@ export abstract class BaseFilter implements AudioComponent {
       case 'cutoff':
         // Clamp to valid range (20 Hz - Nyquist frequency)
         this.frequency = Math.max(20, Math.min(this.engine.getSampleRate() / 2, value));
-        this.filterNode.frequency.exponentialRampToValueAtTime(this.frequency, now + 0.01);
+        // Cancel any pending automation and set new value
+        this.filterNode.frequency.cancelScheduledValues(now);
+        this.filterNode.frequency.setValueAtTime(this.filterNode.frequency.value, now);
+        this.filterNode.frequency.setTargetAtTime(this.frequency, now, 0.015);
         break;
         
       case 'resonance':
       case 'Q':
         // Clamp Q value (0.0001 - 1000)
         this.resonance = Math.max(0.0001, Math.min(1000, value));
-        this.filterNode.Q.linearRampToValueAtTime(this.resonance, now + 0.01);
+        this.filterNode.Q.cancelScheduledValues(now);
+        this.filterNode.Q.setValueAtTime(this.filterNode.Q.value, now);
+        this.filterNode.Q.setTargetAtTime(this.resonance, now, 0.015);
         break;
         
       case 'gain':
         // For peaking and shelving filters (-40 to +40 dB)
         this.gain = Math.max(-40, Math.min(40, value));
-        this.filterNode.gain.linearRampToValueAtTime(this.gain, now + 0.01);
+        this.filterNode.gain.cancelScheduledValues(now);
+        this.filterNode.gain.setValueAtTime(this.filterNode.gain.value, now);
+        this.filterNode.gain.setTargetAtTime(this.gain, now, 0.015);
         break;
         
       default:

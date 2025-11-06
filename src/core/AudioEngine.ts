@@ -39,7 +39,7 @@ export class AudioEngine {
     try {
       this.audioContext = new AudioContext({
         sampleRate: config.sampleRate,
-        latencyHint: config.latencyHint || 'interactive',
+        latencyHint: config.latencyHint || 'playback', // Changed from 'interactive' to 'playback' for larger buffer
       });
 
       // Resume context if suspended (required by some browsers)

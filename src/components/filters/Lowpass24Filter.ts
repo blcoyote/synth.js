@@ -23,9 +23,11 @@ export class Lowpass24Filter extends BaseFilter {
     super('Lowpass 24dB', 'lowpass', cutoffFrequency);
     
     // Create second filter stage for 24dB/octave slope
-    this.secondStage = AudioEngine.getInstance().createBiquadFilter('lowpass');
-    this.secondStage.frequency.value = cutoffFrequency;
-    this.secondStage.Q.value = this.filterNode.Q.value;
+    const engine = AudioEngine.getInstance();
+    this.secondStage = engine.createBiquadFilter('lowpass');
+    const now = engine.getCurrentTime();
+    this.secondStage.frequency.setTargetAtTime(cutoffFrequency, now, 0.001);
+    this.secondStage.Q.setTargetAtTime(this.filterNode.Q.value, now, 0.001);
     
     // Reconnect: input -> first stage -> second stage -> output
     this.reconnectStages();
@@ -51,13 +53,16 @@ export class Lowpass24Filter extends BaseFilter {
     
     const now = this.engine.getCurrentTime();
     
-    // Update second stage to match
+    // Update second stage to match using setTargetAtTime for stability
     if ((name === 'cutoff' || name === 'frequency') && this.secondStage) {
-      // Use the clamped frequency value from parent
-      this.secondStage.frequency.exponentialRampToValueAtTime(this.frequency, now + 0.01);
+      // Cancel pending automation and set new value
+      this.secondStage.frequency.cancelScheduledValues(now);
+      this.secondStage.frequency.setValueAtTime(this.secondStage.frequency.value, now);
+      this.secondStage.frequency.setTargetAtTime(this.frequency, now, 0.015);
     } else if ((name === 'resonance' || name === 'Q') && this.secondStage) {
-      // Use the clamped resonance value from parent
-      this.secondStage.Q.linearRampToValueAtTime(this.resonance, now + 0.01);
+      this.secondStage.Q.cancelScheduledValues(now);
+      this.secondStage.Q.setValueAtTime(this.secondStage.Q.value, now);
+      this.secondStage.Q.setTargetAtTime(this.resonance, now, 0.015);
     }
   }
 
