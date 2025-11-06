@@ -22,13 +22,12 @@
     "forceConsistentCasingInFileNames": true,
 
     /* Path aliases */
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@core/*": ["src/core/*"],
-      "@components/*": ["src/components/*"],
-      "@bus/*": ["src/bus/*"],
-      "@utils/*": ["src/utils/*"]
+      "@/*": ["./src/*"],
+      "@core/*": ["./src/core/*"],
+      "@components/*": ["./src/components/*"],
+      "@bus/*": ["./src/bus/*"],
+      "@utils/*": ["./src/utils/*"]
     }
   },
   "include": ["src"],
