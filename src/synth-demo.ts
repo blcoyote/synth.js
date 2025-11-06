@@ -403,92 +403,68 @@ function setupOscillatorControls() {
   }
 }
 
+/**
+ * Helper function to setup a single ADSR parameter control
+ * Eliminates code duplication across envelope controls
+ */
+function setupEnvelopeParameter(
+  envNum: 1 | 2 | 3,
+  param: 'attack' | 'decay' | 'sustain' | 'release',
+  valueTransform: (sliderValue: number) => number,
+  displayFormat: (sliderValue: string) => string
+): void {
+  const slider = document.getElementById(`env${envNum}-${param}`) as HTMLInputElement;
+  const valueDisplay = document.getElementById(`env${envNum}-${param}-value`) as HTMLSpanElement;
+
+  if (!slider || !valueDisplay) {
+    console.warn(`Envelope ${envNum} ${param} controls not found in DOM`);
+    return;
+  }
+
+  slider.addEventListener('input', () => {
+    envelopeSettings[envNum][param] = valueTransform(parseFloat(slider.value));
+    valueDisplay.textContent = displayFormat(slider.value);
+  });
+}
+
 function setupEnvelopeControls() {
-  // Envelope 1
-  const env1AttackSlider = document.getElementById('env1-attack') as HTMLInputElement;
-  const env1AttackValue = document.getElementById('env1-attack-value') as HTMLSpanElement;
-  env1AttackSlider.addEventListener('input', () => {
-    envelopeSettings[1].attack = parseFloat(env1AttackSlider.value) / 1000;
-    env1AttackValue.textContent = `${env1AttackSlider.value}ms`;
-  });
+  // Setup all three envelopes using the helper function
+  // This eliminates ~100 lines of duplicated code
+  
+  const envelopes: Array<1 | 2 | 3> = [1, 2, 3];
+  
+  envelopes.forEach(envNum => {
+    // Attack: milliseconds to seconds
+    setupEnvelopeParameter(
+      envNum,
+      'attack',
+      (value) => value / 1000,
+      (value) => `${value}ms`
+    );
 
-  const env1DecaySlider = document.getElementById('env1-decay') as HTMLInputElement;
-  const env1DecayValue = document.getElementById('env1-decay-value') as HTMLSpanElement;
-  env1DecaySlider.addEventListener('input', () => {
-    envelopeSettings[1].decay = parseFloat(env1DecaySlider.value) / 1000;
-    env1DecayValue.textContent = `${env1DecaySlider.value}ms`;
-  });
+    // Decay: milliseconds to seconds
+    setupEnvelopeParameter(
+      envNum,
+      'decay',
+      (value) => value / 1000,
+      (value) => `${value}ms`
+    );
 
-  const env1SustainSlider = document.getElementById('env1-sustain') as HTMLInputElement;
-  const env1SustainValue = document.getElementById('env1-sustain-value') as HTMLSpanElement;
-  env1SustainSlider.addEventListener('input', () => {
-    envelopeSettings[1].sustain = parseFloat(env1SustainSlider.value) / 100;
-    env1SustainValue.textContent = `${env1SustainSlider.value}%`;
-  });
+    // Sustain: percentage to decimal (0-1)
+    setupEnvelopeParameter(
+      envNum,
+      'sustain',
+      (value) => value / 100,
+      (value) => `${value}%`
+    );
 
-  const env1ReleaseSlider = document.getElementById('env1-release') as HTMLInputElement;
-  const env1ReleaseValue = document.getElementById('env1-release-value') as HTMLSpanElement;
-  env1ReleaseSlider.addEventListener('input', () => {
-    envelopeSettings[1].release = parseFloat(env1ReleaseSlider.value) / 1000;
-    env1ReleaseValue.textContent = `${env1ReleaseSlider.value}ms`;
-  });
-
-  // Envelope 2
-  const env2AttackSlider = document.getElementById('env2-attack') as HTMLInputElement;
-  const env2AttackValue = document.getElementById('env2-attack-value') as HTMLSpanElement;
-  env2AttackSlider.addEventListener('input', () => {
-    envelopeSettings[2].attack = parseFloat(env2AttackSlider.value) / 1000;
-    env2AttackValue.textContent = `${env2AttackSlider.value}ms`;
-  });
-
-  const env2DecaySlider = document.getElementById('env2-decay') as HTMLInputElement;
-  const env2DecayValue = document.getElementById('env2-decay-value') as HTMLSpanElement;
-  env2DecaySlider.addEventListener('input', () => {
-    envelopeSettings[2].decay = parseFloat(env2DecaySlider.value) / 1000;
-    env2DecayValue.textContent = `${env2DecaySlider.value}ms`;
-  });
-
-  const env2SustainSlider = document.getElementById('env2-sustain') as HTMLInputElement;
-  const env2SustainValue = document.getElementById('env2-sustain-value') as HTMLSpanElement;
-  env2SustainSlider.addEventListener('input', () => {
-    envelopeSettings[2].sustain = parseFloat(env2SustainSlider.value) / 100;
-    env2SustainValue.textContent = `${env2SustainSlider.value}%`;
-  });
-
-  const env2ReleaseSlider = document.getElementById('env2-release') as HTMLInputElement;
-  const env2ReleaseValue = document.getElementById('env2-release-value') as HTMLSpanElement;
-  env2ReleaseSlider.addEventListener('input', () => {
-    envelopeSettings[2].release = parseFloat(env2ReleaseSlider.value) / 1000;
-    env2ReleaseValue.textContent = `${env2ReleaseSlider.value}ms`;
-  });
-
-  // Envelope 3
-  const env3AttackSlider = document.getElementById('env3-attack') as HTMLInputElement;
-  const env3AttackValue = document.getElementById('env3-attack-value') as HTMLSpanElement;
-  env3AttackSlider.addEventListener('input', () => {
-    envelopeSettings[3].attack = parseFloat(env3AttackSlider.value) / 1000;
-    env3AttackValue.textContent = `${env3AttackSlider.value}ms`;
-  });
-
-  const env3DecaySlider = document.getElementById('env3-decay') as HTMLInputElement;
-  const env3DecayValue = document.getElementById('env3-decay-value') as HTMLSpanElement;
-  env3DecaySlider.addEventListener('input', () => {
-    envelopeSettings[3].decay = parseFloat(env3DecaySlider.value) / 1000;
-    env3DecayValue.textContent = `${env3DecaySlider.value}ms`;
-  });
-
-  const env3SustainSlider = document.getElementById('env3-sustain') as HTMLInputElement;
-  const env3SustainValue = document.getElementById('env3-sustain-value') as HTMLSpanElement;
-  env3SustainSlider.addEventListener('input', () => {
-    envelopeSettings[3].sustain = parseFloat(env3SustainSlider.value) / 100;
-    env3SustainValue.textContent = `${env3SustainSlider.value}%`;
-  });
-
-  const env3ReleaseSlider = document.getElementById('env3-release') as HTMLInputElement;
-  const env3ReleaseValue = document.getElementById('env3-release-value') as HTMLSpanElement;
-  env3ReleaseSlider.addEventListener('input', () => {
-    envelopeSettings[3].release = parseFloat(env3ReleaseSlider.value) / 1000;
-    env3ReleaseValue.textContent = `${env3ReleaseSlider.value}ms`;
+    // Release: milliseconds to seconds
+    setupEnvelopeParameter(
+      envNum,
+      'release',
+      (value) => value / 1000,
+      (value) => `${value}ms`
+    );
   });
 }
 
