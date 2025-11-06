@@ -740,20 +740,20 @@ function setupFilterControls() {
       currentCustomFilter.setParameter('resonance', filterSettings.resonance);
       masterFilter = currentCustomFilter;
       masterBus.connect(currentCustomFilter.getInputNode());
-      currentCustomFilter.getOutputNode().connect(analyser);
+      currentCustomFilter.getOutputNode().connect(effectsChain!.getInput());
     } else if (newType === 'lowpass24') {
       currentCustomFilter = new Lowpass24Filter(filterSettings.cutoff);
       currentCustomFilter.setParameter('resonance', filterSettings.resonance);
       masterFilter = currentCustomFilter;
       masterBus.connect(currentCustomFilter.getInputNode());
-      currentCustomFilter.getOutputNode().connect(analyser);
+      currentCustomFilter.getOutputNode().connect(effectsChain!.getInput());
     } else {
       currentCustomFilter = null;
       masterFilter = audioEngine.createBiquadFilter(newType as BiquadFilterType);
       (masterFilter as BiquadFilterNode).frequency.value = filterSettings.cutoff;
       (masterFilter as BiquadFilterNode).Q.value = filterSettings.resonance;
       masterBus.connect(masterFilter as BiquadFilterNode);
-      (masterFilter as BiquadFilterNode).connect(analyser);
+      (masterFilter as BiquadFilterNode).connect(effectsChain!.getInput());
     }
     
     // Update filter visualizer filter node
