@@ -1476,9 +1476,10 @@ function cleanupVoice(noteIndex: number) {
 
   // Remove LFO targets for this voice
   if (multiLFO) {
+    const lfo = multiLFO; // Capture for closure
     oscillatorConfigs.forEach((_, oscNum) => {
-      multiLFO.removeTarget(`volume_${noteIndex}_${oscNum}`);
-      multiLFO.removeTarget(`pan_${noteIndex}_${oscNum}`);
+      lfo.removeTarget(`volume_${noteIndex}_${oscNum}`);
+      lfo.removeTarget(`pan_${noteIndex}_${oscNum}`);
     });
   }
 
