@@ -13,7 +13,8 @@ import {
 } from './components/oscillators';
 import type { BaseOscillator } from './components/oscillators/BaseOscillator';
 import { ADSREnvelope } from './components/envelopes';
-import { LFO, MultiTargetLFO } from './components/modulation';
+import { LFO, MultiTargetLFO, Sequencer } from './components/modulation';
+import type { SequencerStep } from './components/modulation';
 import { Lowpass12Filter, Lowpass24Filter } from './components/filters';
 import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect, ShimmerEffect } from './components/effects';
 import { WaveSurferVisualizer } from './utils';
@@ -34,8 +35,6 @@ import {
   MS_TO_SECONDS,
   PERCENT_TO_DECIMAL,
   LFO_RATE_SLIDER_FACTOR,
-  MIN_FILTER_CUTOFF,
-  MAX_FILTER_CUTOFF,
   LFO_PITCH_MODULATION_CENTS,
 } from './synth/constants';
 
@@ -71,6 +70,8 @@ let effectsChain: EffectsChain | null = null;
 let vibrato: LFO | null = null; // Keep old LFO for backward compatibility
 let multiLFO: MultiTargetLFO | null = null; // New multi-target LFO
 let masterFilter: BiquadFilterNode | Lowpass12Filter | Lowpass24Filter | null = null;
+let sequencer: Sequencer | null = null;
+let selectedStepIndex: number | null = null;
 
 // LFO state
 const lfoState = {
@@ -165,13 +166,14 @@ const notes = [
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const initBtn = document.getElementById('initBtn') as HTMLButtonElement;
+  const systemLed = document.getElementById('systemLed') as HTMLDivElement;
+  const systemStatus = document.getElementById('systemStatus') as HTMLDivElement;
 
   // Auto-initialize on page load
   if (initialized) return;
 
-  initBtn.disabled = true;
-  initBtn.textContent = 'Initializing...';
+  systemLed.classList.add('initializing');
+  systemStatus.textContent = 'Initializing...';
 
   try {
     const engine = AudioEngine.getInstance();
@@ -305,14 +307,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       setupKeyboard();
       setupWaveformVisualizer();
       setupMasterControls();
+      setupSequencer();
+      setupCollapsibleSections();
 
       initialized = true;
-      initBtn.textContent = '✓ System Ready';
-      initBtn.style.background = 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)';
+      systemLed.classList.remove('initializing');
+      systemLed.classList.add('ready');
+      systemStatus.textContent = 'Ready';
     } catch (error) {
       console.error('Failed to initialize:', error);
-      initBtn.disabled = false;
-      initBtn.textContent = 'Initialize Audio System';
+      systemLed.classList.remove('initializing');
+      systemStatus.textContent = 'Failed';
     }
 });
 
@@ -1432,3 +1437,319 @@ function setupMasterControls() {
     masterBus.setInputGain(volume);
   });
 }
+
+// Helper function to convert MIDI note to frequency
+function midiToFrequency(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+// Helper function to convert MIDI note to note name
+function midiToNoteName(midi: number): string {
+  const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const octave = Math.floor(midi / 12) - 1;
+  const noteName = noteNames[midi % 12];
+  return `${noteName}${octave}`;
+}
+
+function setupSequencer() {
+  // Create sequencer instance
+  sequencer = new Sequencer({
+    steps: 16,
+    tempo: 120,
+    swing: 0,
+    mode: 'forward',
+  });
+
+  // Setup step grid
+  const stepGrid = document.getElementById('step-grid') as HTMLDivElement;
+  for (let i = 0; i < 16; i++) {
+    const stepBtn = document.createElement('button');
+    stepBtn.className = 'step-button';
+    stepBtn.dataset.step = i.toString();
+    stepBtn.addEventListener('click', () => {
+      const step = sequencer!.getStep(i);
+      if (step) {
+        // Toggle gate
+        sequencer!.setStep(i, { gate: !step.gate });
+        updateStepButton(i);
+        
+        // Select this step for editing
+        selectedStepIndex = i;
+        updateStepEditor();
+      }
+    });
+    stepGrid.appendChild(stepBtn);
+  }
+
+  // Initialize step buttons
+  for (let i = 0; i < 16; i++) {
+    updateStepButton(i);
+  }
+
+  // Transport controls
+  const playBtn = document.getElementById('seq-play') as HTMLButtonElement;
+  const stopBtn = document.getElementById('seq-stop') as HTMLButtonElement;
+  const pauseBtn = document.getElementById('seq-pause') as HTMLButtonElement;
+  const resetBtn = document.getElementById('seq-reset') as HTMLButtonElement;
+  const powerIndicator = document.getElementById('sequencer-power') as HTMLDivElement;
+
+  playBtn.addEventListener('click', () => {
+    sequencer!.start();
+    powerIndicator.classList.add('on');
+  });
+
+  stopBtn.addEventListener('click', () => {
+    sequencer!.stop();
+    powerIndicator.classList.remove('on');
+    updateAllStepButtons();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    if (sequencer!.isRunning()) {
+      sequencer!.pause();
+      powerIndicator.classList.remove('on');
+    } else {
+      sequencer!.resume();
+      powerIndicator.classList.add('on');
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    sequencer!.reset();
+    updateAllStepButtons();
+  });
+
+  // Tempo control
+  const tempoSlider = document.getElementById('seq-tempo') as HTMLInputElement;
+  const tempoValue = document.getElementById('seq-tempo-value') as HTMLSpanElement;
+
+  tempoSlider.addEventListener('input', () => {
+    const tempo = parseInt(tempoSlider.value);
+    sequencer!.setTempo(tempo);
+    tempoValue.textContent = `${tempo} BPM`;
+  });
+
+  // Swing control
+  const swingSlider = document.getElementById('seq-swing') as HTMLInputElement;
+  const swingValue = document.getElementById('seq-swing-value') as HTMLSpanElement;
+
+  swingSlider.addEventListener('input', () => {
+    const swing = parseInt(swingSlider.value) / 100;
+    sequencer!.setSwing(swing);
+    swingValue.textContent = `${swingSlider.value}%`;
+  });
+
+  // Step count buttons
+  const stepButtons = document.querySelectorAll('[data-steps]');
+  stepButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const steps = parseInt(btn.getAttribute('data-steps')!);
+      sequencer!.setSteps(steps as 4 | 8 | 16 | 32);
+      
+      // Update active button
+      stepButtons.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Rebuild step grid
+      rebuildStepGrid(steps);
+    });
+  });
+
+  // Playback mode selector
+  const modeSelect = document.getElementById('seq-mode') as HTMLSelectElement;
+  modeSelect.addEventListener('change', () => {
+    sequencer!.setMode(modeSelect.value as 'forward' | 'reverse' | 'pingpong' | 'random');
+  });
+
+  // Step editor - Note
+  const noteSlider = document.getElementById('seq-note') as HTMLInputElement;
+  const noteValue = document.getElementById('seq-note-value') as HTMLSpanElement;
+
+  noteSlider.addEventListener('input', () => {
+    if (selectedStepIndex !== null) {
+      const pitch = parseInt(noteSlider.value);
+      sequencer!.setStep(selectedStepIndex, { pitch });
+      noteValue.textContent = midiToNoteName(pitch);
+      updateStepButton(selectedStepIndex);
+    }
+  });
+
+  // Step editor - Velocity
+  const velocitySlider = document.getElementById('seq-velocity') as HTMLInputElement;
+  const velocityValue = document.getElementById('seq-velocity-value') as HTMLSpanElement;
+
+  velocitySlider.addEventListener('input', () => {
+    if (selectedStepIndex !== null) {
+      const velocity = parseInt(velocitySlider.value);
+      sequencer!.setStep(selectedStepIndex, { velocity });
+      velocityValue.textContent = velocity.toString();
+      updateStepButton(selectedStepIndex);
+    }
+  });
+
+  // Pattern tools
+  const clearBtn = document.getElementById('seq-clear') as HTMLButtonElement;
+  const randomBtn = document.getElementById('seq-random') as HTMLButtonElement;
+  const basslineBtn = document.getElementById('seq-bassline') as HTMLButtonElement;
+
+  clearBtn.addEventListener('click', () => {
+    sequencer!.clear();
+    updateAllStepButtons();
+  });
+
+  randomBtn.addEventListener('click', () => {
+    sequencer!.randomize(0.5); // 50% density
+    updateAllStepButtons();
+  });
+
+  basslineBtn.addEventListener('click', () => {
+    sequencer!.createBasslinePattern();
+    updateAllStepButtons();
+  });
+
+  // Setup step callback to trigger notes
+  sequencer.onStep((stepIndex: number, stepData: SequencerStep) => {
+    if (stepData.gate) {
+      const frequency = midiToFrequency(stepData.pitch);
+      
+      // Find if this note exists in our keyboard notes array
+      const matchingNote = notes.find(n => Math.abs(n.freq - frequency) < 0.5);
+      
+      if (matchingNote) {
+        // Use existing playNote for notes in keyboard range
+        const noteIndex = notes.indexOf(matchingNote);
+        playNote(noteIndex);
+        
+        // Release after step length
+        const stepDuration = (60000 / sequencer!.getTempo()) / 4; // 16th note duration
+        const noteDuration = stepDuration * stepData.length;
+        
+        setTimeout(() => {
+          releaseNote(noteIndex);
+        }, noteDuration);
+      }
+    }
+    
+    // Update visual feedback
+    updateAllStepButtons();
+    
+    // Update current step display
+    const currentStepDisplay = document.getElementById('seq-current-step') as HTMLSpanElement;
+    currentStepDisplay.textContent = `Step: ${stepIndex + 1}`;
+  });
+
+  // Initialize first step as selected
+  selectedStepIndex = 0;
+  updateStepEditor();
+}
+
+function updateStepButton(index: number) {
+  const stepBtn = document.querySelector(`[data-step="${index}"]`) as HTMLButtonElement;
+  if (!stepBtn) return;
+  
+  const step = sequencer!.getStep(index);
+  if (!step) return;
+  
+  // Update gate state
+  if (step.gate) {
+    stepBtn.classList.add('active');
+  } else {
+    stepBtn.classList.remove('active');
+  }
+  
+  // Update playing state
+  if (sequencer!.isRunning() && sequencer!.getCurrentStep() === index) {
+    stepBtn.classList.add('playing');
+  } else {
+    stepBtn.classList.remove('playing');
+  }
+  
+  // Update selected state
+  if (selectedStepIndex === index) {
+    stepBtn.classList.add('selected');
+  } else {
+    stepBtn.classList.remove('selected');
+  }
+}
+
+function updateAllStepButtons() {
+  const steps = sequencer!.getSteps();
+  for (let i = 0; i < steps; i++) {
+    updateStepButton(i);
+  }
+}
+
+function updateStepEditor() {
+  if (selectedStepIndex === null) return;
+  
+  const step = sequencer!.getStep(selectedStepIndex);
+  if (!step) return;
+  
+  const editStepDisplay = document.getElementById('seq-edit-step') as HTMLSpanElement;
+  const noteSlider = document.getElementById('seq-note') as HTMLInputElement;
+  const noteValue = document.getElementById('seq-note-value') as HTMLSpanElement;
+  const velocitySlider = document.getElementById('seq-velocity') as HTMLInputElement;
+  const velocityValue = document.getElementById('seq-velocity-value') as HTMLSpanElement;
+  
+  editStepDisplay.textContent = `${selectedStepIndex + 1}`;
+  noteSlider.value = step.pitch.toString();
+  noteValue.textContent = midiToNoteName(step.pitch);
+  velocitySlider.value = step.velocity.toString();
+  velocityValue.textContent = step.velocity.toString();
+  
+  updateAllStepButtons();
+}
+
+function rebuildStepGrid(steps: number) {
+  const stepGrid = document.getElementById('step-grid') as HTMLDivElement;
+  stepGrid.innerHTML = '';
+  stepGrid.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
+  
+  for (let i = 0; i < steps; i++) {
+    const stepBtn = document.createElement('button');
+    stepBtn.className = 'step-button';
+    stepBtn.dataset.step = i.toString();
+    stepBtn.addEventListener('click', () => {
+      const step = sequencer!.getStep(i);
+      if (step) {
+        sequencer!.setStep(i, { gate: !step.gate });
+        updateStepButton(i);
+        selectedStepIndex = i;
+        updateStepEditor();
+      }
+    });
+    stepGrid.appendChild(stepBtn);
+  }
+  
+  updateAllStepButtons();
+}
+
+function setupCollapsibleSections() {
+  // Find all collapsible headers
+  const collapsibleHeaders = document.querySelectorAll('.module-header.collapsible');
+  
+  collapsibleHeaders.forEach((header) => {
+    header.addEventListener('click', () => {
+      const targetId = header.getAttribute('data-collapse');
+      if (!targetId) return;
+      
+      const contentElement = document.getElementById(`${targetId}-content`);
+      if (!contentElement) return;
+      
+      // Toggle collapsed state
+      const isCollapsed = contentElement.classList.contains('collapsed');
+      
+      if (isCollapsed) {
+        // Expand
+        contentElement.classList.remove('collapsed');
+        header.classList.remove('collapsed');
+      } else {
+        // Collapse
+        contentElement.classList.add('collapsed');
+        header.classList.add('collapsed');
+      }
+    });
+  });
+}
+
+

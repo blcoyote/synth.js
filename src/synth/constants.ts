@@ -122,10 +122,17 @@ export const DEFAULT_DELAY_TIME = 0.3;
 export const DEFAULT_DELAY_FEEDBACK = 0.5;
 
 /**
- * Default reverb decay time in seconds
- * Creates medium-sized room ambience
+ * Default reverb decay ratio (0-1)
+ * 0.8 creates medium-length reverb tail
  */
 export const DEFAULT_REVERB_DECAY = 0.8;
+
+/**
+ * Default reverb RT60 time in seconds
+ * RT60 is the time for reverb to decay by 60dB
+ * 1.2 seconds creates a medium-sized room ambience
+ */
+export const DEFAULT_REVERB_RT60 = 1.2;
 
 /**
  * Default chorus rate in Hz

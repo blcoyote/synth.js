@@ -40,6 +40,7 @@ export class ReverbEffect extends BaseEffect {
   private damping: number = 2000; // 2kHz default
   private spread: number = 0.7; // 70% stereo width
   private size: number = 0.5; // Medium room
+  private averageDelayTime: number = 0.04; // Average comb filter delay time in seconds
 
   constructor(decay: number = 0.5) {
     super('Reverb Effect', 'reverb');
@@ -148,8 +149,39 @@ export class ReverbEffect extends BaseEffect {
     // Connect to wet path
     this.connectWetPath(this.smoothingFilter);
     
+    // Calculate average delay time for RT60 conversion
+    this.averageDelayTime = combDelayTimes.reduce((a, b) => a + b, 0) / combDelayTimes.length;
+    
     // Set initial mix to 70% - obvious effect
     this.setMix(0.7);
+  }
+
+  /**
+   * Convert decay feedback (0-1) to RT60 time in seconds
+   * RT60 is the time for reverb to decay by 60dB
+   * Formula: RT60 ≈ -3 * delayTime / ln(feedback)
+   */
+  private decayToRT60(decay: number): number {
+    if (decay <= 0.01) return 0;
+    const feedback = decay * 0.7; // Match the comb filter feedback calculation
+    // Using average delay time and logarithmic decay formula
+    const rt60 = -3 * this.averageDelayTime / Math.log(feedback);
+    return Math.max(0, rt60);
+  }
+
+  /**
+   * Convert RT60 time in seconds to decay feedback (0-1)
+   * Inverse of decayToRT60
+   */
+  private rt60ToDecay(rt60Seconds: number): number {
+    if (rt60Seconds <= 0) return 0;
+    // Solve for feedback: RT60 = -3 * delayTime / ln(feedback)
+    // ln(feedback) = -3 * delayTime / RT60
+    // feedback = exp(-3 * delayTime / RT60)
+    const feedback = Math.exp(-3 * this.averageDelayTime / rt60Seconds);
+    // Convert feedback back to decay (0-1)
+    const decay = feedback / 0.7;
+    return Math.max(0, Math.min(1, decay));
   }
 
   public setParameter(name: string, value: number): void {
@@ -165,6 +197,19 @@ export class ReverbEffect extends BaseEffect {
           const feedbackAmount = index < 6 
             ? this.decay * 0.7   // Comb filters: moderate feedback to avoid metallic sound
             : 0.5;               // All-pass filters: low feedback for smooth diffusion
+          feedback.gain.linearRampToValueAtTime(feedbackAmount, now + 0.01);
+        });
+        break;
+      }
+      
+      case 'rt60': {
+        // RT60 in seconds (typical range 0.1 to 10 seconds)
+        // Convert RT60 to decay feedback and apply
+        this.decay = this.rt60ToDecay(value);
+        this.feedbacks.forEach((feedback, index) => {
+          const feedbackAmount = index < 6 
+            ? this.decay * 0.7
+            : 0.5;
           feedback.gain.linearRampToValueAtTime(feedbackAmount, now + 0.01);
         });
         break;
@@ -220,6 +265,8 @@ export class ReverbEffect extends BaseEffect {
       case 'decay':
       case 'time':
         return this.decay;
+      case 'rt60':
+        return this.decayToRT60(this.decay);
       case 'predelay':
         return this.predelay * 1000; // Return in milliseconds
       case 'damping':
@@ -244,6 +291,14 @@ export class ReverbEffect extends BaseEffect {
         max: 1,
         default: 0.5,
         unit: 'ratio',
+        type: 'continuous',
+      },
+      {
+        name: 'rt60',
+        min: 0.1,
+        max: 10,
+        default: 0.8,
+        unit: 's',
         type: 'continuous',
       },
       {

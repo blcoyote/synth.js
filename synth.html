@@ -9,12 +9,19 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎹 Modular Synthesizer</h1>
-      <p>Professional sound synthesis with multiple oscillators and real-time control</p>
-    </div>
-
-    <div class="init-section">
-      <button id="initBtn" class="init-btn">Initialize Audio System</button>
+      <div class="header-content">
+        <div>
+          <h1>🎹 Modular Synthesizer</h1>
+          <p>Professional sound synthesis with multiple oscillators and real-time control</p>
+        </div>
+        <div class="system-status">
+          <div class="status-led" id="systemLed"></div>
+          <div class="status-text">
+            <div class="status-label">Audio System</div>
+            <div class="status-value" id="systemStatus">Not Initialized</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Three column layout: Oscillators | Envelopes & Modulation | Effects & Filter -->
@@ -28,15 +35,18 @@
 
         <!-- Oscillator 1 -->
         <div class="module" data-type="oscillator">
-        <div class="module-header">
+        <div class="module-header collapsible" data-collapse="osc1">
           <div class="module-title">
             <span class="module-icon">〰️</span>
             Oscillator 1
           </div>
-          <div class="power-indicator on" id="osc1-power"></div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="power-indicator on" id="osc1-power"></div>
+            <span class="collapse-icon">▼</span>
+          </div>
         </div>
         
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content" id="osc1-content">
           <div class="control-group">
             <div class="control-label">
               <span>Waveform</span>
@@ -98,15 +108,18 @@
 
       <!-- Oscillator 2 -->
       <div class="module" data-type="oscillator">
-        <div class="module-header">
+        <div class="module-header collapsible collapsed" data-collapse="osc2">
           <div class="module-title">
             <span class="module-icon">〰️</span>
             Oscillator 2
           </div>
-          <div class="power-indicator" id="osc2-power"></div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="power-indicator" id="osc2-power"></div>
+            <span class="collapse-icon">▼</span>
+          </div>
         </div>
         
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content collapsed" id="osc2-content">
           <div class="control-group">
             <div class="control-label">
               <span>Waveform</span>
@@ -183,15 +196,18 @@
 
       <!-- Oscillator 3 -->
       <div class="module" data-type="oscillator">
-        <div class="module-header">
+        <div class="module-header collapsible collapsed" data-collapse="osc3">
           <div class="module-title">
             <span class="module-icon">〰️</span>
             Oscillator 3
           </div>
-          <div class="power-indicator" id="osc3-power"></div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="power-indicator" id="osc3-power"></div>
+            <span class="collapse-icon">▼</span>
+          </div>
         </div>
         
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content collapsed" id="osc3-content">
           <div class="control-group">
             <div class="control-label">
               <span>Waveform</span>
@@ -619,6 +635,127 @@
 
     </div>
     <!-- END THREE COLUMN GRID -->
+
+    <!-- Sequencer Section -->
+    <div class="module" data-type="sequencer" style="margin-top: 20px;">
+      <div class="module-header">
+        <div class="module-title">
+          <span class="module-icon">🎼</span>
+          Step Sequencer
+        </div>
+        <div class="power-indicator off" id="sequencer-power"></div>
+      </div>
+
+      <div class="oscillator-controls">
+        <!-- Transport Controls -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>Transport</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <button class="waveform-btn" id="seq-play">▶️ Play</button>
+            <button class="waveform-btn" id="seq-stop">⏹️ Stop</button>
+            <button class="waveform-btn" id="seq-pause">⏸️ Pause</button>
+            <button class="waveform-btn" id="seq-reset">🔄 Reset</button>
+          </div>
+        </div>
+
+        <!-- Tempo and Swing -->
+        <div class="control-row">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Tempo</span>
+              <span class="control-value" id="seq-tempo-value">120 BPM</span>
+            </div>
+            <input type="range" id="seq-tempo" min="40" max="300" value="120" step="1">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Swing</span>
+              <span class="control-value" id="seq-swing-value">0%</span>
+            </div>
+            <input type="range" id="seq-swing" min="0" max="100" value="0" step="1">
+          </div>
+        </div>
+
+        <!-- Step Count and Mode -->
+        <div class="control-row">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Steps</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+              <button class="waveform-btn" data-steps="4">4</button>
+              <button class="waveform-btn" data-steps="8">8</button>
+              <button class="waveform-btn active" data-steps="16">16</button>
+              <button class="waveform-btn" data-steps="32">32</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Mode</span>
+            </div>
+            <select id="seq-mode" style="width: 100%; padding: 8px; background: #1a1a1a; color: #fff; border: 2px solid #2a2a2a; border-radius: 6px; font-size: 0.9rem;">
+              <option value="forward">Forward</option>
+              <option value="reverse">Reverse</option>
+              <option value="pingpong">Ping-Pong</option>
+              <option value="random">Random</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Step Grid -->
+        <div class="control-group" style="margin-top: 15px;">
+          <div class="control-label">
+            <span>Pattern</span>
+            <span class="control-value" id="seq-current-step">Step: -</span>
+          </div>
+          <div id="step-grid" style="display: grid; grid-template-columns: repeat(16, 1fr); gap: 6px; margin-top: 10px;">
+            <!-- Steps will be generated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Step Editor -->
+        <div class="control-group" style="margin-top: 15px;">
+          <div class="control-label">
+            <span>Edit Step</span>
+            <span class="control-value" id="seq-edit-step">-</span>
+          </div>
+          
+          <div class="control-row">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Note</span>
+                <span class="control-value" id="seq-note-value">C3</span>
+              </div>
+              <input type="range" id="seq-note" min="36" max="84" value="60" step="1">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label">
+                <span>Velocity</span>
+                <span class="control-value" id="seq-velocity-value">100</span>
+              </div>
+              <input type="range" id="seq-velocity" min="0" max="127" value="100" step="1">
+            </div>
+          </div>
+        </div>
+
+        <!-- Pattern Management -->
+        <div class="control-group" style="margin-top: 15px;">
+          <div class="control-label">
+            <span>Pattern Tools</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <button class="waveform-btn" id="seq-clear">Clear</button>
+            <button class="waveform-btn" id="seq-random">Random</button>
+            <button class="waveform-btn" id="seq-bassline">Bassline</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Keyboard -->
     <div class="keyboard">
