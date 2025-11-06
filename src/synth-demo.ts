@@ -284,7 +284,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       setupKeyboard();
       setupWaveformVisualizer();
       setupMasterControls();
-      setupKnobs(); // Create knobs last, after all other setup
 
       initialized = true;
       initBtn.textContent = '✓ System Ready';
@@ -296,79 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-function setupKnobs() {
-  // TEMPORARILY DISABLED - Need to add CSS first
-  // if (knobsCreated) return;
-  // knobsCreated = true;
-  
-  // try {
-  // // Oscillator 1 Volume Knob
-  // new Knob('osc1-volume-knob', {
-  //   min: 0,
-  //   max: 100,
-  //   value: 70,
-  //   step: 1,
-  //   label: 'Volume',
-  //   unit: '%',
-  //   onChange: (value) => {
-  //     const config = oscillatorConfigs.get(1)!;
-  //     config.volume = value / 100;
-  //   },
-  // });
-
-  // // Oscillator 1 Pan Knob
-  // new Knob('osc1-pan-knob', {
-  //   min: -100,
-  //   max: 100,
-  //   value: 0,
-  //   step: 1,
-  //   label: 'Pan',
-  //   onChange: (value) => {
-  //     const config = oscillatorConfigs.get(1)!;
-  //     config.pan = value / 100;
-  //   },
-  //   valueFormatter: (value) => {
-  //     if (value < -10) return `${Math.abs(value)}% L`;
-  //     if (value > 10) return `${value}% R`;
-  //     return 'Center';
-  //   },
-  // });
-
-  // // Oscillator 2 Volume Knob
-  // new Knob('osc2-volume-knob', {
-  //   min: 0,
-  //   max: 100,
-  //   value: 50,
-  //   step: 1,
-  //   label: 'Volume',
-  //   unit: '%',
-  //   onChange: (value) => {
-  //     const config = oscillatorConfigs.get(2)!;
-  //     config.volume = value / 100;
-  //   },
-  // });
-
-  // // Oscillator 2 Pan Knob
-  // new Knob('osc2-pan-knob', {
-  //   min: -100,
-  //   max: 100,
-  //   value: 0,
-  //   step: 1,
-  //   label: 'Pan',
-  //   onChange: (value) => {
-  //     const config = oscillatorConfigs.get(2)!;
-  //     config.pan = value / 100;
-  //   },
-  //   valueFormatter: (value) => {
-  //     if (value < -10) return `${Math.abs(value)}% L`;
-  //     if (value > 10) return `${value}% R`;
-  //     return 'Center';
-  //   },
-  // });
-  // } catch (error) {
-  //   console.error('Error creating knobs:', error);
-  // }
-}function setupOscillatorControls() {
+function setupOscillatorControls() {
   for (let oscNum = 1; oscNum <= 3; oscNum++) {
     // Toggle button
     const toggleBtn = document.getElementById(`osc${oscNum}-toggle`) as HTMLButtonElement;
@@ -1415,8 +1342,6 @@ function playNote(noteIndex: number) {
             modulatorData.panNode.connect(modulatorData.envelope.getInputNode());
             modulatorData.envelope.connect(fmGain);
             fmGain.connect(carrierNode.frequency);
-
-            console.log(`FM: Osc ${oscNum} (${config.waveform}) modulating Osc 1 with depth ${config.fmDepth} Hz`);
           }
         }
       });

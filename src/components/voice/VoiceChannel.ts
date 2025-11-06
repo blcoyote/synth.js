@@ -220,8 +220,7 @@ export class VoiceChannel {
     this.lfo = lfo;
     
     // Get the internal oscillator node for Web Audio API modulation
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const oscNode = (this.oscillator as any).oscillatorNode as OscillatorNode;
+    const oscNode = this.oscillator.getOscillatorNode();
     if (oscNode && oscNode.frequency) {
       lfo.connectToParam(oscNode.frequency);
     }
@@ -232,8 +231,7 @@ export class VoiceChannel {
    */
   detachLFO(): void {
     if (this.lfo) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const oscNode = (this.oscillator as any).oscillatorNode as OscillatorNode;
+      const oscNode = this.oscillator.getOscillatorNode();
       if (oscNode && oscNode.frequency) {
         this.lfo.disconnect();
       }

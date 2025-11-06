@@ -30,12 +30,12 @@ export class WaveSurferVisualizer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
 
-  // Reusable buffers
-  private frequencyData: Uint8Array | null = null;
-  private waveformData: Uint8Array | null = null;
-  private filterMagResponse: Float32Array = new Float32Array(512);
-  private filterPhaseResponse: Float32Array = new Float32Array(512);
-  private filterFreqArray: Float32Array = new Float32Array(512);
+  // Reusable buffers - properly typed for Web Audio API
+  private frequencyData: Uint8Array<ArrayBuffer> | null = null;
+  private waveformData: Uint8Array<ArrayBuffer> | null = null;
+  private filterMagResponse: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(512 * 4));
+  private filterPhaseResponse: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(512 * 4));
+  private filterFreqArray: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(512 * 4));
 
   constructor(config: WaveSurferVisualizerConfig) {
     this.container = config.container;
@@ -129,9 +129,9 @@ export class WaveSurferVisualizer {
 
     const bufferLength = this.analyserNode.frequencyBinCount;
     if (!this.frequencyData || this.frequencyData.length !== bufferLength) {
-      this.frequencyData = new Uint8Array(bufferLength);
+      this.frequencyData = new Uint8Array(new ArrayBuffer(bufferLength));
     }
-    this.analyserNode.getByteFrequencyData(this.frequencyData as any);
+    this.analyserNode.getByteFrequencyData(this.frequencyData);
 
     const width = this.canvas.width;
     const height = this.canvas.height;
@@ -191,9 +191,9 @@ export class WaveSurferVisualizer {
 
     // Get filter frequency response
     this.filterNode.getFrequencyResponse(
-      this.filterFreqArray as any,
-      this.filterMagResponse as any,
-      this.filterPhaseResponse as any
+      this.filterFreqArray,
+      this.filterMagResponse,
+      this.filterPhaseResponse
     );
 
     // Draw filter curve
@@ -242,9 +242,9 @@ export class WaveSurferVisualizer {
 
     const bufferLength = this.analyserNode.fftSize;
     if (!this.waveformData || this.waveformData.length !== bufferLength) {
-      this.waveformData = new Uint8Array(bufferLength);
+      this.waveformData = new Uint8Array(new ArrayBuffer(bufferLength));
     }
-    this.analyserNode.getByteTimeDomainData(this.waveformData as any);
+    this.analyserNode.getByteTimeDomainData(this.waveformData);
 
     const width = this.canvas.width;
     const height = this.canvas.height;
