@@ -14,10 +14,10 @@ The LFO can now modulate:
 
 ### UI Controls
 In the LFO module, you'll find checkboxes to enable/disable each target:
-- ☑️ Pitch (Vibrato) - *enabled by default*
-- ☐ Volume (Tremolo)
-- ☐ Pan (Auto-Pan)
-- ☐ Filter Cutoff
+- [X] Pitch (Vibrato) - *enabled by default*
+- [ ] Volume (Tremolo)
+- [ ] Pan (Auto-Pan)
+- [ ] Filter Cutoff
 
 ### Shared Parameters
 All targets share these controls:

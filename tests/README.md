@@ -91,8 +91,8 @@ describe('ComponentName', () => {
 ### Testing Best Practices
 
 1. **Use descriptive test names**
-   - ✅ `it('should start oscillator and play audio')`
-   - ❌ `it('works')`
+   - GOOD: `it('should start oscillator and play audio')`
+   - BAD: `it('works')`
 
 2. **Follow AAA pattern**
    - Arrange: Set up test data

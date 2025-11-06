@@ -133,8 +133,8 @@ synth-demo.ts
 | Animation loops | 1 | 1 | Same |
 | Canvas operations/frame | ~15 | ~15 | Same |
 | Code complexity | High | Low | Much better |
-| Reusability | None | High | ⭐⭐⭐⭐⭐ |
-| Testability | Low | High | ⭐⭐⭐⭐⭐ |
+| Reusability | None | High | 5/5 |
+| Testability | Low | High | 5/5 |
 
 ## API Simplicity
 
@@ -184,26 +184,26 @@ visualizer.updateConfig({
 
 ## Key Benefits
 
-### 1. **Separation of Concerns** ✅
+### 1. **Separation of Concerns**
 - UI controls (sliders, buttons) → synth-demo.ts
 - Visualization rendering → Visualizer.ts
 - Audio processing → Web Audio nodes
 
-### 2. **Single Responsibility** ✅
+### 2. **Single Responsibility**
 - Visualizer: Render audio data
 - synth-demo: Coordinate UI and audio
 - Filter/Analyser: Process audio
 
-### 3. **Open/Closed Principle** ✅
+### 3. **Open/Closed Principle**
 - Open for extension (add new viz types)
 - Closed for modification (core logic stable)
 
-### 4. **DRY (Don't Repeat Yourself)** ✅
+### 4. **DRY (Don't Repeat Yourself)**
 - Grid drawing: Single method
 - Color scheme: Centralized constants
 - Layout: Configurable ratios
 
-### 5. **Testability** ✅
+### 5. **Testability**
 ```typescript
 // Easy to test
 describe('Visualizer', () => {

@@ -2,7 +2,7 @@
 
 ## Test Results
 
-**Status**: ✅ All tests passing  
+**Status**: All tests passing  
 **Total Tests**: 99  
 **Passed**: 99  
 **Failed**: 0
@@ -75,7 +75,7 @@ Added 40 comprehensive tests covering:
 3. **After Adding Fake Timers**: 2 failed, 97 passed
    - Issue: Test expectations for color changes and mock calls
    
-4. **Final Run**: **99 passed, 0 failed** ✅
+4. **Final Run**: **99 passed, 0 failed**
 
 ## Running the Tests
 

@@ -99,9 +99,9 @@ All components follow the `AudioComponent` interface:
 ## Next Steps
 
 Now that the core is built, we can:
-1. ✅ Core audio engine
-2. ✅ Bus system with dynamic routing
-3. ⏭️ Build oscillator components
-4. ⏭️ Create effects (delay, reverb, distortion)
-5. ⏭️ Add envelope generators
-6. ⏭️ Build filters
+1. DONE: Core audio engine
+2. DONE: Bus system with dynamic routing
+3. NEXT: Build oscillator components
+4. NEXT: Create effects (delay, reverb, distortion)
+5. NEXT: Add envelope generators
+6. NEXT: Build filters

@@ -13,11 +13,11 @@ This project is designed as a learning journey to understand:
 
 ## Key Features
 
-- 🎛️ **Modular Components**: Reusable oscillators, filters, and effects
-- 🚌 **Dynamic Bus System**: Add/remove effects on the fly
-- 🔊 **Real-time Audio**: Low-latency sound generation and processing
-- 🎨 **Extensible Architecture**: Easy to add new components
-- 📚 **Educational Focus**: Well-documented code for learning
+- **Modular Components**: Reusable oscillators, filters, and effects
+- **Dynamic Bus System**: Add/remove effects on the fly
+- **Real-time Audio**: Low-latency sound generation and processing
+- **Extensible Architecture**: Easy to add new components
+- **Educational Focus**: Well-documented code for learning
 
 ## Getting Started
 
@@ -116,4 +116,4 @@ MIT License - Feel free to learn from and build upon this project.
 
 ---
 
-**Happy Sound Designing! 🎵**
+**Happy Sound Designing!**

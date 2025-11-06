@@ -60,6 +60,12 @@ A learning journey in building a modular synthesizer with reusable components an
 - **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_GAIN`, `SAMPLE_RATE`)
 - **Private methods**: prefix with underscore (e.g., `_processAudio`)
 
+#### Code Style Rules
+- **No icons/emoticons in code, documentation, or README files**
+- Keep code and documentation professional and clean
+- Use clear, descriptive text instead of visual symbols
+- Emoticons are allowed in chat conversations only
+
 #### Component Interface Template
 Every audio component must implement:
 ```typescript
