@@ -1,0 +1,168 @@
+/**
+ * Synthesizer Constants
+ * 
+ * Centralized constants for default values, ranges, and magic numbers
+ * used throughout the synthesizer application.
+ */
+
+// =============================================================================
+// AUDIO PARAMETERS
+// =============================================================================
+
+/**
+ * Default oscillator volume (0-1)
+ * Used for initial voice settings
+ */
+export const DEFAULT_OSCILLATOR_VOLUME = 0.7;
+
+/**
+ * Default envelope sustain level (0-1)
+ * 70% sustain provides good balance between punch and sustainability
+ */
+export const DEFAULT_ENVELOPE_SUSTAIN = 0.7;
+
+/**
+ * Default envelope release time in seconds
+ * 300ms provides natural-sounding decay
+ */
+export const DEFAULT_ENVELOPE_RELEASE = 0.3;
+
+// =============================================================================
+// FILTER PARAMETERS
+// =============================================================================
+
+/**
+ * Default filter cutoff frequency in Hz
+ * 2000 Hz is a good starting point for lowpass filtering
+ */
+export const DEFAULT_FILTER_CUTOFF = 2000;
+
+/**
+ * Minimum filter cutoff frequency in Hz
+ * 20 Hz represents the lower limit of human hearing
+ */
+export const MIN_FILTER_CUTOFF = 20;
+
+/**
+ * Maximum filter cutoff frequency in Hz
+ * 20000 Hz (20 kHz) represents the upper limit of human hearing
+ */
+export const MAX_FILTER_CUTOFF = 20000;
+
+/**
+ * Maximum filter modulation depth in Hz
+ * Used for LFO and envelope modulation of filter cutoff
+ */
+export const MAX_FILTER_MODULATION_DEPTH = 2000;
+
+// =============================================================================
+// LFO (Low Frequency Oscillator) PARAMETERS
+// =============================================================================
+
+/**
+ * Minimum LFO rate in Hz
+ * 0.1 Hz = 1 cycle every 10 seconds (very slow modulation)
+ */
+export const MIN_LFO_RATE = 0.1;
+
+/**
+ * Maximum LFO rate in Hz
+ * 20 Hz = 20 cycles per second (audio rate modulation)
+ */
+export const MAX_LFO_RATE = 20;
+
+/**
+ * Maximum tremolo (volume LFO) depth (0-1)
+ * 30% modulation prevents excessive volume swings
+ */
+export const MAX_TREMOLO_DEPTH = 0.3;
+
+/**
+ * LFO pitch modulation depth in cents per 100% depth
+ * 50 cents = half a semitone modulation at full depth
+ */
+export const LFO_PITCH_MODULATION_CENTS = 50;
+
+// =============================================================================
+// FM (FREQUENCY MODULATION) PARAMETERS
+// =============================================================================
+
+/**
+ * Minimum FM modulation depth in Hz
+ * 0 Hz = no frequency modulation
+ */
+export const MIN_FM_DEPTH = 0;
+
+/**
+ * Maximum FM modulation depth in Hz
+ * 5000 Hz allows for dramatic FM synthesis effects
+ */
+export const MAX_FM_DEPTH = 5000;
+
+// =============================================================================
+// EFFECTS PARAMETERS
+// =============================================================================
+
+/**
+ * Default effect wet/dry mix ratio (0-1)
+ * 70% wet signal creates obvious but not overwhelming effects
+ */
+export const DEFAULT_EFFECT_MIX = 0.7;
+
+/**
+ * Default delay time in seconds
+ * 300ms (0.3s) provides clear rhythmic delays
+ */
+export const DEFAULT_DELAY_TIME = 0.3;
+
+/**
+ * Default delay feedback amount (0-1)
+ * 50% feedback creates several audible repeats
+ */
+export const DEFAULT_DELAY_FEEDBACK = 0.5;
+
+/**
+ * Default reverb decay time in seconds
+ * Creates medium-sized room ambience
+ */
+export const DEFAULT_REVERB_DECAY = 0.8;
+
+/**
+ * Default chorus rate in Hz
+ * 2.5 Hz creates noticeable but musical chorus effect
+ */
+export const DEFAULT_CHORUS_RATE = 2.5;
+
+/**
+ * Default chorus depth (0-1)
+ * 70% depth creates rich, thick chorus sound
+ */
+export const DEFAULT_CHORUS_DEPTH = 0.7;
+
+/**
+ * Default shimmer amount (0-1)
+ * 70% shimmer creates obvious ethereal effect
+ */
+export const DEFAULT_SHIMMER_AMOUNT = 0.7;
+
+// =============================================================================
+// UI CONVERSION CONSTANTS
+// =============================================================================
+
+/**
+ * Milliseconds to seconds conversion factor
+ * Used for ADSR time parameters (attack, decay, release)
+ */
+export const MS_TO_SECONDS = 1000;
+
+/**
+ * Percentage to decimal conversion factor
+ * Used for sustain level and other percentage-based controls
+ */
+export const PERCENT_TO_DECIMAL = 100;
+
+/**
+ * LFO rate slider to Hz conversion factor
+ * Slider value / 10 = Hz (range 0.1 to 20 Hz)
+ */
+export const LFO_RATE_SLIDER_FACTOR = 10;

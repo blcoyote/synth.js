@@ -17,6 +17,27 @@ import { LFO, MultiTargetLFO } from './components/modulation';
 import { Lowpass12Filter, Lowpass24Filter } from './components/filters';
 import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect, ShimmerEffect } from './components/effects';
 import { WaveSurferVisualizer } from './utils';
+import {
+  DEFAULT_OSCILLATOR_VOLUME,
+  DEFAULT_ENVELOPE_SUSTAIN,
+  DEFAULT_ENVELOPE_RELEASE,
+  DEFAULT_FILTER_CUTOFF,
+  MAX_FILTER_MODULATION_DEPTH,
+  MAX_TREMOLO_DEPTH,
+  DEFAULT_EFFECT_MIX,
+  DEFAULT_DELAY_TIME,
+  DEFAULT_DELAY_FEEDBACK,
+  DEFAULT_REVERB_DECAY,
+  DEFAULT_CHORUS_RATE,
+  DEFAULT_CHORUS_DEPTH,
+  DEFAULT_SHIMMER_AMOUNT,
+  MS_TO_SECONDS,
+  PERCENT_TO_DECIMAL,
+  LFO_RATE_SLIDER_FACTOR,
+  MIN_FILTER_CUTOFF,
+  MAX_FILTER_CUTOFF,
+  LFO_PITCH_MODULATION_CENTS,
+} from './synth/constants';
 
 // Voice represents a single note being played
 interface Voice {
@@ -76,7 +97,7 @@ let waveformVisualizer3: WaveSurferVisualizer | null = null;
 const filterSettings = {
   enabled: true,
   type: 'lowpass' as BiquadFilterType | 'lowpass12' | 'lowpass24',
-  cutoff: 2000,
+  cutoff: DEFAULT_FILTER_CUTOFF,
   resonance: 1.0,
 };
 
@@ -85,20 +106,20 @@ const envelopeSettings = {
   1: {
     attack: 0.01,
     decay: 0.1,
-    sustain: 0.7,
-    release: 0.3,
+    sustain: DEFAULT_ENVELOPE_SUSTAIN,
+    release: DEFAULT_ENVELOPE_RELEASE,
   },
   2: {
     attack: 0.01,
     decay: 0.1,
-    sustain: 0.7,
-    release: 0.3,
+    sustain: DEFAULT_ENVELOPE_SUSTAIN,
+    release: DEFAULT_ENVELOPE_RELEASE,
   },
   3: {
     attack: 0.01,
     decay: 0.1,
-    sustain: 0.7,
-    release: 0.3,
+    sustain: DEFAULT_ENVELOPE_SUSTAIN,
+    release: DEFAULT_ENVELOPE_RELEASE,
   },
 };
 
@@ -209,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         waveform: 'sawtooth',
         octave: 0,
         detune: 0,
-        volume: 0.7,
+        volume: DEFAULT_OSCILLATOR_VOLUME,
         pan: 0,
       });
 
@@ -438,7 +459,7 @@ function setupEnvelopeControls() {
     setupEnvelopeParameter(
       envNum,
       'attack',
-      (value) => value / 1000,
+      (value) => value / MS_TO_SECONDS,
       (value) => `${value}ms`
     );
 
@@ -446,7 +467,7 @@ function setupEnvelopeControls() {
     setupEnvelopeParameter(
       envNum,
       'decay',
-      (value) => value / 1000,
+      (value) => value / MS_TO_SECONDS,
       (value) => `${value}ms`
     );
 
@@ -454,7 +475,7 @@ function setupEnvelopeControls() {
     setupEnvelopeParameter(
       envNum,
       'sustain',
-      (value) => value / 100,
+      (value) => value / PERCENT_TO_DECIMAL,
       (value) => `${value}%`
     );
 
@@ -462,7 +483,7 @@ function setupEnvelopeControls() {
     setupEnvelopeParameter(
       envNum,
       'release',
-      (value) => value / 1000,
+      (value) => value / MS_TO_SECONDS,
       (value) => `${value}ms`
     );
   });
@@ -489,7 +510,7 @@ function setupLFOControls() {
 
   // Rate control
   rateSlider.addEventListener('input', () => {
-    const rate = parseFloat(rateSlider.value) / 10; // 0.1 to 20 Hz
+    const rate = parseFloat(rateSlider.value) / LFO_RATE_SLIDER_FACTOR; // 0.1 to 20 Hz
     vibrato?.setParameter('frequency', rate);
     multiLFO?.setFrequency(rate);
     rateValue.textContent = `${rate.toFixed(1)} Hz`;
@@ -502,18 +523,18 @@ function setupLFOControls() {
     
     // Update depth for all active targets in multiLFO
     if (multiLFO) {
-      const depthValue = depth * 50; // Scale for pitch modulation (cents)
+      const depthValue = depth * LFO_PITCH_MODULATION_CENTS; // Scale for pitch modulation (cents)
       if (multiLFO.hasTarget('pitch')) {
         multiLFO.setTargetDepth('pitch', depthValue);
       }
       if (multiLFO.hasTarget('volume')) {
-        multiLFO.setTargetDepth('volume', depth * 0.3); // Volume modulation (0-0.3)
+        multiLFO.setTargetDepth('volume', depth * MAX_TREMOLO_DEPTH); // Volume modulation (0-0.3)
       }
       if (multiLFO.hasTarget('pan')) {
         multiLFO.setTargetDepth('pan', depth); // Pan modulation (-1 to +1)
       }
       if (multiLFO.hasTarget('filter')) {
-        multiLFO.setTargetDepth('filter', depth * 2000); // Filter cutoff modulation (Hz)
+        multiLFO.setTargetDepth('filter', depth * MAX_FILTER_MODULATION_DEPTH); // Filter cutoff modulation (Hz)
       }
     }
     
@@ -564,7 +585,7 @@ function setupLFOControls() {
     
     if (filterParam && lfoState.targets.filter) {
       const currentCutoff = filterParam.value;
-      const depth = (parseFloat(depthSlider.value) / 100) * 2000;
+      const depth = (parseFloat(depthSlider.value) / PERCENT_TO_DECIMAL) * MAX_FILTER_MODULATION_DEPTH;
       
       if (multiLFO.hasTarget('filter')) {
         multiLFO.setTargetDepth('filter', depth);
@@ -745,7 +766,7 @@ function setupFilterControls() {
     if (!masterFilter || !filterVisualizer) return;
     
     // Convert from logarithmic slider value to frequency
-    // Slider range: log(20) to log(20000) ≈ 2.996 to 9.903
+    // Slider range: log(MIN_FILTER_CUTOFF) to log(MAX_FILTER_CUTOFF) ≈ 2.996 to 9.903
     const logValue = parseFloat(cutoffSlider.value);
     filterSettings.cutoff = Math.exp(logValue); // e^x to get actual frequency
     
@@ -912,24 +933,24 @@ function setupEffectsChain() {
     let effect;
     switch (type) {
       case 'delay':
-        effect = new DelayEffect(0.3, 0.5); // Increased feedback for more repeats
-        effect.setParameter('mix', 0.7); // 70% wet - very obvious delay
+        effect = new DelayEffect(DEFAULT_DELAY_TIME, DEFAULT_DELAY_FEEDBACK);
+        effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
       case 'reverb':
-        effect = new ReverbEffect(0.75);
-        effect.setParameter('mix', 0.7); // 70% wet - obvious reverb
+        effect = new ReverbEffect(DEFAULT_REVERB_DECAY);
+        effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
       case 'distortion':
         effect = new DistortionEffect(20); // Increased drive for more grit
-        effect.setParameter('mix', 0.7); // 70% wet - obvious distortion
+        effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
       case 'chorus':
-        effect = new ChorusEffect(2.5, 0.7); // Increased depth and rate
-        effect.setParameter('mix', 0.7); // 70% wet - obvious chorus
+        effect = new ChorusEffect(DEFAULT_CHORUS_RATE, DEFAULT_CHORUS_DEPTH);
+        effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
       case 'shimmer':
-        effect = new ShimmerEffect(0.8, 0.7); // Increased shimmer amount
-        effect.setParameter('mix', 0.7); // 70% wet - obvious shimmer
+        effect = new ShimmerEffect(DEFAULT_REVERB_DECAY, DEFAULT_SHIMMER_AMOUNT);
+        effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
     }
 
