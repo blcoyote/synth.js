@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arpeggiator Demo - Modular Synth</title>
+  <link rel="stylesheet" href="synth.css">
+  <style>
+    .demo-section {
+      background: rgba(30, 30, 45, 0.7);
+      border-radius: 12px;
+      padding: 25px;
+      margin: 20px 0;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .control-group {
+      margin: 15px 0;
+    }
+
+    .control-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #e0e0e0;
+      font-weight: 500;
+    }
+
+    .control-group input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .control-group select {
+      width: 100%;
+      padding: 8px;
+      background: rgba(20, 20, 30, 0.8);
+      color: #e0e0e0;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .pattern-btn, .chord-btn, .progression-btn {
+      padding: 10px 15px;
+      background: rgba(100, 100, 120, 0.3);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 6px;
+      color: #e0e0e0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 13px;
+      text-transform: capitalize;
+    }
+
+    .pattern-btn:hover, .chord-btn:hover, .progression-btn:hover {
+      background: rgba(139, 92, 246, 0.4);
+      border-color: rgba(139, 92, 246, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .pattern-btn.active, .chord-btn.active, .progression-btn.active {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+      border-color: #8b5cf6;
+    }
+
+    .play-controls {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .play-controls button {
+      flex: 1;
+      padding: 15px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #playBtn {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    #playBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+
+    #stopBtn {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    #stopBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+
+    .value-display {
+      display: inline-block;
+      min-width: 60px;
+      text-align: right;
+      color: #8b5cf6;
+      font-weight: 600;
+    }
+
+    .info-display {
+      background: rgba(20, 20, 30, 0.8);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 3px solid #8b5cf6;
+    }
+
+    .info-display p {
+      margin: 8px 0;
+      color: #d0d0d0;
+      font-size: 14px;
+    }
+
+    .section-title {
+      color: #8b5cf6;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>🎹 Arpeggiator Demo</h1>
+      <p>Musical arpeggio patterns with chord progressions</p>
+    </header>
+
+    <main class="main-content">
+      <div class="init-section">
+        <button id="initBtn" class="init-btn">Initialize Audio System</button>
+      </div>
+
+      <!-- Playback Controls -->
+      <div class="demo-section">
+        <h2 class="section-title">Playback</h2>
+        <div class="play-controls">
+          <button id="playBtn">▶ Play</button>
+          <button id="stopBtn">⏹ Stop</button>
+        </div>
+      </div>
+
+      <!-- Timing Controls -->
+      <div class="demo-section">
+        <h2 class="section-title">Timing</h2>
+        
+        <div class="control-group">
+          <label>
+            Tempo: <span id="tempo-value" class="value-display">120 BPM</span>
+          </label>
+          <input type="range" id="tempo" min="40" max="300" value="120" step="1">
+        </div>
+
+        <div class="control-group">
+          <label>Note Division</label>
+          <select id="division">
+            <option value="1/4">Quarter Notes (1/4)</option>
+            <option value="1/8">Eighth Notes (1/8)</option>
+            <option value="1/16" selected>Sixteenth Notes (1/16)</option>
+            <option value="1/8T">Eighth Triplets (1/8T)</option>
+            <option value="1/16T">Sixteenth Triplets (1/16T)</option>
+            <option value="1/32">Thirty-second Notes (1/32)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>
+            Gate Length: <span id="gate-value" class="value-display">80%</span>
+          </label>
+          <input type="range" id="gate" min="10" max="100" value="80" step="5">
+        </div>
+
+        <div class="control-group">
+          <label>
+            Swing: <span id="swing-value" class="value-display">0%</span>
+          </label>
+          <input type="range" id="swing" min="0" max="100" value="0" step="5">
+        </div>
+
+        <div class="control-group">
+          <label>
+            Humanize: <span id="humanize-value" class="value-display">0%</span>
+          </label>
+          <input type="range" id="humanize" min="0" max="100" value="0" step="5">
+        </div>
+      </div>
+
+      <!-- Pattern Selection -->
+      <div class="demo-section">
+        <h2 class="section-title">Arpeggio Patterns</h2>
+        <p style="color: #b0b0b0; margin-bottom: 15px; font-size: 14px;">
+          Select how notes are played
+        </p>
+        <div id="pattern-buttons" class="button-grid"></div>
+      </div>
+
+      <!-- Octave Range -->
+      <div class="demo-section">
+        <h2 class="section-title">Range</h2>
+        <div class="control-group">
+          <label>
+            Octaves: <span id="octaves-value" class="value-display">2</span>
+          </label>
+          <input type="range" id="octaves" min="1" max="4" value="2" step="1">
+        </div>
+      </div>
+
+      <!-- Chord Selection -->
+      <div class="demo-section">
+        <h2 class="section-title">Chords</h2>
+        
+        <div class="control-group">
+          <label>Root Note</label>
+          <select id="root-note">
+            <option value="48">C3</option>
+            <option value="49">C#3</option>
+            <option value="50">D3</option>
+            <option value="51">D#3</option>
+            <option value="52">E3</option>
+            <option value="53">F3</option>
+            <option value="54">F#3</option>
+            <option value="55">G3</option>
+            <option value="56">G#3</option>
+            <option value="57">A3</option>
+            <option value="58">A#3</option>
+            <option value="59">B3</option>
+            <option value="60" selected>C4 (Middle C)</option>
+            <option value="61">C#4</option>
+            <option value="62">D4</option>
+            <option value="63">D#4</option>
+            <option value="64">E4</option>
+            <option value="65">F4</option>
+            <option value="66">F#4</option>
+            <option value="67">G4</option>
+            <option value="68">G#4</option>
+            <option value="69">A4</option>
+            <option value="70">A#4</option>
+            <option value="71">B4</option>
+            <option value="72">C5</option>
+          </select>
+        </div>
+
+        <p style="color: #b0b0b0; margin: 15px 0 10px; font-size: 14px;">
+          Select chord type
+        </p>
+        <div id="chord-buttons" class="button-grid"></div>
+      </div>
+
+      <!-- Progressions -->
+      <div class="demo-section">
+        <h2 class="section-title">Chord Progressions</h2>
+        <p style="color: #b0b0b0; margin-bottom: 15px; font-size: 14px;">
+          Load preset chord progressions (uses first chord)
+        </p>
+        <div id="progression-buttons" class="button-grid"></div>
+      </div>
+
+      <!-- Sequence Display -->
+      <div class="demo-section">
+        <h2 class="section-title">Current Sequence</h2>
+        <div class="info-display">
+          <p id="notes-display">Current Notes: C4, E4, G4</p>
+          <p id="sequence-display">Sequence: ...</p>
+        </div>
+      </div>
+
+      <!-- Info Section -->
+      <div class="demo-section">
+        <h2 class="section-title">About Arpeggiators</h2>
+        <p style="color: #d0d0d0; line-height: 1.6; margin-top: 10px;">
+          An arpeggiator breaks chords into individual notes played in sequence. 
+          This demo features 13 different patterns, from simple up/down arpeggios 
+          to complex converging and pinched patterns. Experiment with different 
+          chord types, octave ranges, and rhythmic divisions to create everything 
+          from classic synth sequences to modern electronic textures.
+        </p>
+        
+        <div style="margin-top: 20px; padding: 15px; background: rgba(139, 92, 246, 0.1); border-radius: 8px;">
+          <p style="color: #8b5cf6; font-weight: 600; margin-bottom: 8px;">Pattern Guide:</p>
+          <ul style="color: #d0d0d0; line-height: 1.8; margin-left: 20px;">
+            <li><strong>Up/Down:</strong> Basic ascending/descending patterns</li>
+            <li><strong>Up-Down/Down-Up:</strong> Bouncing patterns that reverse direction</li>
+            <li><strong>Converge/Diverge:</strong> Alternating between outer and inner notes</li>
+            <li><strong>Pinched:</strong> Start with extremes, then fill in the middle</li>
+            <li><strong>Random/Shuffle:</strong> Unpredictable note orders</li>
+            <li><strong>Chord:</strong> All notes played simultaneously</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/src/arpeggiator-demo.ts"></script>
+</body>
+</html>

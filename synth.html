@@ -293,14 +293,15 @@
 
         <!-- ADSR Envelope 1 -->
         <div class="module" data-type="envelope">
-        <div class="module-header">
+        <div class="module-header collapsible" data-collapse="env1">
           <div class="module-title">
             <span class="module-icon">📈</span>
             Envelope 1
           </div>
+          <span class="collapse-icon">▼</span>
         </div>
         
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content" id="env1-content">
           <div class="control-row">
             <div class="control-group">
               <div class="control-label">
@@ -341,14 +342,15 @@
 
       <!-- ADSR Envelope 2 -->
       <div class="module" data-type="envelope">
-        <div class="module-header">
+        <div class="module-header collapsible" data-collapse="env2">
           <div class="module-title">
             <span class="module-icon">📈</span>
             Envelope 2
           </div>
+          <span class="collapse-icon">▼</span>
         </div>
         
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content collapsed" id="env2-content">
           <div class="control-row">
             <div class="control-group">
               <div class="control-label">
@@ -389,14 +391,15 @@
 
       <!-- ADSR Envelope 3 -->
       <div class="module" data-type="envelope">
-        <div class="module-header">
+        <div class="module-header collapsible" data-collapse="env3">
           <div class="module-title">
             <span class="module-icon">📈</span>
             Envelope 3
           </div>
+          <span class="collapse-icon">▼</span>
         </div>
         
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content collapsed" id="env3-content">
           <div class="control-row">
             <div class="control-group">
               <div class="control-label">
@@ -437,15 +440,18 @@
 
       <!-- LFO -->
       <div class="module" data-type="lfo">
-        <div class="module-header">
+        <div class="module-header collapsible" data-collapse="lfo">
           <div class="module-title">
             <span class="module-icon">🌊</span>
             LFO (Vibrato)
           </div>
-          <div class="power-indicator" id="lfo-power"></div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="power-indicator" id="lfo-power"></div>
+            <span class="collapse-icon">▼</span>
+          </div>
         </div>
         
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content" id="lfo-content">
           <div class="control-group">
             <div class="control-label">
               <span>Waveform</span>
@@ -532,15 +538,18 @@
 
         <!-- Filter -->
         <div class="module" data-type="filter">
-        <div class="module-header">
+        <div class="module-header collapsible" data-collapse="filter">
           <div class="module-title">
             <span class="module-icon">🔊</span>
             Filter
           </div>
-          <div class="power-indicator on" id="filter-power"></div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="power-indicator on" id="filter-power"></div>
+            <span class="collapse-icon">▼</span>
+          </div>
         </div>
         
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content" id="filter-content">
           <div class="control-group">
             <div class="control-label">
               <span>Type</span>
@@ -591,15 +600,18 @@
 
       <!-- Effects Chain Section -->
       <div class="module" data-type="effects" style="margin-top: 20px;">
-        <div class="module-header">
+        <div class="module-header collapsible" data-collapse="effects">
           <div class="module-title">
             <span class="module-icon">🎛️</span>
             Effects Chain
           </div>
-          <div class="power-indicator on" id="effects-power"></div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="power-indicator on" id="effects-power"></div>
+            <span class="collapse-icon">▼</span>
+          </div>
         </div>
 
-        <div class="oscillator-controls">
+        <div class="oscillator-controls collapsible-content" id="effects-content">
           <!-- Add Effect Controls -->
           <div class="control-group">
             <div class="control-label">
@@ -630,6 +642,26 @@
         </div>
       </div>
 
+      <!-- Master Section -->
+      <div class="module" data-type="master" style="margin-top: 20px;">
+        <div class="module-header collapsible" data-collapse="master">
+          <div class="module-title">
+            <span class="module-icon">🎚️</span>
+            Master Output
+          </div>
+          <span class="collapse-icon">▼</span>
+        </div>
+        <div class="oscillator-controls collapsible-content" id="master-content">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Master Volume</span>
+              <span class="control-value" id="master-volume-value">80%</span>
+            </div>
+            <input type="range" id="master-volume" min="0" max="100" value="80" step="1">
+          </div>
+        </div>
+      </div>
+
       </div>
       <!-- END RIGHT COLUMN -->
 
@@ -638,15 +670,18 @@
 
     <!-- Sequencer Section -->
     <div class="module" data-type="sequencer" style="margin-top: 20px;">
-      <div class="module-header">
+      <div class="module-header collapsible" data-collapse="sequencer">
         <div class="module-title">
           <span class="module-icon">🎼</span>
           Step Sequencer
         </div>
-        <div class="power-indicator off" id="sequencer-power"></div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="power-indicator off" id="sequencer-power"></div>
+          <span class="collapse-icon">▼</span>
+        </div>
       </div>
 
-      <div class="oscillator-controls">
+      <div class="oscillator-controls collapsible-content collapsed" id="sequencer-content">
         <!-- Transport Controls -->
         <div class="control-group">
           <div class="control-label">
@@ -757,6 +792,138 @@
       </div>
     </div>
 
+    <!-- Arpeggiator Section -->
+    <div class="module" data-type="arpeggiator" style="margin-top: 20px; margin-bottom: 30px;">
+      <div class="module-header collapsible" data-collapse="arpeggiator">
+        <div class="module-title">
+          <span class="module-icon">🎶</span>
+          Arpeggiator
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="power-indicator off" id="arpeggiator-power"></div>
+          <span class="collapse-icon">▼</span>
+        </div>
+      </div>
+
+      <div class="oscillator-controls collapsible-content collapsed" id="arpeggiator-content">
+        <!-- Transport Controls -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>Transport</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button class="waveform-btn" id="arp-enable">▶ Play</button>
+            <button class="waveform-btn" id="arp-stop">⏹ Stop</button>
+          </div>
+        </div>
+
+        <!-- Tempo and Octaves -->
+        <div class="control-row">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Tempo</span>
+              <span class="control-value" id="arp-tempo-value">120 BPM</span>
+            </div>
+            <input type="range" id="arp-tempo" min="40" max="300" value="120" step="1">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Octaves</span>
+              <span class="control-value" id="arp-octaves-value">2</span>
+            </div>
+            <input type="range" id="arp-octaves" min="1" max="4" value="2" step="1">
+          </div>
+        </div>
+
+        <!-- Gate and Division -->
+        <div class="control-row">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Gate Length</span>
+              <span class="control-value" id="arp-gate-value">80%</span>
+            </div>
+            <input type="range" id="arp-gate" min="10" max="100" value="80" step="5">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Note Division</span>
+            </div>
+            <select id="arp-division" style="width: 100%; padding: 8px; background: #1a1a1a; color: #fff; border: 2px solid #2a2a2a; border-radius: 6px; font-size: 0.9rem;">
+              <option value="1/4">Quarter Notes (1/4)</option>
+              <option value="1/8">Eighth Notes (1/8)</option>
+              <option value="1/16" selected>Sixteenth Notes (1/16)</option>
+              <option value="1/8T">Eighth Triplets (1/8T)</option>
+              <option value="1/16T">Sixteenth Triplets (1/16T)</option>
+              <option value="1/32">Thirty-second Notes (1/32)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pattern Selection -->
+        <div class="control-group" style="margin-top: 15px;">
+          <div class="control-label">
+            <span>Pattern</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <button class="waveform-btn active" id="arp-pattern-up">Up</button>
+            <button class="waveform-btn" id="arp-pattern-down">Down</button>
+            <button class="waveform-btn" id="arp-pattern-updown">Up-Down</button>
+            <button class="waveform-btn" id="arp-pattern-updown2">Up-Down 2</button>
+            <button class="waveform-btn" id="arp-pattern-converge">Converge</button>
+            <button class="waveform-btn" id="arp-pattern-diverge">Diverge</button>
+            <button class="waveform-btn" id="arp-pattern-random">Random</button>
+          </div>
+        </div>
+
+        <!-- Chord Selection -->
+        <div class="control-group" style="margin-top: 15px;">
+          <div class="control-label">
+            <span>Root Note</span>
+          </div>
+          <select id="arp-root" style="width: 100%; padding: 8px; background: #1a1a1a; color: #fff; border: 2px solid #2a2a2a; border-radius: 6px; font-size: 0.9rem;">
+            <option value="48">C3</option>
+            <option value="49">C#3</option>
+            <option value="50">D3</option>
+            <option value="51">D#3</option>
+            <option value="52">E3</option>
+            <option value="53">F3</option>
+            <option value="54">F#3</option>
+            <option value="55">G3</option>
+            <option value="56">G#3</option>
+            <option value="57">A3</option>
+            <option value="58">A#3</option>
+            <option value="59">B3</option>
+            <option value="60" selected>C4 (Middle C)</option>
+            <option value="61">C#4</option>
+            <option value="62">D4</option>
+            <option value="63">D#4</option>
+            <option value="64">E4</option>
+            <option value="65">F4</option>
+            <option value="66">F#4</option>
+            <option value="67">G4</option>
+            <option value="68">G#4</option>
+            <option value="69">A4</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Chord Type</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <button class="waveform-btn arp-chord-btn active" id="arp-chord-major">Major</button>
+            <button class="waveform-btn arp-chord-btn" id="arp-chord-minor">Minor</button>
+            <button class="waveform-btn arp-chord-btn" id="arp-chord-major7">Maj7</button>
+            <button class="waveform-btn arp-chord-btn" id="arp-chord-minor7">Min7</button>
+            <button class="waveform-btn arp-chord-btn" id="arp-chord-dom7">Dom7</button>
+            <button class="waveform-btn arp-chord-btn" id="arp-chord-sus4">Sus4</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Keyboard -->
     <div class="keyboard">
       <div class="keyboard-title">
@@ -765,25 +932,6 @@
       </div>
       <div class="keys-container" id="keyboard">
         <!-- Keys will be generated by JavaScript -->
-      </div>
-    </div>
-
-    <!-- Master Section -->
-    <div class="master-section module" data-type="master" style="margin-top: 20px;">
-      <div class="module-header">
-        <div class="module-title">
-          <span class="module-icon">🎚️</span>
-          Master Output
-        </div>
-      </div>
-      <div class="master-controls">
-        <div class="control-group">
-          <div class="control-label">
-            <span>Master Volume</span>
-            <span class="control-value" id="master-volume-value">80%</span>
-          </div>
-          <input type="range" id="master-volume" min="0" max="100" value="80" step="1">
-        </div>
       </div>
     </div>
 

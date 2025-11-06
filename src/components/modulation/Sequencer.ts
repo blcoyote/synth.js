@@ -17,8 +17,6 @@
  * Classic use: Basslines, arpeggios, drum patterns, generative melodies
  */
 
-import { AudioEngine } from '../../core/AudioEngine';
-
 export interface SequencerStep {
   gate: boolean;        // Note on/off
   pitch: number;        // MIDI note number (0-127) or CV value
@@ -41,7 +39,6 @@ export interface SequencerConfig {
 }
 
 export class Sequencer {
-  private engine: AudioEngine;
   private steps: number = 16;
   private tempo: number = 120;
   private swing: number = 0;
@@ -60,7 +57,6 @@ export class Sequencer {
   private onPatternCompleteCallback: (() => void) | null = null;
 
   constructor(config: SequencerConfig = {}) {
-    this.engine = AudioEngine.getInstance();
     this.steps = config.steps || 16;
     this.tempo = config.tempo || 120;
     this.swing = config.swing || 0;

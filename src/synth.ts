@@ -14,8 +14,8 @@ import {
 } from './components/oscillators';
 import type { BaseOscillator } from './components/oscillators/BaseOscillator';
 import { ADSREnvelope } from './components/envelopes';
-import { LFO, MultiTargetLFO, Sequencer } from './components/modulation';
-import type { SequencerStep } from './components/modulation';
+import { LFO, MultiTargetLFO, Sequencer, Arpeggiator } from './components/modulation';
+import type { SequencerStep, ArpPattern, NoteDivision } from './components/modulation';
 import { Lowpass12Filter, Lowpass24Filter } from './components/filters';
 import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect, ShimmerEffect } from './components/effects';
 import { WaveSurferVisualizer } from './utils';
@@ -73,6 +73,8 @@ let multiLFO: MultiTargetLFO | null = null; // New multi-target LFO
 let masterFilter: BiquadFilterNode | Lowpass12Filter | Lowpass24Filter | null = null;
 let sequencer: Sequencer | null = null;
 let selectedStepIndex: number | null = null;
+let arpeggiator: Arpeggiator | null = null;
+let arpeggiatorEnabled: boolean = false;
 
 // LFO state
 const lfoState = {
@@ -309,6 +311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setupWaveformVisualizer();
       setupMasterControls();
       setupSequencer();
+      setupArpeggiator();
       setupCollapsibleSections();
 
       initialized = true;
@@ -1725,11 +1728,194 @@ function rebuildStepGrid(steps: number) {
   updateAllStepButtons();
 }
 
+function setupArpeggiator() {
+  // Create arpeggiator instance
+  arpeggiator = new Arpeggiator({
+    pattern: 'up',
+    octaves: 2,
+    tempo: 120,
+    division: '1/16',
+    gateLength: 0.8,
+    swing: 0,
+    humanize: 0,
+  });
+
+  // Set initial chord (C major)
+  arpeggiator.setChord(60, 'major');
+
+  // Register note callback
+  arpeggiator.onNote((note) => {
+    const frequency = midiToFrequency(note.pitch);
+    
+    // Find if this note exists in our keyboard notes array
+    const matchingNote = notes.find(n => Math.abs(n.freq - frequency) < 0.5);
+    
+    if (matchingNote) {
+      // Use existing playNote for notes in keyboard range
+      const noteIndex = notes.indexOf(matchingNote);
+      playNote(noteIndex);
+      
+      // Calculate note duration
+      const tempo = arpeggiator!.getTempo();
+      const division = arpeggiator!.getDivision();
+      const quarterNoteDuration = 60000 / tempo;
+      
+      let noteDuration = quarterNoteDuration / 4; // Default to 1/16
+      switch (division) {
+        case '1/4': noteDuration = quarterNoteDuration; break;
+        case '1/8': noteDuration = quarterNoteDuration / 2; break;
+        case '1/16': noteDuration = quarterNoteDuration / 4; break;
+        case '1/8T': noteDuration = (quarterNoteDuration / 2) * (2/3); break;
+        case '1/16T': noteDuration = (quarterNoteDuration / 4) * (2/3); break;
+        case '1/32': noteDuration = quarterNoteDuration / 8; break;
+      }
+      
+      const gateDuration = noteDuration * note.gate;
+      
+      // Release after gate duration
+      setTimeout(() => {
+        releaseNote(noteIndex);
+      }, gateDuration);
+    }
+  });
+
+  // Enable/Disable toggle
+  const enableBtn = document.getElementById('arp-enable') as HTMLButtonElement;
+  const powerIndicator = document.getElementById('arpeggiator-power') as HTMLDivElement;
+  
+  enableBtn.addEventListener('click', () => {
+    arpeggiatorEnabled = !arpeggiatorEnabled;
+    
+    if (arpeggiatorEnabled) {
+      // Disable sequencer if running
+      if (sequencer?.isRunning()) {
+        sequencer.stop();
+        document.getElementById('sequencer-power')?.classList.remove('on');
+      }
+      
+      arpeggiator!.start();
+      powerIndicator.classList.add('on');
+      enableBtn.textContent = '⏸ Pause';
+    } else {
+      arpeggiator!.pause();
+      powerIndicator.classList.remove('on');
+      enableBtn.textContent = '▶ Play';
+    }
+  });
+
+  // Stop button
+  const stopBtn = document.getElementById('arp-stop') as HTMLButtonElement;
+  stopBtn.addEventListener('click', () => {
+    arpeggiator!.stop();
+    arpeggiatorEnabled = false;
+    powerIndicator.classList.remove('on');
+    enableBtn.textContent = '▶ Play';
+  });
+
+  // Tempo
+  const tempoSlider = document.getElementById('arp-tempo') as HTMLInputElement;
+  const tempoValue = document.getElementById('arp-tempo-value') as HTMLSpanElement;
+  tempoSlider.addEventListener('input', () => {
+    const tempo = parseInt(tempoSlider.value);
+    arpeggiator!.setTempo(tempo);
+    tempoValue.textContent = `${tempo} BPM`;
+  });
+
+  // Octaves
+  const octavesSlider = document.getElementById('arp-octaves') as HTMLInputElement;
+  const octavesValue = document.getElementById('arp-octaves-value') as HTMLSpanElement;
+  octavesSlider.addEventListener('input', () => {
+    const octaves = parseInt(octavesSlider.value);
+    arpeggiator!.setOctaves(octaves);
+    octavesValue.textContent = octaves.toString();
+  });
+
+  // Gate Length
+  const gateSlider = document.getElementById('arp-gate') as HTMLInputElement;
+  const gateValue = document.getElementById('arp-gate-value') as HTMLSpanElement;
+  gateSlider.addEventListener('input', () => {
+    const gate = parseFloat(gateSlider.value) / 100;
+    arpeggiator!.setGateLength(gate);
+    gateValue.textContent = `${gateSlider.value}%`;
+  });
+
+  // Note Division
+  const divisionSelect = document.getElementById('arp-division') as HTMLSelectElement;
+  divisionSelect.addEventListener('change', () => {
+    arpeggiator!.setDivision(divisionSelect.value as NoteDivision);
+  });
+
+  // Pattern buttons
+  const patterns: ArpPattern[] = [
+    'up', 'down', 'updown', 'updown2', 'converge', 'diverge', 'random'
+  ];
+
+  patterns.forEach(pattern => {
+    const btn = document.getElementById(`arp-pattern-${pattern}`) as HTMLButtonElement;
+    if (btn) {
+      btn.addEventListener('click', () => {
+        arpeggiator!.setPattern(pattern);
+        
+        // Update active state
+        patterns.forEach(p => {
+          document.getElementById(`arp-pattern-${p}`)?.classList.remove('active');
+        });
+        btn.classList.add('active');
+      });
+    }
+  });
+
+  // Chord type buttons
+  const chordTypes: Array<{ id: string; type: 'major' | 'minor' | 'major7' | 'minor7' | 'dom7' | 'sus4' }> = [
+    { id: 'major', type: 'major' },
+    { id: 'minor', type: 'minor' },
+    { id: 'major7', type: 'major7' },
+    { id: 'minor7', type: 'minor7' },
+    { id: 'dom7', type: 'dom7' },
+    { id: 'sus4', type: 'sus4' },
+  ];
+
+  const rootNoteSelect = document.getElementById('arp-root') as HTMLSelectElement;
+
+  chordTypes.forEach(chord => {
+    const btn = document.getElementById(`arp-chord-${chord.id}`) as HTMLButtonElement;
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const rootNote = parseInt(rootNoteSelect.value);
+        arpeggiator!.setChord(rootNote, chord.type);
+        
+        // Update active state
+        chordTypes.forEach(c => {
+          document.getElementById(`arp-chord-${c.id}`)?.classList.remove('active');
+        });
+        btn.classList.add('active');
+      });
+    }
+  });
+
+  // Root note change
+  rootNoteSelect.addEventListener('change', () => {
+    const activeChordBtn = document.querySelector('.arp-chord-btn.active') as HTMLButtonElement;
+    if (activeChordBtn) {
+      activeChordBtn.click();
+    }
+  });
+}
+
 function setupCollapsibleSections() {
   // Find all collapsible headers
   const collapsibleHeaders = document.querySelectorAll('.module-header.collapsible');
   
   collapsibleHeaders.forEach((header) => {
+    // Initialize collapsed state based on content element
+    const targetId = header.getAttribute('data-collapse');
+    if (targetId) {
+      const contentElement = document.getElementById(`${targetId}-content`);
+      if (contentElement && contentElement.classList.contains('collapsed')) {
+        header.classList.add('collapsed');
+      }
+    }
+    
     header.addEventListener('click', () => {
       const targetId = header.getAttribute('data-collapse');
       if (!targetId) return;
