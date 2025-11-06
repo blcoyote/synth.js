@@ -17,9 +17,17 @@
       <button id="initBtn" class="init-btn">Initialize Audio System</button>
     </div>
 
-    <div class="synth-layout">
-      <!-- Oscillator 1 -->
-      <div class="module" data-type="oscillator">
+    <!-- Three column layout: Oscillators | Envelopes & Modulation | Effects & Filter -->
+    <div class="synth-layout-grid">
+      
+      <!-- LEFT COLUMN: OSCILLATORS -->
+      <div class="synth-column oscillators-column">
+        <div class="column-header">
+          <h2>🎵 Oscillators</h2>
+        </div>
+
+        <!-- Oscillator 1 -->
+        <div class="module" data-type="oscillator">
         <div class="module-header">
           <div class="module-title">
             <span class="module-icon">〰️</span>
@@ -34,8 +42,8 @@
               <span>Waveform</span>
             </div>
             <div class="waveform-select">
-              <button class="waveform-btn active" data-osc="1" data-wave="sine">Sine</button>
-              <button class="waveform-btn" data-osc="1" data-wave="sawtooth">Saw</button>
+              <button class="waveform-btn" data-osc="1" data-wave="sine">Sine</button>
+              <button class="waveform-btn active" data-osc="1" data-wave="sawtooth">Saw</button>
               <button class="waveform-btn" data-osc="1" data-wave="square">Square</button>
               <button class="waveform-btn" data-osc="1" data-wave="triangle">Triangle</button>
             </div>
@@ -154,12 +162,121 @@
             <canvas id="oscillator2-waveform" width="400" height="120" style="width: 100%; height: 120px; background: #0a0a0a; border-radius: 8px; border: 2px solid #1a1a1a;"></canvas>
           </div>
 
+          <!-- FM Modulation Controls -->
+          <div class="control-group" style="margin-top: 15px; padding: 12px; background: rgba(147, 51, 234, 0.1); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 8px;">
+            <div class="control-label" style="margin-bottom: 10px;">
+              <span>🔀 FM Modulation (Osc 1)</span>
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>FM Depth</span>
+                <span class="control-value" id="osc2-fm-depth-value">0 Hz</span>
+              </div>
+              <input type="range" id="osc2-fm-depth" min="0" max="5000" value="0" step="10">
+            </div>
+            <button class="toggle-btn" id="osc2-fm-toggle" style="margin-top: 10px;">Enable FM</button>
+          </div>
+
           <button class="toggle-btn" id="osc2-toggle">Enable Oscillator</button>
         </div>
       </div>
 
-      <!-- ADSR Envelope 1 -->
-      <div class="module" data-type="envelope">
+      <!-- Oscillator 3 -->
+      <div class="module" data-type="oscillator">
+        <div class="module-header">
+          <div class="module-title">
+            <span class="module-icon">〰️</span>
+            Oscillator 3
+          </div>
+          <div class="power-indicator" id="osc3-power"></div>
+        </div>
+        
+        <div class="oscillator-controls">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Waveform</span>
+            </div>
+            <div class="waveform-select">
+              <button class="waveform-btn" data-osc="3" data-wave="sine">Sine</button>
+              <button class="waveform-btn" data-osc="3" data-wave="sawtooth">Saw</button>
+              <button class="waveform-btn active" data-osc="3" data-wave="square">Square</button>
+              <button class="waveform-btn" data-osc="3" data-wave="triangle">Triangle</button>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Octave</span>
+                <span class="control-value" id="osc3-octave-value">1</span>
+              </div>
+              <input type="range" id="osc3-octave" min="-2" max="2" value="1" step="1">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label">
+                <span>Detune</span>
+                <span class="control-value" id="osc3-detune-value">7¢</span>
+              </div>
+              <input type="range" id="osc3-detune" min="-100" max="100" value="7" step="1">
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Volume</span>
+                <span class="control-value" id="osc3-volume-value">40%</span>
+              </div>
+              <input type="range" id="osc3-volume" min="0" max="100" value="40" step="1">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label">
+                <span>Pan</span>
+                <span class="control-value" id="osc3-pan-value">Center</span>
+              </div>
+              <input type="range" id="osc3-pan" min="-100" max="100" value="0" step="1">
+            </div>
+          </div>
+
+          <div class="control-group" style="margin-top: 15px;">
+            <div class="control-label">
+              <span>Waveform</span>
+            </div>
+            <canvas id="oscillator3-waveform" width="400" height="120" style="width: 100%; height: 120px; background: #0a0a0a; border-radius: 8px; border: 2px solid #1a1a1a;"></canvas>
+          </div>
+
+          <!-- FM Modulation Controls -->
+          <div class="control-group" style="margin-top: 15px; padding: 12px; background: rgba(147, 51, 234, 0.1); border: 1px solid rgba(147, 51, 234, 0.3); border-radius: 8px;">
+            <div class="control-label" style="margin-bottom: 10px;">
+              <span>🔀 FM Modulation (Osc 1)</span>
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>FM Depth</span>
+                <span class="control-value" id="osc3-fm-depth-value">0 Hz</span>
+              </div>
+              <input type="range" id="osc3-fm-depth" min="0" max="5000" value="0" step="10">
+            </div>
+            <button class="toggle-btn" id="osc3-fm-toggle" style="margin-top: 10px;">Enable FM</button>
+          </div>
+
+          <button class="toggle-btn" id="osc3-toggle">Enable Oscillator</button>
+        </div>
+      </div>
+      
+      </div>
+      <!-- END LEFT COLUMN -->
+
+      <!-- MIDDLE COLUMN: ENVELOPES & MODULATION -->
+      <div class="synth-column envelopes-column">
+        <div class="column-header">
+          <h2>📈 Envelopes & Modulation</h2>
+        </div>
+
+        <!-- ADSR Envelope 1 -->
+        <div class="module" data-type="envelope">
         <div class="module-header">
           <div class="module-title">
             <span class="module-icon">📈</span>
@@ -254,6 +371,54 @@
         </div>
       </div>
 
+      <!-- ADSR Envelope 3 -->
+      <div class="module" data-type="envelope">
+        <div class="module-header">
+          <div class="module-title">
+            <span class="module-icon">📈</span>
+            Envelope 3
+          </div>
+        </div>
+        
+        <div class="oscillator-controls">
+          <div class="control-row">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Attack</span>
+                <span class="control-value" id="env3-attack-value">10ms</span>
+              </div>
+              <input type="range" id="env3-attack" min="1" max="2000" value="10" step="1">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label">
+                <span>Decay</span>
+                <span class="control-value" id="env3-decay-value">100ms</span>
+              </div>
+              <input type="range" id="env3-decay" min="1" max="2000" value="100" step="1">
+            </div>
+          </div>
+
+          <div class="control-row">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Sustain</span>
+                <span class="control-value" id="env3-sustain-value">70%</span>
+              </div>
+              <input type="range" id="env3-sustain" min="0" max="100" value="70" step="1">
+            </div>
+
+            <div class="control-group">
+              <div class="control-label">
+                <span>Release</span>
+                <span class="control-value" id="env3-release-value">300ms</span>
+              </div>
+              <input type="range" id="env3-release" min="1" max="5000" value="300" step="1">
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- LFO -->
       <div class="module" data-type="lfo">
         <div class="module-header">
@@ -296,12 +461,61 @@
             </div>
           </div>
 
+          <div class="control-group" style="margin-top: 15px;">
+            <div class="control-label">
+              <span>Trigger Mode</span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px; background: #1a1a1a; border-radius: 6px; border: 2px solid #2a2a2a; flex: 1;">
+                <input type="radio" name="lfo-mode" id="lfo-mode-free" value="free" checked style="cursor: pointer;">
+                <span style="font-size: 0.9rem;">Free-Running</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px; background: #1a1a1a; border-radius: 6px; border: 2px solid #2a2a2a; flex: 1;">
+                <input type="radio" name="lfo-mode" id="lfo-mode-trigger" value="trigger" style="cursor: pointer;">
+                <span style="font-size: 0.9rem;">Note Triggered</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="control-group" style="margin-top: 15px;">
+            <div class="control-label">
+              <span>Modulation Targets</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px; background: #1a1a1a; border-radius: 6px; border: 2px solid #2a2a2a;">
+                <input type="checkbox" id="lfo-target-pitch" checked style="cursor: pointer;">
+                <span style="font-size: 0.9rem;">Pitch (Vibrato)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px; background: #1a1a1a; border-radius: 6px; border: 2px solid #2a2a2a;">
+                <input type="checkbox" id="lfo-target-volume" style="cursor: pointer;">
+                <span style="font-size: 0.9rem;">Volume (Tremolo)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px; background: #1a1a1a; border-radius: 6px; border: 2px solid #2a2a2a;">
+                <input type="checkbox" id="lfo-target-pan" style="cursor: pointer;">
+                <span style="font-size: 0.9rem;">Pan (Auto-Pan)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px; background: #1a1a1a; border-radius: 6px; border: 2px solid #2a2a2a;">
+                <input type="checkbox" id="lfo-target-filter" style="cursor: pointer;">
+                <span style="font-size: 0.9rem;">Filter Cutoff</span>
+              </label>
+            </div>
+          </div>
+
           <button class="toggle-btn" id="lfo-toggle">Enable LFO</button>
         </div>
       </div>
 
-      <!-- Filter -->
-      <div class="module" data-type="filter">
+      </div>
+      <!-- END MIDDLE COLUMN -->
+
+      <!-- RIGHT COLUMN: FILTER & EFFECTS -->
+      <div class="synth-column effects-column">
+        <div class="column-header">
+          <h2>🎛️ Filter & Effects</h2>
+        </div>
+
+        <!-- Filter -->
+        <div class="module" data-type="filter">
         <div class="module-header">
           <div class="module-title">
             <span class="module-icon">🔊</span>
@@ -358,7 +572,53 @@
           <button class="toggle-btn active" id="filter-toggle">Disable Filter</button>
         </div>
       </div>
+
+      <!-- Effects Chain Section -->
+      <div class="module" data-type="effects" style="margin-top: 20px;">
+        <div class="module-header">
+          <div class="module-title">
+            <span class="module-icon">🎛️</span>
+            Effects Chain
+          </div>
+          <div class="power-indicator on" id="effects-power"></div>
+        </div>
+
+        <div class="oscillator-controls">
+          <!-- Add Effect Controls -->
+          <div class="control-group">
+            <div class="control-label">
+              <span>Add Effect</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <button class="waveform-btn" id="add-delay">+ Delay</button>
+              <button class="waveform-btn" id="add-reverb">+ Reverb</button>
+              <button class="waveform-btn" id="add-distortion">+ Distortion</button>
+              <button class="waveform-btn" id="add-chorus">+ Chorus</button>
+              <button class="waveform-btn" id="add-shimmer">+ Shimmer</button>
+            </div>
+          </div>
+
+          <!-- Effects List Container -->
+          <div class="control-group" style="margin-top: 15px;">
+            <div class="control-label">
+              <span>Active Effects</span>
+              <span class="control-value" id="effects-count">0</span>
+            </div>
+            <div id="effects-list" style="display: flex; flex-direction: column; gap: 10px; min-height: 50px; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 2px solid #2a2a2a;">
+              <div style="color: #666; text-align: center; font-size: 0.85rem;">No effects added</div>
+            </div>
+          </div>
+
+          <!-- Chain Bypass Toggle -->
+          <button class="toggle-btn active" id="effects-toggle">Bypass Effects Chain</button>
+        </div>
+      </div>
+
+      </div>
+      <!-- END RIGHT COLUMN -->
+
     </div>
+    <!-- END THREE COLUMN GRID -->
 
     <!-- Keyboard -->
     <div class="keyboard">
@@ -368,47 +628,6 @@
       </div>
       <div class="keys-container" id="keyboard">
         <!-- Keys will be generated by JavaScript -->
-      </div>
-    </div>
-
-    <!-- Effects Chain Section -->
-    <div class="module" data-type="filter" style="margin-top: 20px;">
-      <div class="module-header">
-        <div class="module-title">
-          <span class="module-icon">🎛️</span>
-          Effects Chain
-        </div>
-        <div class="power-indicator on" id="effects-power"></div>
-      </div>
-
-      <div class="oscillator-controls">
-        <!-- Add Effect Controls -->
-        <div class="control-group">
-          <div class="control-label">
-            <span>Add Effect</span>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <button class="waveform-btn" id="add-delay">+ Delay</button>
-            <button class="waveform-btn" id="add-reverb">+ Reverb</button>
-            <button class="waveform-btn" id="add-distortion">+ Distortion</button>
-            <button class="waveform-btn" id="add-chorus">+ Chorus</button>
-            <button class="waveform-btn" id="add-shimmer">+ Shimmer</button>
-          </div>
-        </div>
-
-        <!-- Effects List Container -->
-        <div class="control-group" style="margin-top: 15px;">
-          <div class="control-label">
-            <span>Active Effects</span>
-            <span class="control-value" id="effects-count">0</span>
-          </div>
-          <div id="effects-list" style="display: flex; flex-direction: column; gap: 10px; min-height: 50px; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 2px solid #2a2a2a;">
-            <div style="color: #666; text-align: center; font-size: 0.85rem;">No effects added</div>
-          </div>
-        </div>
-
-        <!-- Chain Bypass Toggle -->
-        <button class="toggle-btn active" id="effects-toggle">Bypass Effects Chain</button>
       </div>
     </div>
 

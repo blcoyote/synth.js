@@ -90,8 +90,8 @@ describe('Lowpass Filters', () => {
       filter.setParameter('cutoff', 2000);
       
       expect(filter.getParameter('cutoff')).toBe(2000);
-      // Verify exponentialRampToValueAtTime was called on second stage
-      expect(secondStage.frequency.exponentialRampToValueAtTime).toHaveBeenCalled();
+      // Verify setTargetAtTime was called on second stage
+      expect(secondStage.frequency.setTargetAtTime).toHaveBeenCalled();
     });
 
     it('should set resonance on both stages', () => {
@@ -101,8 +101,8 @@ describe('Lowpass Filters', () => {
       filter.setParameter('resonance', 10);
       
       expect(filter.getParameter('resonance')).toBe(10);
-      // Verify linearRampToValueAtTime was called on second stage
-      expect(secondStage.Q.linearRampToValueAtTime).toHaveBeenCalled();
+      // Verify setTargetAtTime was called on second stage
+      expect(secondStage.Q.setTargetAtTime).toHaveBeenCalled();
     });
 
     it('should maintain sync when changing cutoff multiple times', () => {
@@ -114,8 +114,8 @@ describe('Lowpass Filters', () => {
       filter.setParameter('cutoff', 1500);
       
       expect(filter.getParameter('cutoff')).toBe(1500);
-      // Verify exponentialRampToValueAtTime was called 3 times (after constructor)
-      expect(secondStage.frequency.exponentialRampToValueAtTime).toHaveBeenCalled();
+      // Verify setTargetAtTime was called 3 times (after constructor)
+      expect(secondStage.frequency.setTargetAtTime).toHaveBeenCalled();
     });
 
     it('should enable and disable', () => {
@@ -200,7 +200,7 @@ describe('Lowpass Filters', () => {
       
       expect(filter.getParameter('cutoff')).toBe(100 + 99 * 50);
       // Verify second stage was updated (called 100 times after constructor)
-      expect(secondStage.frequency.exponentialRampToValueAtTime).toHaveBeenCalled();
+      expect(secondStage.frequency.setTargetAtTime).toHaveBeenCalled();
     });
 
     it('should handle zero resonance', () => {

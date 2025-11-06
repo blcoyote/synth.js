@@ -88,15 +88,16 @@ synth.html             # REFACTORED - Single canvas
 ## Usage Example
 
 ```typescript
-import { Visualizer } from './utils';
+import { WaveSurferVisualizer } from './utils';
 
 // Create visualizer
-const visualizer = new Visualizer({
-  canvas: document.getElementById('audio-visualizer'),
-  filterNode: myFilter,
+const visualizer = new WaveSurferVisualizer({
+  container: document.getElementById('visualizer-container'),
   analyserNode: myAnalyser,
+  filterNode: myFilter,
   filterEnabled: true,
-  cutoffFrequency: 2000
+  cutoffFrequency: 2000,
+  mode: 'spectrum'
 });
 
 // Start visualization

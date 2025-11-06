@@ -203,6 +203,13 @@ export abstract class BaseOscillator implements AudioComponent {
   }
 
   /**
+   * Get the underlying OscillatorNode for direct parameter access (e.g., FM modulation)
+   */
+  public getOscillatorNode(): OscillatorNode | null {
+    return this.oscillator;
+  }
+
+  /**
    * Set frequency from MIDI note number
    */
   public setNoteNumber(noteNumber: number): void {

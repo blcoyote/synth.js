@@ -21,8 +21,10 @@ class MockAudioContext {
       frequency: { 
         value: 440, 
         setValueAtTime: vi.fn(), 
+        setTargetAtTime: vi.fn(),
         linearRampToValueAtTime: vi.fn(),
         exponentialRampToValueAtTime: vi.fn(),
+        cancelScheduledValues: vi.fn(),
       },
       detune: { value: 0 },
       connect: vi.fn(),
@@ -37,6 +39,7 @@ class MockAudioContext {
       gain: { 
         value: 1, 
         setValueAtTime: vi.fn(),
+        setTargetAtTime: vi.fn(),
         linearRampToValueAtTime: vi.fn(),
         exponentialRampToValueAtTime: vi.fn(),
         cancelScheduledValues: vi.fn(),
@@ -55,21 +58,32 @@ class MockAudioContext {
   }
 
   createBiquadFilter() {
+    const frequencyParam = { 
+      value: 350, 
+      setValueAtTime: vi.fn((value) => { frequencyParam.value = value; }),
+      setTargetAtTime: vi.fn((value) => { frequencyParam.value = value; }),
+      linearRampToValueAtTime: vi.fn((value) => { frequencyParam.value = value; }),
+      exponentialRampToValueAtTime: vi.fn((value) => { frequencyParam.value = value; }),
+      cancelScheduledValues: vi.fn(),
+    };
+    const qParam = { 
+      value: 1, 
+      setValueAtTime: vi.fn((value) => { qParam.value = value; }),
+      setTargetAtTime: vi.fn((value) => { qParam.value = value; }),
+      linearRampToValueAtTime: vi.fn((value) => { qParam.value = value; }),
+      exponentialRampToValueAtTime: vi.fn((value) => { qParam.value = value; }),
+      cancelScheduledValues: vi.fn(),
+    };
+    const gainParam = { 
+      value: 0,
+      setTargetAtTime: vi.fn((value) => { gainParam.value = value; }),
+      cancelScheduledValues: vi.fn(),
+    };
     return {
       type: 'lowpass',
-      frequency: { 
-        value: 350, 
-        setValueAtTime: vi.fn(),
-        linearRampToValueAtTime: vi.fn(),
-        exponentialRampToValueAtTime: vi.fn(),
-      },
-      Q: { 
-        value: 1, 
-        setValueAtTime: vi.fn(),
-        linearRampToValueAtTime: vi.fn(),
-        exponentialRampToValueAtTime: vi.fn(),
-      },
-      gain: { value: 0 },
+      frequency: frequencyParam,
+      Q: qParam,
+      gain: gainParam,
       connect: vi.fn(),
       disconnect: vi.fn(),
       getFrequencyResponse: vi.fn((frequencyArray, magResponseOutput, phaseResponseOutput) => {
@@ -96,8 +110,10 @@ class MockAudioContext {
       delayTime: { 
         value: 0, 
         setValueAtTime: vi.fn(),
+        setTargetAtTime: vi.fn(),
         linearRampToValueAtTime: vi.fn(),
         exponentialRampToValueAtTime: vi.fn(),
+        cancelScheduledValues: vi.fn(),
       },
       connect: vi.fn(),
       disconnect: vi.fn(),
@@ -122,6 +138,24 @@ class MockAudioContext {
       release: { value: 0.25 },
       connect: vi.fn(),
       disconnect: vi.fn(),
+    };
+  }
+
+  createChannelSplitter(numberOfOutputs = 2) {
+    return {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      numberOfInputs: 1,
+      numberOfOutputs,
+    };
+  }
+
+  createChannelMerger(numberOfInputs = 2) {
+    return {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      numberOfInputs,
+      numberOfOutputs: 1,
     };
   }
 

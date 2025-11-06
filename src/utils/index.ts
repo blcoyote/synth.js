@@ -2,5 +2,5 @@
  * Utility modules
  */
 
-export { Visualizer } from './Visualizer';
-export type { VisualizerConfig } from './Visualizer';
+export { WaveSurferVisualizer } from './WaveSurferVisualizer';
+export type { WaveSurferVisualizerConfig } from './WaveSurferVisualizer';

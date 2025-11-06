@@ -1,5 +1,5 @@
 /**
- * ReverbEffect - Simple reverb using multiple delays
+ * ReverbEffect - Enhanced reverb with professional parameters
  * 
  * Creates a sense of space and ambience using a network of
  * delays (Schroeder reverb algorithm).
@@ -9,10 +9,14 @@
  * 
  * Parameters:
  * - decay: How long the reverb lasts (0-1)
+ * - predelay: Delay before reverb starts (0-100ms)
+ * - damping: High frequency absorption (500-8000Hz)
+ * - spread: Stereo width of reverb (0-1)
+ * - size: Room size feeling (0-1, affects delay times)
  * - mix: Wet/dry balance
  * 
- * Note: This is a simplified reverb. Production reverbs use
- * convolution or more complex algorithms.
+ * Note: This is an enhanced educational reverb. Production reverbs use
+ * convolution or even more complex algorithms.
  */
 
 import { BaseEffect } from './BaseEffect';
@@ -20,44 +24,132 @@ import type { ParameterDescriptor } from '../../core/types';
 
 export class ReverbEffect extends BaseEffect {
   private delays: DelayNode[] = [];
-  private gains: GainNode[] = [];
+  private feedbacks: GainNode[] = [];
+  private filters: BiquadFilterNode[] = [];
   private decayGain: GainNode;
+  private preDelayNode: DelayNode;
+  private spreadLeft: GainNode;
+  private spreadRight: GainNode;
+  private spreadMerger: ChannelMergerNode;
+  private spreadSplitter: ChannelSplitterNode;
+  private smoothingFilter: BiquadFilterNode;
+  private wetBoost: GainNode;
   
   private decay: number = 0.5;
+  private predelay: number = 0.03; // 30ms default
+  private damping: number = 2000; // 2kHz default
+  private spread: number = 0.7; // 70% stereo width
+  private size: number = 0.5; // Medium room
 
   constructor(decay: number = 0.5) {
     super('Reverb Effect', 'reverb');
     
-    this.decay = decay;
+    this.decay = Math.max(0, Math.min(1, decay));
     
-    // Create a simple multi-tap delay reverb (safer than feedback loops)
-    // Multiple delays at different times create reverb effect
-    const delayTimes = [0.023, 0.029, 0.031, 0.037, 0.041, 0.043, 0.047, 0.053];
+    // Pre-delay for initial reflection (adds depth and realism)
+    this.preDelayNode = this.engine.createDelay(0.1);
+    this.preDelayNode.delayTime.value = this.predelay;
+    
+    // Stereo spread using channel splitter/merger
+    const context = this.engine.getContext();
+    this.spreadSplitter = context.createChannelSplitter(2);
+    this.spreadMerger = context.createChannelMerger(2);
+    this.spreadLeft = this.engine.createGain(1.0);
+    this.spreadRight = this.engine.createGain(1.0);
     
     // Create decay control
     this.decayGain = this.engine.createGain(1.0);
     
-    // Create multiple parallel delays (no feedback - prevents runaway)
-    for (let i = 0; i < delayTimes.length; i++) {
-      const delay = this.engine.createDelay(0.2);
-      const gain = this.engine.createGain(this.decay * (0.8 - i * 0.08)); // Decreasing amplitude
+    // Schroeder reverb: parallel comb filters with feedback
+    // Using prime number delays scaled by size parameter
+    const baseCombTimes = [0.0297, 0.0371, 0.0411, 0.0437, 0.0503, 0.0571];
+    const combDelayTimes = baseCombTimes.map(t => t * (0.5 + this.size * 1.5));
+    
+    this.inputGain.connect(this.preDelayNode);
+    
+    // Parallel comb filters with feedback (creates the reverb tail)
+    for (let i = 0; i < combDelayTimes.length; i++) {
+      const delay = this.engine.createDelay(0.3);
+      const feedbackGain = this.engine.createGain(this.decay * 0.7);
+      const damping = this.engine.createBiquadFilter('lowpass');
+      damping.frequency.value = this.damping;
+      const outputGain = this.engine.createGain(0.4 / combDelayTimes.length);
       
-      delay.delayTime.value = delayTimes[i];
+      delay.delayTime.value = combDelayTimes[i];
       
-      // Simple parallel routing: input -> delay -> gain -> output
-      this.inputGain.connect(delay);
-      delay.connect(gain);
-      gain.connect(this.decayGain);
+      // Comb filter with damping: input -> delay -> damping -> feedback -> delay
+      this.preDelayNode.connect(delay);
+      delay.connect(damping);
+      damping.connect(feedbackGain);
+      feedbackGain.connect(delay); // Feedback connection
+      damping.connect(outputGain); // Take output after damping
+      outputGain.connect(this.decayGain);
       
       this.delays.push(delay);
-      this.gains.push(gain);
+      this.feedbacks.push(feedbackGain);
+      this.filters.push(damping);
     }
     
-    // Connect to wet path
-    this.connectWetPath(this.decayGain);
+    // Series all-pass filters for diffusion (creates density)
+    const baseAllpassTimes = [0.005, 0.0089, 0.0127, 0.0179, 0.0223, 0.0289];
+    const allpassDelayTimes = baseAllpassTimes.map(t => t * (0.5 + this.size * 1.5));
+    let lastNode: AudioNode = this.decayGain;
     
-    // Set initial mix to 30% (typical for reverb)
-    this.setMix(0.3);
+    for (let i = 0; i < allpassDelayTimes.length; i++) {
+      const delay = this.engine.createDelay(0.1);
+      const feedbackGain = this.engine.createGain(0.5);
+      const feedforwardGain = this.engine.createGain(1.0);
+      const inverterGain = this.engine.createGain(-0.5);
+      const mixer = this.engine.createGain(1.0);
+      
+      delay.delayTime.value = allpassDelayTimes[i];
+      
+      // All-pass filter structure
+      lastNode.connect(delay);
+      lastNode.connect(feedforwardGain);
+      delay.connect(feedbackGain);
+      feedbackGain.connect(delay); // Feedback
+      delay.connect(inverterGain);
+      
+      feedforwardGain.connect(mixer);
+      inverterGain.connect(mixer);
+      
+      lastNode = mixer;
+      this.delays.push(delay);
+      this.feedbacks.push(feedbackGain);
+    }
+    
+    // Stereo spread processing
+    lastNode.connect(this.spreadSplitter);
+    
+    // Left channel: slightly delayed
+    this.spreadSplitter.connect(this.spreadLeft, 0);
+    const leftDelay = this.engine.createDelay(0.01);
+    leftDelay.delayTime.value = 0.003 * this.spread; // 3ms max
+    this.spreadLeft.connect(leftDelay);
+    leftDelay.connect(this.spreadMerger, 0, 0);
+    
+    // Right channel: slightly delayed opposite
+    this.spreadSplitter.connect(this.spreadRight, 1);
+    const rightDelay = this.engine.createDelay(0.01);
+    rightDelay.delayTime.value = 0.002 * this.spread; // 2ms max, different timing
+    this.spreadRight.connect(rightDelay);
+    rightDelay.connect(this.spreadMerger, 0, 1);
+    
+    // Smoothing filter and boost
+    this.wetBoost = this.engine.createGain(1.5);
+    this.smoothingFilter = this.engine.createBiquadFilter('lowpass');
+    this.smoothingFilter.frequency.value = 6000;
+    this.smoothingFilter.Q.value = 0.7;
+    
+    this.spreadMerger.connect(this.wetBoost);
+    this.wetBoost.connect(this.smoothingFilter);
+    
+    // Connect to wet path
+    this.connectWetPath(this.smoothingFilter);
+    
+    // Set initial mix to 70% - obvious effect
+    this.setMix(0.7);
   }
 
   public setParameter(name: string, value: number): void {
@@ -67,11 +159,50 @@ export class ReverbEffect extends BaseEffect {
       case 'decay':
       case 'time': {
         this.decay = Math.max(0, Math.min(1, value));
-        // Adjust gains for each tap - decreasing amplitude for later taps
-        this.gains.forEach((gain, i) => {
-          const amplitude = this.decay * (0.8 - i * 0.08);
-          gain.gain.linearRampToValueAtTime(amplitude, now + 0.01);
+        // Adjust feedback gains for each comb filter (controls reverb tail length)
+        // First 6 are comb filters (moderate feedback), rest are all-pass (low feedback)
+        this.feedbacks.forEach((feedback, index) => {
+          const feedbackAmount = index < 6 
+            ? this.decay * 0.7   // Comb filters: moderate feedback to avoid metallic sound
+            : 0.5;               // All-pass filters: low feedback for smooth diffusion
+          feedback.gain.linearRampToValueAtTime(feedbackAmount, now + 0.01);
         });
+        break;
+      }
+      
+      case 'predelay': {
+        // Pre-delay in milliseconds (0-100ms)
+        this.predelay = Math.max(0, Math.min(0.1, value / 1000));
+        this.preDelayNode.delayTime.linearRampToValueAtTime(this.predelay, now + 0.01);
+        break;
+      }
+      
+      case 'damping': {
+        // Damping frequency in Hz (500-8000Hz)
+        this.damping = Math.max(500, Math.min(8000, value));
+        // Update all comb filter dampings (first 6 filters)
+        for (let i = 0; i < 6; i++) {
+          this.filters[i].frequency.linearRampToValueAtTime(this.damping, now + 0.01);
+        }
+        break;
+      }
+      
+      case 'spread': {
+        // Stereo spread (0-1)
+        this.spread = Math.max(0, Math.min(1, value));
+        // Can't easily update delay times dynamically, but we can adjust gains
+        const spreadGain = 0.5 + this.spread * 0.5; // 0.5 to 1.0
+        this.spreadLeft.gain.linearRampToValueAtTime(spreadGain, now + 0.01);
+        this.spreadRight.gain.linearRampToValueAtTime(spreadGain, now + 0.01);
+        break;
+      }
+      
+      case 'size': {
+        // Room size (0-1) - affects delay times
+        // Note: Can't dynamically change delay times without reconstruction
+        // So we store it for display but warn about limitations
+        this.size = Math.max(0, Math.min(1, value));
+        console.warn('Size parameter change requires reverb restart to take full effect');
         break;
       }
         
@@ -89,6 +220,14 @@ export class ReverbEffect extends BaseEffect {
       case 'decay':
       case 'time':
         return this.decay;
+      case 'predelay':
+        return this.predelay * 1000; // Return in milliseconds
+      case 'damping':
+        return this.damping;
+      case 'spread':
+        return this.spread;
+      case 'size':
+        return this.size;
       case 'mix':
         return this.mix;
       default:
@@ -101,6 +240,38 @@ export class ReverbEffect extends BaseEffect {
       ...this.getCommonParameters(),
       {
         name: 'decay',
+        min: 0,
+        max: 1,
+        default: 0.5,
+        unit: 'ratio',
+        type: 'continuous',
+      },
+      {
+        name: 'predelay',
+        min: 0,
+        max: 100,
+        default: 30,
+        unit: 'ms',
+        type: 'continuous',
+      },
+      {
+        name: 'damping',
+        min: 500,
+        max: 8000,
+        default: 2000,
+        unit: 'Hz',
+        type: 'continuous',
+      },
+      {
+        name: 'spread',
+        min: 0,
+        max: 1,
+        default: 0.7,
+        unit: 'ratio',
+        type: 'continuous',
+      },
+      {
+        name: 'size',
         min: 0,
         max: 1,
         default: 0.5,

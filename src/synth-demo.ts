@@ -13,10 +13,10 @@ import {
 } from './components/oscillators';
 import type { BaseOscillator } from './components/oscillators/BaseOscillator';
 import { ADSREnvelope } from './components/envelopes';
-import { LFO } from './components/modulation';
+import { LFO, MultiTargetLFO } from './components/modulation';
 import { Lowpass12Filter, Lowpass24Filter } from './components/filters';
 import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect, ShimmerEffect } from './components/effects';
-import { Visualizer } from './utils';
+import { WaveSurferVisualizer } from './utils';
 
 // Voice represents a single note being played
 interface Voice {
@@ -38,6 +38,8 @@ interface OscillatorConfig {
   detune: number;
   volume: number;
   pan: number;
+  fmEnabled?: boolean; // FM modulation enabled (for osc 2 & 3)
+  fmDepth?: number;    // FM modulation depth in Hz (for osc 2 & 3)
 }
 
 const oscillatorConfigs: Map<number, OscillatorConfig> = new Map();
@@ -45,15 +47,30 @@ const activeVoices: Map<number, Voice> = new Map(); // noteIndex -> Voice
 let initialized = false;
 let masterBus: ReturnType<typeof BusManager.prototype.getMasterBus>;
 let effectsChain: EffectsChain | null = null;
-let vibrato: LFO | null = null;
+let vibrato: LFO | null = null; // Keep old LFO for backward compatibility
+let multiLFO: MultiTargetLFO | null = null; // New multi-target LFO
 let masterFilter: BiquadFilterNode | Lowpass12Filter | Lowpass24Filter | null = null;
+
+// LFO state
+const lfoState = {
+  enabled: false,
+  mode: 'free' as 'free' | 'trigger',
+  targets: {
+    pitch: true,
+    volume: false,
+    pan: false,
+    filter: false,
+  },
+};
 let currentCustomFilter: Lowpass12Filter | Lowpass24Filter | null = null;
 let analyser: AnalyserNode | null = null;
 let analyser1: AnalyserNode | null = null; // For oscillator 1 waveform
 let analyser2: AnalyserNode | null = null; // For oscillator 2 waveform
-let filterVisualizer: Visualizer | null = null;
-let waveformVisualizer1: Visualizer | null = null;
-let waveformVisualizer2: Visualizer | null = null;
+let analyser3: AnalyserNode | null = null; // For oscillator 3 waveform
+let filterVisualizer: WaveSurferVisualizer | null = null;
+let waveformVisualizer1: WaveSurferVisualizer | null = null;
+let waveformVisualizer2: WaveSurferVisualizer | null = null;
+let waveformVisualizer3: WaveSurferVisualizer | null = null;
 
 // Filter settings
 const filterSettings = {
@@ -72,6 +89,12 @@ const envelopeSettings = {
     release: 0.3,
   },
   2: {
+    attack: 0.01,
+    decay: 0.1,
+    sustain: 0.7,
+    release: 0.3,
+  },
+  3: {
     attack: 0.01,
     decay: 0.1,
     sustain: 0.7,
@@ -141,11 +164,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const context = engine.getContext();
       const osc1Bus = context.createGain();
       const osc2Bus = context.createGain();
+      const osc3Bus = context.createGain();
       
       analyser1 = context.createAnalyser();
       analyser1.fftSize = 2048;
       analyser2 = context.createAnalyser();
       analyser2.fftSize = 2048;
+      analyser3 = context.createAnalyser();
+      analyser3.fftSize = 2048;
       
       // Connect: osc1Bus -> analyser1 -> masterBus
       osc1Bus.connect(analyser1);
@@ -155,9 +181,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       osc2Bus.connect(analyser2);
       analyser2.connect(masterBus.getInputNode());
       
+      // Connect: osc3Bus -> analyser3 -> masterBus
+      osc3Bus.connect(analyser3);
+      analyser3.connect(masterBus.getInputNode());
+      
       // Store these buses globally so oscillators can connect to them
       (window as unknown as Record<string, GainNode>).osc1Bus = osc1Bus;
       (window as unknown as Record<string, GainNode>).osc2Bus = osc2Bus;
+      (window as unknown as Record<string, GainNode>).osc3Bus = osc3Bus;
 
       // Create LFO for vibrato (shared across all voices)
       vibrato = new LFO({
@@ -166,10 +197,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         waveform: 'sine',
       });
 
+      // Create multi-target LFO for advanced modulation
+      multiLFO = new MultiTargetLFO({
+        frequency: 5.0,
+        waveform: 'sine',
+      });
+
       // Initialize oscillator configurations (not actual instances)
       oscillatorConfigs.set(1, {
         enabled: true,
-        waveform: 'sine',
+        waveform: 'sawtooth',
         octave: 0,
         detune: 0,
         volume: 0.7,
@@ -183,6 +220,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         detune: -7,
         volume: 0.5,
         pan: 0,
+        fmEnabled: false,
+        fmDepth: 0,
+      });
+
+      oscillatorConfigs.set(3, {
+        enabled: false,
+        waveform: 'square',
+        octave: 1,
+        detune: 7,
+        volume: 0.4,
+        pan: 0,
+        fmEnabled: false,
+        fmDepth: 0,
       });
 
       // Create master filter and analyser
@@ -219,6 +269,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else if (masterFilter) {
         masterBus.connect(masterFilter as BiquadFilterNode);
         (masterFilter as BiquadFilterNode).connect(effectsChain.getInput());
+      } else {
+        // Fallback: connect directly if no filter
+        masterBus.connect(effectsChain.getInput());
       }
       effectsChain.getOutput().connect(analyser);
       analyser.connect(audioEngine.getDestination());
@@ -316,7 +369,7 @@ function setupKnobs() {
   //   console.error('Error creating knobs:', error);
   // }
 }function setupOscillatorControls() {
-  for (let oscNum = 1; oscNum <= 2; oscNum++) {
+  for (let oscNum = 1; oscNum <= 3; oscNum++) {
     // Toggle button
     const toggleBtn = document.getElementById(`osc${oscNum}-toggle`) as HTMLButtonElement;
     const powerIndicator = document.getElementById(`osc${oscNum}-power`) as HTMLDivElement;
@@ -394,6 +447,32 @@ function setupKnobs() {
         panValue.textContent = 'Center';
       }
     });
+
+    // FM Modulation controls (only for oscillators 2 and 3)
+    if (oscNum >= 2) {
+      const fmToggleBtn = document.getElementById(`osc${oscNum}-fm-toggle`) as HTMLButtonElement;
+      const fmDepthSlider = document.getElementById(`osc${oscNum}-fm-depth`) as HTMLInputElement;
+      const fmDepthValue = document.getElementById(`osc${oscNum}-fm-depth-value`) as HTMLSpanElement;
+
+      fmToggleBtn?.addEventListener('click', () => {
+        const config = oscillatorConfigs.get(oscNum)!;
+        config.fmEnabled = !config.fmEnabled;
+
+        if (config.fmEnabled) {
+          fmToggleBtn.textContent = 'Disable FM';
+          fmToggleBtn.classList.add('active');
+        } else {
+          fmToggleBtn.textContent = 'Enable FM';
+          fmToggleBtn.classList.remove('active');
+        }
+      });
+
+      fmDepthSlider?.addEventListener('input', () => {
+        const config = oscillatorConfigs.get(oscNum)!;
+        config.fmDepth = parseFloat(fmDepthSlider.value);
+        fmDepthValue.textContent = `${fmDepthSlider.value} Hz`;
+      });
+    }
   }
 }
 
@@ -455,6 +534,35 @@ function setupEnvelopeControls() {
     envelopeSettings[2].release = parseFloat(env2ReleaseSlider.value) / 1000;
     env2ReleaseValue.textContent = `${env2ReleaseSlider.value}ms`;
   });
+
+  // Envelope 3
+  const env3AttackSlider = document.getElementById('env3-attack') as HTMLInputElement;
+  const env3AttackValue = document.getElementById('env3-attack-value') as HTMLSpanElement;
+  env3AttackSlider.addEventListener('input', () => {
+    envelopeSettings[3].attack = parseFloat(env3AttackSlider.value) / 1000;
+    env3AttackValue.textContent = `${env3AttackSlider.value}ms`;
+  });
+
+  const env3DecaySlider = document.getElementById('env3-decay') as HTMLInputElement;
+  const env3DecayValue = document.getElementById('env3-decay-value') as HTMLSpanElement;
+  env3DecaySlider.addEventListener('input', () => {
+    envelopeSettings[3].decay = parseFloat(env3DecaySlider.value) / 1000;
+    env3DecayValue.textContent = `${env3DecaySlider.value}ms`;
+  });
+
+  const env3SustainSlider = document.getElementById('env3-sustain') as HTMLInputElement;
+  const env3SustainValue = document.getElementById('env3-sustain-value') as HTMLSpanElement;
+  env3SustainSlider.addEventListener('input', () => {
+    envelopeSettings[3].sustain = parseFloat(env3SustainSlider.value) / 100;
+    env3SustainValue.textContent = `${env3SustainSlider.value}%`;
+  });
+
+  const env3ReleaseSlider = document.getElementById('env3-release') as HTMLInputElement;
+  const env3ReleaseValue = document.getElementById('env3-release-value') as HTMLSpanElement;
+  env3ReleaseSlider.addEventListener('input', () => {
+    envelopeSettings[3].release = parseFloat(env3ReleaseSlider.value) / 1000;
+    env3ReleaseValue.textContent = `${env3ReleaseSlider.value}ms`;
+  });
 }
 
 function setupLFOControls() {
@@ -466,10 +574,21 @@ function setupLFOControls() {
   const toggleBtn = document.getElementById('lfo-toggle') as HTMLButtonElement;
   const powerIndicator = document.getElementById('lfo-power') as HTMLDivElement;
 
+  // Mode radio buttons
+  const freeModeRadio = document.getElementById('lfo-mode-free') as HTMLInputElement;
+  const triggerModeRadio = document.getElementById('lfo-mode-trigger') as HTMLInputElement;
+
+  // Target checkboxes
+  const pitchCheckbox = document.getElementById('lfo-target-pitch') as HTMLInputElement;
+  const volumeCheckbox = document.getElementById('lfo-target-volume') as HTMLInputElement;
+  const panCheckbox = document.getElementById('lfo-target-pan') as HTMLInputElement;
+  const filterCheckbox = document.getElementById('lfo-target-filter') as HTMLInputElement;
+
   // Rate control
   rateSlider.addEventListener('input', () => {
     const rate = parseFloat(rateSlider.value) / 10; // 0.1 to 20 Hz
     vibrato?.setParameter('frequency', rate);
+    multiLFO?.setFrequency(rate);
     rateValue.textContent = `${rate.toFixed(1)} Hz`;
   });
 
@@ -477,6 +596,24 @@ function setupLFOControls() {
   depthSlider.addEventListener('input', () => {
     const depth = parseFloat(depthSlider.value) / 100;
     vibrato?.setParameter('depth', depth);
+    
+    // Update depth for all active targets in multiLFO
+    if (multiLFO) {
+      const depthValue = depth * 50; // Scale for pitch modulation (cents)
+      if (multiLFO.hasTarget('pitch')) {
+        multiLFO.setTargetDepth('pitch', depthValue);
+      }
+      if (multiLFO.hasTarget('volume')) {
+        multiLFO.setTargetDepth('volume', depth * 0.3); // Volume modulation (0-0.3)
+      }
+      if (multiLFO.hasTarget('pan')) {
+        multiLFO.setTargetDepth('pan', depth); // Pan modulation (-1 to +1)
+      }
+      if (multiLFO.hasTarget('filter')) {
+        multiLFO.setTargetDepth('filter', depth * 2000); // Filter cutoff modulation (Hz)
+      }
+    }
+    
     depthValue.textContent = `${depthSlider.value}%`;
   });
 
@@ -484,22 +621,122 @@ function setupLFOControls() {
   waveformSelect.addEventListener('change', () => {
     const waveform = waveformSelect.value as 'sine' | 'triangle' | 'square' | 'sawtooth' | 'random';
     vibrato?.setWaveform(waveform);
+    multiLFO?.setWaveform(waveform);
+  });
+
+  // Mode selection
+  freeModeRadio.addEventListener('change', () => {
+    if (freeModeRadio.checked) {
+      lfoState.mode = 'free';
+      // If LFO is enabled and filter target is active, start it immediately
+      if (lfoState.enabled && lfoState.targets.filter && multiLFO) {
+        updateFilterLFOTarget();
+        if (!multiLFO.isEnabled()) {
+          multiLFO.start();
+        }
+      }
+    }
+  });
+
+  triggerModeRadio.addEventListener('change', () => {
+    if (triggerModeRadio.checked) {
+      lfoState.mode = 'trigger';
+      // Stop free-running LFO (will restart on next note)
+      if (vibrato?.isEnabled()) {
+        vibrato.stop();
+      }
+      if (multiLFO?.isEnabled()) {
+        multiLFO.stop();
+      }
+    }
+  });
+
+  // Helper function to update filter LFO target
+  function updateFilterLFOTarget() {
+    if (!multiLFO || !masterFilter) return;
+    
+    const filterParam = 'frequency' in masterFilter 
+      ? (masterFilter as BiquadFilterNode).frequency
+      : null;
+    
+    if (filterParam && lfoState.targets.filter) {
+      const currentCutoff = filterParam.value;
+      const depth = (parseFloat(depthSlider.value) / 100) * 2000;
+      
+      if (multiLFO.hasTarget('filter')) {
+        multiLFO.setTargetDepth('filter', depth);
+        multiLFO.setTargetBaseline('filter', currentCutoff);
+      } else {
+        multiLFO.addTarget('filter', filterParam, depth, currentCutoff);
+      }
+    }
+  }
+
+  // Target checkboxes
+  pitchCheckbox.addEventListener('change', () => {
+    lfoState.targets.pitch = pitchCheckbox.checked;
+  });
+
+  volumeCheckbox.addEventListener('change', () => {
+    lfoState.targets.volume = volumeCheckbox.checked;
+  });
+
+  panCheckbox.addEventListener('change', () => {
+    lfoState.targets.pan = panCheckbox.checked;
+  });
+
+  filterCheckbox.addEventListener('change', () => {
+    lfoState.targets.filter = filterCheckbox.checked;
+    
+    if (filterCheckbox.checked) {
+      updateFilterLFOTarget();
+      // Start LFO if in free-running mode and enabled
+      if (lfoState.mode === 'free' && lfoState.enabled && multiLFO && !multiLFO.isEnabled()) {
+        multiLFO.start();
+      }
+    } else {
+      // Remove filter target
+      multiLFO?.removeTarget('filter');
+      // Stop multiLFO if no targets remain
+      if (multiLFO && !lfoState.targets.volume && !lfoState.targets.pan) {
+        multiLFO.stop();
+      }
+    }
   });
 
   // Toggle LFO
   toggleBtn.addEventListener('click', () => {
-    if (!vibrato) return;
+    if (!vibrato || !multiLFO) return;
 
-    if (vibrato.isEnabled()) {
-      vibrato.stop();
-      toggleBtn.textContent = 'Enable LFO';
-      toggleBtn.classList.remove('active');
-      powerIndicator.classList.remove('on');
-    } else {
-      vibrato.start();
+    lfoState.enabled = !lfoState.enabled;
+
+    if (lfoState.enabled) {
       toggleBtn.textContent = 'Disable LFO';
       toggleBtn.classList.add('active');
       powerIndicator.classList.add('on');
+
+      // Start LFOs in free-running mode
+      if (lfoState.mode === 'free') {
+        if (lfoState.targets.pitch) {
+          vibrato.start();
+        }
+        if (lfoState.targets.volume || lfoState.targets.pan || lfoState.targets.filter) {
+          // Set up filter target if needed
+          if (lfoState.targets.filter) {
+            updateFilterLFOTarget();
+          }
+          multiLFO.start();
+        }
+      }
+      // In trigger mode, LFOs start when notes are played
+    } else {
+      toggleBtn.textContent = 'Enable LFO';
+      toggleBtn.classList.remove('active');
+      powerIndicator.classList.remove('on');
+
+      // Stop all LFOs
+      vibrato.stop();
+      multiLFO.stop();
     }
   });
 }
@@ -513,8 +750,16 @@ function setupFilterControls() {
   const toggleBtn = document.getElementById('filter-toggle') as HTMLButtonElement;
   const powerIndicator = document.getElementById('filter-power') as HTMLDivElement;
 
-  // Initialize filter visualizer (only shows filter response)
+  // Initialize filter visualizer with WaveSurfer.js
+  const filterContainer = document.getElementById('audio-visualizer')?.parentElement;
+  if (!filterContainer) {
+    throw new Error('Filter visualizer container not found');
+  }
+  
+  // Hide the canvas, use the container instead
   const filterCanvas = document.getElementById('audio-visualizer') as HTMLCanvasElement;
+  filterCanvas.style.display = 'none';
+  
   let filterNodeForViz: BiquadFilterNode | null = null;
   if (currentCustomFilter instanceof Lowpass24Filter) {
     filterNodeForViz = currentCustomFilter.getCascadedFrequencyResponse();
@@ -523,15 +768,14 @@ function setupFilterControls() {
   } else {
     filterNodeForViz = masterFilter as BiquadFilterNode | null;
   }
-  filterVisualizer = new Visualizer({
-    canvas: filterCanvas,
+  
+  filterVisualizer = new WaveSurferVisualizer({
+    container: filterContainer,
     filterNode: filterNodeForViz,
-    analyserNode: analyser, // Pass analyser to show frequency spectrum
+    analyserNode: analyser,
     filterEnabled: filterSettings.enabled,
     cutoffFrequency: filterSettings.cutoff,
-    sampleRate: AudioEngine.getInstance().getSampleRate(),
-    showFilter: true,
-    showWaveform: false // Only show filter response
+    sampleRate: AudioEngine.getInstance().getSampleRate()
   });
   filterVisualizer.start();
 
@@ -673,33 +917,58 @@ function setupWaveformVisualizer() {
   // Setup waveform visualizer for Oscillator 1
   const waveformCanvas1 = document.getElementById('oscillator-waveform') as HTMLCanvasElement;
   if (waveformCanvas1 && analyser1) {
-    waveformVisualizer1 = new Visualizer({
-      canvas: waveformCanvas1,
-      filterNode: null, // No filter response needed
-      analyserNode: analyser1,
-      filterEnabled: false,
-      cutoffFrequency: 0,
-      sampleRate: AudioEngine.getInstance().getSampleRate(),
-      showFilter: false, // Only show waveform
-      showWaveform: true
-    });
-    waveformVisualizer1.start();
+    // Hide the old canvas
+    waveformCanvas1.style.display = 'none';
+    
+    // Get the parent container
+    const container1 = waveformCanvas1.parentElement;
+    if (container1) {
+      waveformVisualizer1 = new WaveSurferVisualizer({
+        container: container1,
+        analyserNode: analyser1,
+        mode: 'waveform',
+        height: 120
+      });
+      waveformVisualizer1.start();
+    }
   }
 
   // Setup waveform visualizer for Oscillator 2
   const waveformCanvas2 = document.getElementById('oscillator2-waveform') as HTMLCanvasElement;
   if (waveformCanvas2 && analyser2) {
-    waveformVisualizer2 = new Visualizer({
-      canvas: waveformCanvas2,
-      filterNode: null, // No filter response needed
-      analyserNode: analyser2,
-      filterEnabled: false,
-      cutoffFrequency: 0,
-      sampleRate: AudioEngine.getInstance().getSampleRate(),
-      showFilter: false, // Only show waveform
-      showWaveform: true
-    });
-    waveformVisualizer2.start();
+    // Hide the old canvas
+    waveformCanvas2.style.display = 'none';
+    
+    // Get the parent container
+    const container2 = waveformCanvas2.parentElement;
+    if (container2) {
+      waveformVisualizer2 = new WaveSurferVisualizer({
+        container: container2,
+        analyserNode: analyser2,
+        mode: 'waveform',
+        height: 120
+      });
+      waveformVisualizer2.start();
+    }
+  }
+
+  // Setup waveform visualizer for Oscillator 3
+  const waveformCanvas3 = document.getElementById('oscillator3-waveform') as HTMLCanvasElement;
+  if (waveformCanvas3 && analyser3) {
+    // Hide the old canvas
+    waveformCanvas3.style.display = 'none';
+    
+    // Get the parent container
+    const container3 = waveformCanvas3.parentElement;
+    if (container3) {
+      waveformVisualizer3 = new WaveSurferVisualizer({
+        container: container3,
+        analyserNode: analyser3,
+        mode: 'waveform',
+        height: 120
+      });
+      waveformVisualizer3.start();
+    }
   }
 }
 
@@ -740,24 +1009,24 @@ function setupEffectsChain() {
     let effect;
     switch (type) {
       case 'delay':
-        effect = new DelayEffect(0.3, 0.4);
-        effect.setParameter('mix', 0.5);
+        effect = new DelayEffect(0.3, 0.5); // Increased feedback for more repeats
+        effect.setParameter('mix', 0.7); // 70% wet - very obvious delay
         break;
       case 'reverb':
-        effect = new ReverbEffect(2.0);
-        effect.setParameter('mix', 0.3);
+        effect = new ReverbEffect(0.75);
+        effect.setParameter('mix', 0.7); // 70% wet - obvious reverb
         break;
       case 'distortion':
-        effect = new DistortionEffect(10);
-        effect.setParameter('mix', 0.5);
+        effect = new DistortionEffect(20); // Increased drive for more grit
+        effect.setParameter('mix', 0.7); // 70% wet - obvious distortion
         break;
       case 'chorus':
-        effect = new ChorusEffect(1.5, 0.5);
-        effect.setParameter('mix', 0.5);
+        effect = new ChorusEffect(2.5, 0.7); // Increased depth and rate
+        effect.setParameter('mix', 0.7); // 70% wet - obvious chorus
         break;
       case 'shimmer':
-        effect = new ShimmerEffect(0.7, 0.6);
-        effect.setParameter('mix', 0.6);
+        effect = new ShimmerEffect(0.8, 0.7); // Increased shimmer amount
+        effect.setParameter('mix', 0.7); // 70% wet - obvious shimmer
         break;
     }
 
@@ -1015,39 +1284,142 @@ function playNote(noteIndex: number) {
       oscillator.setParameter('volume', config.volume);
       oscillator.setParameter('detune', config.detune);
 
-      // Connect LFO to oscillator frequency for vibrato (if enabled)
-      if (vibrato?.isEnabled()) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const oscNode = (oscillator as any).oscillatorNode as OscillatorNode;
-        if (oscNode && oscNode.frequency) {
-          vibrato.connectToParam(oscNode.frequency);
-        }
-      }
-
       // Create pan node
       const engine = AudioEngine.getInstance();
       const panNode = engine.getContext().createStereoPanner();
       panNode.pan.value = config.pan;
 
       // Create envelope for this oscillator
-      const envelope = new ADSREnvelope(envelopeSettings[oscNum as 1 | 2]);
+      const envelope = new ADSREnvelope(envelopeSettings[oscNum as 1 | 2 | 3]);
+
+      // Get the envelope's gain node for volume modulation
+      const envelopeGain = envelope.getOutputNode() as GainNode;
+
+      // Connect LFO targets (if enabled)
+      if (lfoState.enabled) {
+        // Pitch modulation (vibrato)
+        if (lfoState.targets.pitch) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const oscNode = (oscillator as any).oscillatorNode as OscillatorNode;
+          if (oscNode && oscNode.frequency) {
+            // In trigger mode, start LFO on note press
+            if (lfoState.mode === 'trigger' && !vibrato!.isEnabled()) {
+              vibrato!.start();
+            }
+            // Always connect to this oscillator's frequency
+            vibrato?.connectToParam(oscNode.frequency);
+          }
+        }
+
+        // Volume modulation (tremolo) - modulate envelope output gain
+        if (lfoState.targets.volume && multiLFO && envelopeGain && envelopeGain.gain) {
+          const targetName = `volume_${noteIndex}_${oscNum}`;
+          const depth = (parseFloat((document.getElementById('lfo-depth') as HTMLInputElement).value) / 100) * 0.3;
+          const baseline = envelopeGain.gain.value;
+          
+          if (!multiLFO.hasTarget(targetName)) {
+            multiLFO.addTarget(targetName, envelopeGain.gain, depth, baseline);
+          }
+          
+          // Start multiLFO in trigger mode
+          if (lfoState.mode === 'trigger' && !multiLFO.isEnabled()) {
+            multiLFO.start();
+          }
+        }
+
+        // Pan modulation (auto-pan)
+        if (lfoState.targets.pan && multiLFO && panNode && panNode.pan) {
+          const targetName = `pan_${noteIndex}_${oscNum}`;
+          const depth = parseFloat((document.getElementById('lfo-depth') as HTMLInputElement).value) / 100;
+          const baseline = panNode.pan.value;
+          
+          if (!multiLFO.hasTarget(targetName)) {
+            multiLFO.addTarget(targetName, panNode.pan, depth, baseline);
+          }
+          
+          // Start multiLFO in trigger mode
+          if (lfoState.mode === 'trigger' && !multiLFO.isEnabled()) {
+            multiLFO.start();
+          }
+        }
+      }
 
       // Get the appropriate oscillator bus
       const oscBus = oscNum === 1 
         ? (window as unknown as Record<string, GainNode>).osc1Bus
-        : (window as unknown as Record<string, GainNode>).osc2Bus;
+        : oscNum === 2
+        ? (window as unknown as Record<string, GainNode>).osc2Bus
+        : (window as unknown as Record<string, GainNode>).osc3Bus;
 
-      // Signal chain: oscillator -> pan -> envelope -> oscillator bus (-> analyser -> master bus)
-      oscillator.connect(panNode);
-      panNode.connect(envelope.getInputNode());
-      envelope.connect(oscBus);
+      // Check if this oscillator should do FM modulation
+      const shouldModulateOsc1 = config.fmEnabled && oscNum >= 2;
 
+      if (!shouldModulateOsc1) {
+        // Normal audio path: Signal chain: oscillator -> pan -> envelope -> oscillator bus (-> analyser -> master bus)
+        oscillator.connect(panNode);
+        panNode.connect(envelope.getInputNode());
+        envelope.connect(oscBus);
+      }
+
+      // Always start the oscillator (needed for both audio output and FM modulation)
       oscillator.start();
 
       // Trigger the envelope
       envelope.trigger(1.0);
 
+      // Store oscillator data with metadata
       voice.oscillators.push({ oscillator, panNode, envelope });
+    }
+  });
+
+  // Now handle FM modulation connections
+  // Connect FM modulators (osc 2 & 3) to oscillator 1's frequency parameter
+  const engine = AudioEngine.getInstance();
+  
+  voice.oscillators.forEach((modulatorData, idx) => {
+    // Find which oscillator number this is by matching config order
+    let oscNum = 0;
+    let currentIdx = 0;
+    oscillatorConfigs.forEach((cfg, num) => {
+      if (cfg.enabled) {
+        if (currentIdx === idx) oscNum = num;
+        currentIdx++;
+      }
+    });
+
+    const config = oscillatorConfigs.get(oscNum);
+    if (config?.fmEnabled && oscNum >= 2 && config.fmDepth && config.fmDepth > 0) {
+      // Find oscillator 1 instances in this voice to modulate
+      voice.oscillators.forEach((carrierData, carrierIdx) => {
+        let carrierOscNum = 0;
+        let carrierCurrentIdx = 0;
+        oscillatorConfigs.forEach((cfg, num) => {
+          if (cfg.enabled) {
+            if (carrierCurrentIdx === carrierIdx) carrierOscNum = num;
+            carrierCurrentIdx++;
+          }
+        });
+
+        if (carrierOscNum === 1) {
+          // Get the carrier's (osc 1) frequency parameter
+          const carrierNode = carrierData.oscillator.getOscillatorNode();
+          
+          if (carrierNode && carrierNode.frequency) {
+            // Create a gain node to scale the FM depth
+            const fmGain = engine.getContext().createGain();
+            fmGain.gain.value = config.fmDepth || 0;
+
+            // FM signal chain: modulator -> pan -> envelope -> fmGain -> carrier.frequency
+            // The modulator is already started above, we just need to route it to FM instead of audio out
+            modulatorData.oscillator.connect(modulatorData.panNode);
+            modulatorData.panNode.connect(modulatorData.envelope.getInputNode());
+            modulatorData.envelope.connect(fmGain);
+            fmGain.connect(carrierNode.frequency);
+
+            console.log(`FM: Osc ${oscNum} (${config.waveform}) modulating Osc 1 with depth ${config.fmDepth} Hz`);
+          }
+        }
+      });
     }
   });
 
@@ -1074,7 +1446,11 @@ function releaseNote(noteIndex: number) {
   });
 
   // Schedule cleanup after release phase (use longest release time)
-  const maxReleaseTime = Math.max(envelopeSettings[1].release, envelopeSettings[2].release);
+  const maxReleaseTime = Math.max(
+    envelopeSettings[1].release, 
+    envelopeSettings[2].release,
+    envelopeSettings[3].release
+  );
   voice.releaseTimeout = window.setTimeout(() => {
     cleanupVoice(noteIndex);
   }, maxReleaseTime * 1000 + 50);
@@ -1098,6 +1474,14 @@ function cleanupVoice(noteIndex: number) {
     clearTimeout(voice.releaseTimeout);
   }
 
+  // Remove LFO targets for this voice
+  if (multiLFO) {
+    oscillatorConfigs.forEach((_, oscNum) => {
+      multiLFO.removeTarget(`volume_${noteIndex}_${oscNum}`);
+      multiLFO.removeTarget(`pan_${noteIndex}_${oscNum}`);
+    });
+  }
+
   // Stop all oscillators and disconnect envelopes
   voice.oscillators.forEach(({ oscillator, panNode, envelope }) => {
     oscillator.stop();
@@ -1107,6 +1491,12 @@ function cleanupVoice(noteIndex: number) {
 
   // Remove from active voices
   activeVoices.delete(noteIndex);
+
+  // In trigger mode, stop LFOs when all notes are released
+  if (lfoState.mode === 'trigger' && activeVoices.size === 0) {
+    vibrato?.stop();
+    multiLFO?.stop();
+  }
 }
 
 function setupMasterControls() {

@@ -59,9 +59,11 @@ export abstract class BaseEffect implements AudioEffect {
     this.mix = Math.max(0, Math.min(1, value));
     const now = this.engine.getCurrentTime();
     
-    // Equal power crossfade for smoother transitions
-    const dryGain = Math.cos((this.mix * Math.PI) / 2);
-    const wetGain = Math.sin((this.mix * Math.PI) / 2);
+    // Linear mix - more obvious effect
+    // Dry signal fades out as mix increases
+    const dryGain = 1 - this.mix;
+    // Wet signal fades in as mix increases
+    const wetGain = this.mix;
     
     this.dryGain.gain.linearRampToValueAtTime(dryGain, now + 0.01);
     this.wetGain.gain.linearRampToValueAtTime(wetGain, now + 0.01);
