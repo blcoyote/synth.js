@@ -9,66 +9,53 @@ import { SineOscillator } from './components/oscillators';
 import { ADSREnvelope } from './components/envelopes';
 import { Arpeggiator, type ArpPattern, type NoteDivision } from './components/modulation';
 
-let initialized = false;
 let arpeggiator: Arpeggiator | null = null;
 let voices: Map<number, { osc: SineOscillator; env: ADSREnvelope }> = new Map();
 let masterBus: ReturnType<typeof BusManager.prototype.getMasterBus>;
 
 const MAX_VOICES = 8; // Polyphony limit
 
-document.addEventListener('DOMContentLoaded', () => {
-  const initBtn = document.getElementById('initBtn') as HTMLButtonElement;
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const engine = AudioEngine.getInstance();
+    await engine.initialize({ latencyHint: 'interactive' });
 
-  initBtn.addEventListener('click', async () => {
-    if (initialized) return;
+    const busManager = BusManager.getInstance();
+    busManager.initialize();
+    masterBus = busManager.getMasterBus();
 
-    initBtn.disabled = true;
-    initBtn.textContent = 'Initializing...';
+    // Create arpeggiator with default settings
+    arpeggiator = new Arpeggiator({
+      pattern: 'up',
+      octaves: 2,
+      tempo: 120,
+      division: '1/16',
+      gateLength: 0.8,
+      swing: 0,
+      humanize: 0,
+    });
 
-    try {
-      const engine = AudioEngine.getInstance();
-      await engine.initialize({ latencyHint: 'interactive' });
+    // Set initial chord (C major)
+    arpeggiator.setChord(60, 'major');
 
-      const busManager = BusManager.getInstance();
-      busManager.initialize();
-      masterBus = busManager.getMasterBus();
+    // Register note callback
+    arpeggiator.onNote((note) => {
+      playNote(note.pitch, note.velocity / 127, note.gate);
+    });
 
-      // Create arpeggiator with default settings
-      arpeggiator = new Arpeggiator({
-        pattern: 'up',
-        octaves: 2,
-        tempo: 120,
-        division: '1/16',
-        gateLength: 0.8,
-        swing: 0,
-        humanize: 0,
-      });
+    setupControls();
+    setupPatternButtons();
+    setupChordButtons();
+    setupProgressionButtons();
 
-      // Set initial chord (C major)
-      arpeggiator.setChord(60, 'major');
+    console.log('✓ Audio system initialized');
 
-      // Register note callback
-      arpeggiator.onNote((note) => {
-        playNote(note.pitch, note.velocity / 127, note.gate);
-      });
-
-      setupControls();
-      setupPatternButtons();
-      setupChordButtons();
-      setupProgressionButtons();
-
-      initialized = true;
-      initBtn.textContent = '✓ System Ready';
-      initBtn.style.background = 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)';
-
-      // Update display
-      updateSequenceDisplay();
-    } catch (error) {
-      console.error('Failed to initialize:', error);
-      initBtn.disabled = false;
-      initBtn.textContent = 'Initialize Audio System';
-    }
-  });
+    // Update display
+    updateSequenceDisplay();
+  } catch (error) {
+    console.error('Failed to initialize:', error);
+    alert('Failed to initialize audio system. Please refresh the page to try again.');
+  }
 });
 
 function playNote(midiNote: number, velocity: number, gateLength: number) {
@@ -217,7 +204,7 @@ function setupControls() {
   const stopBtn = document.getElementById('stopBtn') as HTMLButtonElement;
 
   playBtn.addEventListener('click', () => {
-    if (!initialized || !arpeggiator) return;
+    if (!arpeggiator) return;
 
     if (arpeggiator.isRunning()) {
       arpeggiator.pause();
@@ -229,7 +216,7 @@ function setupControls() {
   });
 
   stopBtn.addEventListener('click', () => {
-    if (!initialized || !arpeggiator) return;
+    if (!arpeggiator) return;
     arpeggiator.stop();
     playBtn.textContent = '▶ Play';
   });

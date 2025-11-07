@@ -23,6 +23,7 @@ export default defineConfig({
         effects: resolve(__dirname, 'effects.html'),
         modulation: resolve(__dirname, 'modulation.html'),
         arpeggiator: resolve(__dirname, 'arpeggiator.html'),
+        sequencer: resolve(__dirname, 'sequencer.html'),
       },
     },
   },

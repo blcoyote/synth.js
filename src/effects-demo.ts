@@ -5,16 +5,10 @@
 import { AudioEngine } from './core';
 import { BusManager } from './bus';
 import { SawtoothOscillator } from './components/oscillators';
-import {
-  DelayEffect,
-  ReverbEffect,
-  DistortionEffect,
-  ChorusEffect,
-} from './components/effects';
+import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect } from './components/effects';
 
 let oscillator: SawtoothOscillator | null = null;
 let isPlaying = false;
-let initialized = false;
 
 // Effect instances
 const effects = {
@@ -27,40 +21,28 @@ const effects = {
 // Track effect IDs assigned by the bus (not just effect names)
 const effectIdsInBus = new Map<string, string>(); // effectName -> effectId in bus
 
-document.addEventListener('DOMContentLoaded', () => {
-  const initBtn = document.getElementById('initBtn') as HTMLButtonElement;
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const engine = AudioEngine.getInstance();
+    await engine.initialize({ latencyHint: 'interactive' });
 
-  initBtn.addEventListener('click', async () => {
-    if (initialized) return;
+    const busManager = BusManager.getInstance();
+    busManager.initialize();
 
-    initBtn.disabled = true;
-    initBtn.textContent = 'Initializing...';
+    // Create all effects
+    effects.delay = new DelayEffect(0.375, 0.3);
+    effects.reverb = new ReverbEffect(0.5);
+    effects.distortion = new DistortionEffect(0.5);
+    effects.chorus = new ChorusEffect(1.5, 0.5);
 
-    try {
-      const engine = AudioEngine.getInstance();
-      await engine.initialize({ latencyHint: 'interactive' });
+    setupOscillatorControls();
+    setupEffectControls();
 
-      const busManager = BusManager.getInstance();
-      busManager.initialize();
-
-      // Create all effects
-      effects.delay = new DelayEffect(0.375, 0.3);
-      effects.reverb = new ReverbEffect(0.5);
-      effects.distortion = new DistortionEffect(0.5);
-      effects.chorus = new ChorusEffect(1.5, 0.5);
-
-      setupOscillatorControls();
-      setupEffectControls();
-
-      initialized = true;
-      initBtn.textContent = '✓ Initialized';
-      initBtn.style.background = 'rgba(74, 222, 128, 0.4)';
-    } catch (error) {
-      console.error('Failed to initialize:', error);
-      initBtn.disabled = false;
-      initBtn.textContent = 'Initialize Audio System';
-    }
-  });
+    console.log('✓ Audio system initialized');
+  } catch (error) {
+    console.error('Failed to initialize:', error);
+    alert('Failed to initialize audio system. Please refresh the page to try again.');
+  }
 });
 
 function setupOscillatorControls() {

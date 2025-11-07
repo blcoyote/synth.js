@@ -4,15 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Arpeggiator Demo - Modular Synth</title>
-  <link rel="stylesheet" href="synth.css">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+      opacity: 0.9;
+    }
+
     .demo-section {
-      background: rgba(30, 30, 45, 0.7);
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
       padding: 25px;
       margin: 20px 0;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .demo-section:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 15px;
     }
 
     .control-group {
@@ -20,25 +64,63 @@
     }
 
     .control-group label {
-      display: block;
-      margin-bottom: 8px;
-      color: #e0e0e0;
-      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .value-display {
+      font-weight: 600;
     }
 
     .control-group input[type="range"] {
       width: 100%;
-      margin: 10px 0;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .control-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #4ade80;
+      cursor: pointer;
+      box-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
+    }
+
+    .control-group input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #4ade80;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
     }
 
     .control-group select {
       width: 100%;
-      padding: 8px;
-      background: rgba(20, 20, 30, 0.8);
-      color: #e0e0e0;
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      border-radius: 6px;
-      font-size: 14px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .control-group select option {
+      background: #764ba2;
+      color: white;
     }
 
     .button-grid {
@@ -50,25 +132,27 @@
 
     .pattern-btn, .chord-btn, .progression-btn {
       padding: 10px 15px;
-      background: rgba(100, 100, 120, 0.3);
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      border-radius: 6px;
-      color: #e0e0e0;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      color: white;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 13px;
+      font-size: 0.9rem;
+      font-weight: 600;
       text-transform: capitalize;
     }
 
     .pattern-btn:hover, .chord-btn:hover, .progression-btn:hover {
-      background: rgba(139, 92, 246, 0.4);
-      border-color: rgba(139, 92, 246, 0.6);
+      background: rgba(255, 255, 255, 0.3);
       transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     }
 
     .pattern-btn.active, .chord-btn.active, .progression-btn.active {
-      background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-      border-color: #8b5cf6;
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+      border-color: #4ade80;
+      box-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
     }
 
     .play-controls {
@@ -80,11 +164,14 @@
     .play-controls button {
       flex: 1;
       padding: 15px;
-      font-size: 16px;
-      border-radius: 8px;
+      font-size: 1rem;
+      border-radius: 10px;
       border: none;
       cursor: pointer;
       transition: all 0.3s ease;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     #playBtn {
@@ -93,8 +180,8 @@
     }
 
     #playBtn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(16, 185, 129, 0.5);
     }
 
     #stopBtn {
@@ -103,54 +190,30 @@
     }
 
     #stopBtn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-    }
-
-    .value-display {
-      display: inline-block;
-      min-width: 60px;
-      text-align: right;
-      color: #8b5cf6;
-      font-weight: 600;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(239, 68, 68, 0.5);
     }
 
     .info-display {
-      background: rgba(20, 20, 30, 0.8);
+      background: rgba(0, 0, 0, 0.3);
       padding: 15px;
-      border-radius: 8px;
+      border-radius: 10px;
       margin: 15px 0;
-      border-left: 3px solid #8b5cf6;
     }
 
     .info-display p {
       margin: 8px 0;
-      color: #d0d0d0;
-      font-size: 14px;
-    }
-
-    .section-title {
-      color: #8b5cf6;
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      font-size: 0.95rem;
+      opacity: 0.9;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <header class="header">
-      <h1>🎹 Arpeggiator Demo</h1>
-      <p>Musical arpeggio patterns with chord progressions</p>
-    </header>
+    <h1>🎹 Arpeggiator Demo</h1>
+    <p class="subtitle">Musical arpeggio patterns with chord progressions</p>
 
     <main class="main-content">
-      <div class="init-section">
-        <button id="initBtn" class="init-btn">Initialize Audio System</button>
-      </div>
-
       <!-- Playback Controls -->
       <div class="demo-section">
         <h2 class="section-title">Playback</h2>

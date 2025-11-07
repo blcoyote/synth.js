@@ -7,9 +7,8 @@ import { AudioEngine } from './core';
 import { BusManager } from './bus';
 
 // Wait for DOM to be ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // DOM elements
-  const initBtn = document.getElementById('initBtn') as HTMLButtonElement;
   const testToneBtn = document.getElementById('testToneBtn') as HTMLButtonElement;
   const engineIndicator = document.getElementById('engineIndicator') as HTMLSpanElement;
   const engineStatus = document.getElementById('engineStatus') as HTMLSpanElement;
@@ -44,27 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Initialize button
-  initBtn.addEventListener('click', async () => {
-    initBtn.disabled = true;
-    initBtn.textContent = 'Initializing...';
-
-    try {
-      await initializeSynthesizer();
-      testToneBtn.disabled = false;
-      initBtn.textContent = '✓ Initialized';
-      updateStatus();
-    } catch (error) {
-      initBtn.disabled = false;
-      initBtn.textContent = 'Initialize System';
-      console.error('Initialization failed:', error);
-    }
-  });
+  // Auto-initialize on page load
+  console.log('🎵 Initializing Modular Synthesizer...');
+  try {
+    await initializeSynthesizer();
+    testToneBtn.disabled = false;
+    updateStatus();
+    console.log('✓ System initialized and ready');
+  } catch (error) {
+    console.error('Initialization failed:', error);
+    alert('Failed to initialize audio system. Please refresh the page to try again.');
+  }
 
   // Test tone button
   testToneBtn.addEventListener('click', () => {
     playTestTone();
   });
-
-  console.log('🎵 Modular Synthesizer ready. Click "Initialize System" to begin.');
 });

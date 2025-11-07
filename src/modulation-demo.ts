@@ -8,70 +8,57 @@ import { SawtoothOscillator } from './components/oscillators';
 import { ADSREnvelope } from './components/envelopes';
 import { LFO } from './components/modulation';
 
-let initialized = false;
 let oscillator: SawtoothOscillator | null = null;
 let envelope: ADSREnvelope | null = null;
 let lfo: LFO | null = null;
 let isNoteActive = false;
 let masterBus: ReturnType<typeof BusManager.prototype.getMasterBus>;
 
-document.addEventListener('DOMContentLoaded', () => {
-  const initBtn = document.getElementById('initBtn') as HTMLButtonElement;
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const engine = AudioEngine.getInstance();
+    await engine.initialize({ latencyHint: 'interactive' });
 
-  initBtn.addEventListener('click', async () => {
-    if (initialized) return;
+    const busManager = BusManager.getInstance();
+    busManager.initialize();
+    masterBus = busManager.getMasterBus();
 
-    initBtn.disabled = true;
-    initBtn.textContent = 'Initializing...';
+    // Create oscillator (A3 = 220 Hz)
+    oscillator = new SawtoothOscillator(220);
+    oscillator.setParameter('volume', 1.0); // Full volume, envelope will control
 
-    try {
-      const engine = AudioEngine.getInstance();
-      await engine.initialize({ latencyHint: 'interactive' });
+    // Create ADSR envelope for amplitude
+    envelope = new ADSREnvelope({
+      attack: 0.01,
+      decay: 0.1,
+      sustain: 0.7,
+      release: 0.3,
+    });
 
-      const busManager = BusManager.getInstance();
-      busManager.initialize();
-      masterBus = busManager.getMasterBus();
+    // Create LFO for volume modulation
+    lfo = new LFO({
+      frequency: 2.0,
+      depth: 0.3,
+      waveform: 'sine',
+    });
 
-      // Create oscillator (A3 = 220 Hz)
-      oscillator = new SawtoothOscillator(220);
-      oscillator.setParameter('volume', 1.0); // Full volume, envelope will control
+    // Signal chain: Oscillator -> Envelope -> Master Bus
+    oscillator.connect(envelope.getNode());
+    envelope.connect(masterBus.getInputNode());
 
-      // Create ADSR envelope for amplitude
-      envelope = new ADSREnvelope({
-        attack: 0.01,
-        decay: 0.1,
-        sustain: 0.7,
-        release: 0.3,
-      });
+    // LFO modulates the master bus input gain
+    // Note: LFOs typically need to be offset since they output -1 to +1
+    // For volume, we'll modulate around a center point in the control logic
 
-      // Create LFO for volume modulation
-      lfo = new LFO({
-        frequency: 2.0,
-        depth: 0.3,
-        waveform: 'sine',
-      });
+    setupEnvelopeControls();
+    setupLFOControls();
+    setupTriggerControls();
 
-      // Signal chain: Oscillator -> Envelope -> Master Bus
-      oscillator.connect(envelope.getNode());
-      envelope.connect(masterBus.getInputNode());
-
-      // LFO modulates the master bus input gain
-      // Note: LFOs typically need to be offset since they output -1 to +1
-      // For volume, we'll modulate around a center point in the control logic
-
-      setupEnvelopeControls();
-      setupLFOControls();
-      setupTriggerControls();
-
-      initialized = true;
-      initBtn.textContent = '✓ System Ready';
-      initBtn.style.background = 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)';
-    } catch (error) {
-      console.error('Failed to initialize:', error);
-      initBtn.disabled = false;
-      initBtn.textContent = 'Initialize Audio System';
-    }
-  });
+    console.log('✓ Audio system initialized');
+  } catch (error) {
+    console.error('Failed to initialize:', error);
+    alert('Failed to initialize audio system. Please refresh the page to try again.');
+  }
 });
 
 function setupEnvelopeControls() {
@@ -147,21 +134,21 @@ function setupLFOControls() {
 
     if (lfo.isEnabled()) {
       lfo.stop();
-      
+
       // Disconnect LFO and reset master gain
       lfo.disconnect();
       masterBus.setInputGain(0.8);
-      
+
       toggleBtn.textContent = 'Start LFO';
       toggleBtn.classList.remove('active');
     } else {
       // Connect LFO to master bus input gain
       // LFO outputs -depth to +depth, we want to modulate around 0.8 (80% volume)
       lfo.connectToParam(masterBus.getInputNode().gain);
-      
+
       // Set base volume
       masterBus.setInputGain(0.8);
-      
+
       lfo.start();
       toggleBtn.textContent = 'Stop LFO';
       toggleBtn.classList.add('active');
@@ -192,7 +179,7 @@ function setupTriggerControls() {
 
   // Keyboard spacebar
   document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && !isNoteActive && initialized) {
+    if (e.code === 'Space' && !isNoteActive && oscillator) {
       e.preventDefault();
       triggerNote();
       triggerBtn.classList.add('active');
@@ -223,13 +210,16 @@ function releaseNote() {
   isNoteActive = false;
 
   // Stop oscillator after release phase completes
-  setTimeout(() => {
-    if (oscillator && !isNoteActive) {
-      oscillator.stop();
-      // Recreate oscillator for next trigger
-      oscillator = new SawtoothOscillator(220);
-      oscillator.setParameter('volume', 1.0);
-      oscillator.connect(envelope!.getNode());
-    }
-  }, envelope.getParameter('release') * 1000 + 100);
+  setTimeout(
+    () => {
+      if (oscillator && !isNoteActive) {
+        oscillator.stop();
+        // Recreate oscillator for next trigger
+        oscillator = new SawtoothOscillator(220);
+        oscillator.setParameter('volume', 1.0);
+        oscillator.connect(envelope!.getNode());
+      }
+    },
+    envelope.getParameter('release') * 1000 + 100
+  );
 }

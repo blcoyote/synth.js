@@ -4,11 +4,11 @@
 
 import { AudioEngine } from './core';
 import { BusManager } from './bus';
-import { 
-  SineOscillator, 
-  SawtoothOscillator, 
-  SquareOscillator, 
-  TriangleOscillator 
+import {
+  SineOscillator,
+  SawtoothOscillator,
+  SquareOscillator,
+  TriangleOscillator,
 } from './components/oscillators';
 
 // Oscillator instances
@@ -17,59 +17,44 @@ let sawOsc: SawtoothOscillator;
 let squareOsc: SquareOscillator;
 let triangleOsc: TriangleOscillator;
 
-let initialized = false;
+document.addEventListener('DOMContentLoaded', async () => {
+  // Auto-initialize on page load
+  try {
+    // Initialize audio system
+    const engine = AudioEngine.getInstance();
+    await engine.initialize({ latencyHint: 'interactive' });
 
-document.addEventListener('DOMContentLoaded', () => {
-  const initBtn = document.getElementById('initBtn') as HTMLButtonElement;
+    const busManager = BusManager.getInstance();
+    busManager.initialize();
 
-  // Initialize button
-  initBtn.addEventListener('click', async () => {
-    if (initialized) return;
+    const masterBus = busManager.getMasterBus();
 
-    initBtn.disabled = true;
-    initBtn.textContent = 'Initializing...';
+    // Create oscillators
+    sineOsc = new SineOscillator(440);
+    sawOsc = new SawtoothOscillator(440);
+    squareOsc = new SquareOscillator(440);
+    triangleOsc = new TriangleOscillator(440);
 
-    try {
-      // Initialize audio system
-      const engine = AudioEngine.getInstance();
-      await engine.initialize({ latencyHint: 'interactive' });
+    // Connect all to master bus
+    sineOsc.connect(masterBus.getInputNode());
+    sawOsc.connect(masterBus.getInputNode());
+    squareOsc.connect(masterBus.getInputNode());
+    triangleOsc.connect(masterBus.getInputNode());
 
-      const busManager = BusManager.getInstance();
-      busManager.initialize();
+    // Setup controls
+    setupOscillatorControls('sine', sineOsc);
+    setupOscillatorControls('saw', sawOsc);
+    setupOscillatorControls('square', squareOsc);
+    setupOscillatorControls('triangle', triangleOsc);
 
-      const masterBus = busManager.getMasterBus();
+    // Setup note buttons
+    setupNoteButtons();
 
-      // Create oscillators
-      sineOsc = new SineOscillator(440);
-      sawOsc = new SawtoothOscillator(440);
-      squareOsc = new SquareOscillator(440);
-      triangleOsc = new TriangleOscillator(440);
-
-      // Connect all to master bus
-      sineOsc.connect(masterBus.getInputNode());
-      sawOsc.connect(masterBus.getInputNode());
-      squareOsc.connect(masterBus.getInputNode());
-      triangleOsc.connect(masterBus.getInputNode());
-
-      // Setup controls
-      setupOscillatorControls('sine', sineOsc);
-      setupOscillatorControls('saw', sawOsc);
-      setupOscillatorControls('square', squareOsc);
-      setupOscillatorControls('triangle', triangleOsc);
-
-      // Setup note buttons
-      setupNoteButtons();
-
-      initialized = true;
-      initBtn.textContent = '✓ Initialized';
-      initBtn.style.background = 'rgba(74, 222, 128, 0.4)';
-    } catch (error) {
-      console.error('Failed to initialize:', error);
-      initBtn.disabled = false;
-      initBtn.textContent = 'Initialize Audio System';
-      alert('Failed to initialize audio system. Please try again.');
-    }
-  });
+    console.log('✓ Audio system initialized');
+  } catch (error) {
+    console.error('Failed to initialize:', error);
+    alert('Failed to initialize audio system. Please refresh the page to try again.');
+  }
 });
 
 function setupOscillatorControls(
@@ -124,16 +109,16 @@ function setupOscillatorControls(
 
 function setupNoteButtons() {
   const noteButtons = document.querySelectorAll('.note-btn');
-  
-  noteButtons.forEach(button => {
+
+  noteButtons.forEach((button) => {
     button.addEventListener('click', () => {
       const oscType = button.getAttribute('data-osc');
       const noteName = button.getAttribute('data-note');
-      
+
       if (!oscType || !noteName) return;
 
       let oscillator: SineOscillator | SawtoothOscillator | SquareOscillator | TriangleOscillator;
-      
+
       switch (oscType) {
         case 'sine':
           oscillator = sineOsc;
@@ -153,7 +138,7 @@ function setupNoteButtons() {
 
       // Set note
       oscillator.setNoteName(noteName);
-      
+
       // Update frequency display
       const freq = Math.round(oscillator.getParameter('frequency'));
       const freqValue = document.getElementById(`${oscType}-freq-value`) as HTMLSpanElement;

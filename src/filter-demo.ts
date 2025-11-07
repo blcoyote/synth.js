@@ -17,7 +17,6 @@ import {
 
 let oscillator: OscillatorNode | null = null;
 let isPlaying = false;
-let initialized = false;
 
 // Filter instances
 const filters = {
@@ -33,44 +32,32 @@ const filters = {
 
 const activeFilters = new Set<string>();
 
-document.addEventListener('DOMContentLoaded', () => {
-  const initBtn = document.getElementById('initBtn') as HTMLButtonElement;
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const engine = AudioEngine.getInstance();
+    await engine.initialize({ latencyHint: 'interactive' });
 
-  initBtn.addEventListener('click', async () => {
-    if (initialized) return;
+    const busManager = BusManager.getInstance();
+    busManager.initialize();
 
-    initBtn.disabled = true;
-    initBtn.textContent = 'Initializing...';
+    // Create all filters
+    filters.lowpass = new LowpassFilter(1000);
+    filters.highpass = new HighpassFilter(1000);
+    filters.bandpass = new BandpassFilter(1000);
+    filters.notch = new NotchFilter(1000);
+    filters.allpass = new AllpassFilter(1000);
+    filters.peaking = new PeakingFilter(1000, 0);
+    filters.lowshelf = new LowshelfFilter(200, 0);
+    filters.highshelf = new HighshelfFilter(3000, 0);
 
-    try {
-      const engine = AudioEngine.getInstance();
-      await engine.initialize({ latencyHint: 'interactive' });
+    setupOscillatorControls();
+    setupFilterControls();
 
-      const busManager = BusManager.getInstance();
-      busManager.initialize();
-
-      // Create all filters
-      filters.lowpass = new LowpassFilter(1000);
-      filters.highpass = new HighpassFilter(1000);
-      filters.bandpass = new BandpassFilter(1000);
-      filters.notch = new NotchFilter(1000);
-      filters.allpass = new AllpassFilter(1000);
-      filters.peaking = new PeakingFilter(1000, 0);
-      filters.lowshelf = new LowshelfFilter(200, 0);
-      filters.highshelf = new HighshelfFilter(3000, 0);
-
-      setupOscillatorControls();
-      setupFilterControls();
-
-      initialized = true;
-      initBtn.textContent = '✓ Initialized';
-      initBtn.style.background = 'rgba(74, 222, 128, 0.4)';
-    } catch (error) {
-      console.error('Failed to initialize:', error);
-      initBtn.disabled = false;
-      initBtn.textContent = 'Initialize Audio System';
-    }
-  });
+    console.log('✓ Audio system initialized');
+  } catch (error) {
+    console.error('Failed to initialize:', error);
+    alert('Failed to initialize audio system. Please refresh the page to try again.');
+  }
 });
 
 function setupOscillatorControls() {
@@ -168,9 +155,7 @@ function stopOscillator() {
 
 function setupFilterControls() {
   Object.keys(filters).forEach((filterName) => {
-    const toggleBtn = document.querySelector(
-      `[data-filter="${filterName}"]`
-    ) as HTMLButtonElement;
+    const toggleBtn = document.querySelector(`[data-filter="${filterName}"]`) as HTMLButtonElement;
     const card = document.getElementById(`${filterName}-card`) as HTMLDivElement;
 
     // Toggle button
@@ -208,9 +193,7 @@ function setupFilterSliders(filterName: string) {
   if (!filter) return;
 
   // Frequency slider
-  const freqSlider = document.getElementById(
-    `${filterName}-freq-slider`
-  ) as HTMLInputElement;
+  const freqSlider = document.getElementById(`${filterName}-freq-slider`) as HTMLInputElement;
   const freqValue = document.getElementById(`${filterName}-freq`) as HTMLSpanElement;
 
   if (freqSlider && freqValue) {
@@ -222,9 +205,7 @@ function setupFilterSliders(filterName: string) {
   }
 
   // Resonance slider
-  const resSlider = document.getElementById(
-    `${filterName}-res-slider`
-  ) as HTMLInputElement;
+  const resSlider = document.getElementById(`${filterName}-res-slider`) as HTMLInputElement;
   const resValue = document.getElementById(`${filterName}-res`) as HTMLSpanElement;
 
   if (resSlider && resValue) {
@@ -237,9 +218,7 @@ function setupFilterSliders(filterName: string) {
   }
 
   // Gain slider (for peaking and shelf filters)
-  const gainSlider = document.getElementById(
-    `${filterName}-gain-slider`
-  ) as HTMLInputElement;
+  const gainSlider = document.getElementById(`${filterName}-gain-slider`) as HTMLInputElement;
   const gainValue = document.getElementById(`${filterName}-gain`) as HTMLSpanElement;
 
   if (gainSlider && gainValue) {
