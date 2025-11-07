@@ -11,6 +11,9 @@ import {
   DistortionEffect,
   ChorusEffect,
   FlangerEffect,
+  PhaserEffect,
+  CompressorEffect,
+  RingModulatorEffect,
 } from './components/effects';
 
 let oscillator: SawtoothOscillator | null = null;
@@ -23,6 +26,9 @@ const effects = {
   distortion: null as DistortionEffect | null,
   chorus: null as ChorusEffect | null,
   flanger: null as FlangerEffect | null,
+  phaser: null as PhaserEffect | null,
+  compressor: null as CompressorEffect | null,
+  ringmodulator: null as RingModulatorEffect | null,
 };
 
 // Track effect IDs assigned by the bus (not just effect names)
@@ -42,6 +48,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     effects.distortion = new DistortionEffect('overdrive');
     effects.chorus = new ChorusEffect('classic');
     effects.flanger = new FlangerEffect('classic');
+    effects.phaser = new PhaserEffect('classic');
+    effects.compressor = new CompressorEffect('medium');
+    effects.ringmodulator = new RingModulatorEffect('metallic');
 
     setupOscillatorControls();
     setupEffectControls();
@@ -156,6 +165,9 @@ function setupEffectControls() {
   setupDistortionControls();
   setupChorusControls();
   setupFlangerControls();
+  setupPhaserControls();
+  setupCompressorControls();
+  setupRingModulatorControls();
 }
 
 function setupDelayControls() {
@@ -378,6 +390,137 @@ function setupFlangerControls() {
     infoDiv.innerHTML = `
       <strong>${config.name}</strong>: ${config.description}<br>
       <small>Rate: ${config.rate.toFixed(1)} Hz | Depth: ${(config.depth * 100).toFixed(0)}% | Feedback: ${(config.feedback * 100).toFixed(0)}%</small>
+    `;
+  }
+}
+
+function setupPhaserControls() {
+  const presetSelect = document.getElementById('phaser-preset') as HTMLSelectElement;
+  const mixSlider = document.getElementById('phaser-mix-slider') as HTMLInputElement;
+  const mixValue = document.getElementById('phaser-mix') as HTMLSpanElement;
+  const infoDiv = document.getElementById('phaser-info') as HTMLDivElement;
+
+  // Populate preset selector
+  if (effects.phaser && presetSelect) {
+    const presets = effects.phaser.getPresets();
+    Object.entries(presets).forEach(([key, config]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = config.name;
+      presetSelect.appendChild(option);
+    });
+    presetSelect.value = effects.phaser.getCurrentPreset();
+    updatePhaserInfo();
+  }
+
+  presetSelect?.addEventListener('change', () => {
+    const preset = presetSelect.value as any;
+    effects.phaser?.loadPreset(preset);
+    updatePhaserInfo();
+  });
+
+  mixSlider.addEventListener('input', () => {
+    const mix = parseFloat(mixSlider.value) / 100;
+    effects.phaser?.setParameter('mix', mix);
+    mixValue.textContent = `${mixSlider.value}%`;
+  });
+
+  function updatePhaserInfo() {
+    if (!effects.phaser || !infoDiv) return;
+    const presets = effects.phaser.getPresets();
+    const currentPreset = effects.phaser.getCurrentPreset();
+    const config = presets[currentPreset];
+
+    infoDiv.innerHTML = `
+      <strong>${config.name}</strong>: ${config.description}<br>
+      <small>Rate: ${config.rate.toFixed(1)} Hz | Depth: ${(config.depth * 100).toFixed(0)}% | Feedback: ${(config.feedback * 100).toFixed(0)}% | Stages: ${config.stages}</small>
+    `;
+  }
+}
+
+function setupCompressorControls() {
+  const presetSelect = document.getElementById('compressor-preset') as HTMLSelectElement;
+  const mixSlider = document.getElementById('compressor-mix-slider') as HTMLInputElement;
+  const mixValue = document.getElementById('compressor-mix') as HTMLSpanElement;
+  const infoDiv = document.getElementById('compressor-info') as HTMLDivElement;
+
+  // Populate preset selector
+  if (effects.compressor && presetSelect) {
+    const presets = effects.compressor.getPresets();
+    Object.entries(presets).forEach(([key, config]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = config.name;
+      presetSelect.appendChild(option);
+    });
+    presetSelect.value = effects.compressor.getCurrentPreset();
+    updateCompressorInfo();
+  }
+
+  presetSelect?.addEventListener('change', () => {
+    const preset = presetSelect.value as any;
+    effects.compressor?.loadPreset(preset);
+    updateCompressorInfo();
+  });
+
+  mixSlider.addEventListener('input', () => {
+    const mix = parseFloat(mixSlider.value) / 100;
+    effects.compressor?.setParameter('mix', mix);
+    mixValue.textContent = `${mixSlider.value}%`;
+  });
+
+  function updateCompressorInfo() {
+    if (!effects.compressor || !infoDiv) return;
+    const presets = effects.compressor.getPresets();
+    const currentPreset = effects.compressor.getCurrentPreset();
+    const config = presets[currentPreset];
+
+    infoDiv.innerHTML = `
+      <strong>${config.name}</strong>: ${config.description}<br>
+      <small>Threshold: ${config.threshold.toFixed(0)} dB | Ratio: ${config.ratio.toFixed(1)}:1 | Attack: ${(config.attack * 1000).toFixed(1)} ms | Release: ${(config.release * 1000).toFixed(0)} ms</small>
+    `;
+  }
+}
+
+function setupRingModulatorControls() {
+  const presetSelect = document.getElementById('ringmodulator-preset') as HTMLSelectElement;
+  const mixSlider = document.getElementById('ringmodulator-mix-slider') as HTMLInputElement;
+  const mixValue = document.getElementById('ringmodulator-mix') as HTMLSpanElement;
+  const infoDiv = document.getElementById('ringmodulator-info') as HTMLDivElement;
+
+  // Populate preset selector
+  if (effects.ringmodulator && presetSelect) {
+    const presets = RingModulatorEffect.getPresets();
+    presets.forEach((config) => {
+      const option = document.createElement('option');
+      option.value = config.name.toLowerCase();
+      option.textContent = config.name;
+      presetSelect.appendChild(option);
+    });
+    presetSelect.value = 'metallic';
+    updateRingModulatorInfo();
+  }
+
+  presetSelect?.addEventListener('change', () => {
+    const preset = presetSelect.value;
+    effects.ringmodulator?.loadPreset(preset);
+    updateRingModulatorInfo();
+  });
+
+  mixSlider.addEventListener('input', () => {
+    const mix = parseFloat(mixSlider.value) / 100;
+    effects.ringmodulator?.setParameter('mix', mix);
+    mixValue.textContent = `${mixSlider.value}%`;
+  });
+
+  function updateRingModulatorInfo() {
+    if (!effects.ringmodulator || !infoDiv) return;
+    const presetInfo = effects.ringmodulator.getPresetInfo();
+    if (!presetInfo) return;
+
+    infoDiv.innerHTML = `
+      <strong>${presetInfo.name}</strong>: ${presetInfo.description}<br>
+      <small>Carrier: ${presetInfo.carrierFrequency.toFixed(1)} Hz | Waveform: ${presetInfo.carrierWaveform}</small>
     `;
   }
 }

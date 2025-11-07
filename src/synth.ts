@@ -24,6 +24,9 @@ import {
   ChorusEffect,
   ShimmerEffect,
   FlangerEffect,
+  PhaserEffect,
+  CompressorEffect,
+  RingModulatorEffect,
 } from './components/effects';
 import { WaveSurferVisualizer } from './utils';
 import {
@@ -941,6 +944,13 @@ function setupEffectsChain() {
   document.getElementById('add-chorus')?.addEventListener('click', () => addEffect('chorus'));
   document.getElementById('add-shimmer')?.addEventListener('click', () => addEffect('shimmer'));
   document.getElementById('add-flanger')?.addEventListener('click', () => addEffect('flanger'));
+  document.getElementById('add-phaser')?.addEventListener('click', () => addEffect('phaser'));
+  document
+    .getElementById('add-compressor')
+    ?.addEventListener('click', () => addEffect('compressor'));
+  document
+    .getElementById('add-ringmodulator')
+    ?.addEventListener('click', () => addEffect('ringmodulator'));
 
   // Bypass chain toggle
   effectsToggle.addEventListener('click', () => {
@@ -958,7 +968,18 @@ function setupEffectsChain() {
     }
   });
 
-  function addEffect(type: 'delay' | 'reverb' | 'distortion' | 'chorus' | 'shimmer' | 'flanger') {
+  function addEffect(
+    type:
+      | 'delay'
+      | 'reverb'
+      | 'distortion'
+      | 'chorus'
+      | 'shimmer'
+      | 'flanger'
+      | 'phaser'
+      | 'compressor'
+      | 'ringmodulator'
+  ) {
     if (!effectsChain) return;
 
     let effect;
@@ -986,6 +1007,18 @@ function setupEffectsChain() {
       case 'flanger':
         effect = new FlangerEffect('classic'); // Use preset instead of parameters
         effect.setParameter('mix', DEFAULT_EFFECT_MIX);
+        break;
+      case 'phaser':
+        effect = new PhaserEffect('classic'); // Use preset instead of parameters
+        effect.setParameter('mix', DEFAULT_EFFECT_MIX);
+        break;
+      case 'compressor':
+        effect = new CompressorEffect('medium'); // Use preset instead of parameters
+        effect.setParameter('mix', 1.0); // Compressor usually at 100% unless parallel
+        break;
+      case 'ringmodulator':
+        effect = new RingModulatorEffect('metallic'); // Use preset instead of parameters
+        effect.setParameter('mix', 0.7); // Ring mod often sounds better with some dry signal
         break;
     }
 
@@ -1021,6 +1054,9 @@ function setupEffectsChain() {
       const isChorusEffect = slot.effect.getType() === 'Effect-chorus';
       const isShimmerEffect = slot.effect.getType() === 'Effect-shimmer';
       const isFlangerEffect = slot.effect.getType() === 'Effect-flanger';
+      const isPhaserEffect = slot.effect.getType() === 'Effect-phaser';
+      const isCompressorEffect = slot.effect.getType() === 'Effect-compressor';
+      const isRingModulatorEffect = slot.effect.getType() === 'Effect-ring-modulator';
       let presetSelector = '';
 
       if (isDelayEffect && 'getPresets' in slot.effect && 'getCurrentPreset' in slot.effect) {
@@ -1163,6 +1199,78 @@ function setupEffectsChain() {
                 .map(
                   ([key, config]) => `
                 <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      } else if (
+        isPhaserEffect &&
+        'getPresets' in slot.effect &&
+        'getCurrentPreset' in slot.effect
+      ) {
+        const phaserEffect = slot.effect as PhaserEffect;
+        const presets = phaserEffect.getPresets();
+        const currentPreset = phaserEffect.getCurrentPreset();
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="phaser-preset-select" data-effect-id="${slot.id}">
+              ${Object.entries(presets)
+                .map(
+                  ([key, config]) => `
+                <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      } else if (
+        isCompressorEffect &&
+        'getPresets' in slot.effect &&
+        'getCurrentPreset' in slot.effect
+      ) {
+        const compressorEffect = slot.effect as CompressorEffect;
+        const presets = compressorEffect.getPresets();
+        const currentPreset = compressorEffect.getCurrentPreset();
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="compressor-preset-select" data-effect-id="${slot.id}">
+              ${Object.entries(presets)
+                .map(
+                  ([key, config]) => `
+                <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      } else if (isRingModulatorEffect && 'getPresetInfo' in slot.effect) {
+        const ringModulatorEffect = slot.effect as RingModulatorEffect;
+        const presets = RingModulatorEffect.getPresets();
+        const currentPresetInfo = ringModulatorEffect.getPresetInfo();
+        const currentPresetName = currentPresetInfo?.name.toLowerCase() || 'metallic';
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="ringmodulator-preset-select" data-effect-id="${slot.id}">
+              ${presets
+                .map(
+                  (config) => `
+                <option value="${config.name.toLowerCase()}" ${currentPresetName === config.name.toLowerCase() ? 'selected' : ''}>${config.name}</option>
               `
                 )
                 .join('')}
@@ -1341,6 +1449,54 @@ function setupEffectsChain() {
         const effect = effectsChain!.getEffect(effectId) as FlangerEffect;
         if (effect && 'loadPreset' in effect) {
           effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
+        }
+      });
+    });
+
+    // Add event listeners for phaser preset selectors
+    effectsList.querySelectorAll('.phaser-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as PhaserEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
+        }
+      });
+    });
+
+    // Add event listeners for compressor preset selectors
+    effectsList.querySelectorAll('.compressor-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as CompressorEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
+        }
+      });
+    });
+
+    // Add event listeners for ring modulator preset selectors
+    effectsList.querySelectorAll('.ringmodulator-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as RingModulatorEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName);
           // Re-render to update parameter displays
           renderEffectsList();
         }

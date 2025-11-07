@@ -245,6 +245,107 @@
         
         <button class="toggle-btn" data-effect="flanger">Add to Bus</button>
       </div>
+
+      <!-- Phaser Effect Card -->
+      <div class="effect-card" id="phaser-card">
+        <div class="effect-header">
+          <div>
+            <div class="effect-title">Phaser</div>
+            <div class="effect-icon">🔄</div>
+          </div>
+        </div>
+        <div class="effect-desc">Sweeping notch filters. Classic psychedelic sound.</div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Preset</span>
+          </div>
+          <select id="phaser-preset">
+            <!-- Options will be populated by JavaScript -->
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Mix (Wet/Dry)</span>
+            <span class="control-value" id="phaser-mix">50%</span>
+          </div>
+          <input type="range" id="phaser-mix-slider" min="0" max="100" value="50" step="1">
+        </div>
+        
+        <div class="info-box" id="phaser-info">
+          Select a preset to see details
+        </div>
+        
+        <button class="toggle-btn" data-effect="phaser">Add to Bus</button>
+      </div>
+
+      <!-- Compressor Effect Card -->
+      <div class="effect-card" id="compressor-card">
+        <div class="effect-header">
+          <div>
+            <div class="effect-title">Compressor</div>
+            <div class="effect-icon">🎚️</div>
+          </div>
+        </div>
+        <div class="effect-desc">Dynamic range compression. Control peaks and add punch.</div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Preset</span>
+          </div>
+          <select id="compressor-preset">
+            <!-- Options will be populated by JavaScript -->
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Mix (Wet/Dry)</span>
+            <span class="control-value" id="compressor-mix">100%</span>
+          </div>
+          <input type="range" id="compressor-mix-slider" min="0" max="100" value="100" step="1">
+        </div>
+        
+        <div class="info-box" id="compressor-info">
+          Select a preset to see details
+        </div>
+        
+        <button class="toggle-btn" data-effect="compressor">Add to Bus</button>
+      </div>
+
+      <div class="effect-card" id="ringmodulator-card">
+        <div class="effect-header">
+          <div>
+            <div class="effect-title">Ring Modulator</div>
+            <div class="effect-icon">🔔</div>
+          </div>
+        </div>
+        <div class="effect-desc">Ring modulation creates metallic, inharmonic timbres.</div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Preset</span>
+          </div>
+          <select id="ringmodulator-preset">
+            <!-- Options will be populated by JavaScript -->
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Mix (Wet/Dry)</span>
+            <span class="control-value" id="ringmodulator-mix">70%</span>
+          </div>
+          <input type="range" id="ringmodulator-mix-slider" min="0" max="100" value="70" step="1">
+        </div>
+        
+        <div class="info-box" id="ringmodulator-info">
+          Select a preset to see details
+        </div>
+        
+        <button class="toggle-btn" data-effect="ringmodulator">Add to Bus</button>
+      </div>
     </div>
 
     <div class="info-box">
@@ -257,7 +358,10 @@
         <strong>Reverb:</strong> Adds space. Great on pads and leads.<br>
         <strong>Distortion:</strong> Adds harmonics and grit. Classic on bass and leads.<br>
         <strong>Chorus:</strong> Thickens the sound. Beautiful on clean tones.<br>
-        <strong>Flanger:</strong> Sweeping jet plane effect. Try the 'jet' preset!
+        <strong>Flanger:</strong> Sweeping jet plane effect. Try the 'jet' preset!<br>
+        <strong>Phaser:</strong> Sweeping notch filters. Classic psychedelic swirl.<br>
+        <strong>Compressor:</strong> Controls dynamics. Essential for mixing and mastering.<br>
+        <strong>Ring Modulator:</strong> Metallic and robotic effects. Creates sum and difference frequencies.
       </p>
     </div>
   </div>
