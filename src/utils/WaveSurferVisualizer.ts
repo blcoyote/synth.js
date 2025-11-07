@@ -261,19 +261,44 @@ export class WaveSurferVisualizer {
     this.ctx.lineTo(width, height / 2);
     this.ctx.stroke();
 
-    // Draw waveform
+    // Find trigger point (zero-crossing with positive slope)
+    // This stabilizes the waveform display regardless of frequency
+    let triggerIndex = 0;
+    const centerValue = 128;
+    const threshold = 5; // Small threshold to avoid noise triggering
+    
+    // Look for a zero-crossing in the first half of the buffer
+    for (let i = 1; i < bufferLength / 2; i++) {
+      const prevValue = this.waveformData[i - 1];
+      const currValue = this.waveformData[i];
+      
+      // Check for upward zero-crossing (going from below to above center)
+      if (prevValue < centerValue - threshold && currValue >= centerValue - threshold) {
+        triggerIndex = i;
+        break;
+      }
+    }
+
+    // Draw waveform starting from trigger point
     this.ctx.lineWidth = 2;
     this.ctx.strokeStyle = '#10b981';
     this.ctx.shadowBlur = 8;
     this.ctx.shadowColor = '#10b981';
     this.ctx.beginPath();
 
-    const sliceWidth = width / bufferLength;
+    const samplesToDraw = Math.min(bufferLength - triggerIndex, width * 2);
+    const sliceWidth = width / samplesToDraw;
     let x = 0;
 
-    for (let i = 0; i < bufferLength; i++) {
-      const v = this.waveformData[i] / 128.0;
-      const y = (v * height) / 2;
+    for (let i = 0; i < samplesToDraw; i++) {
+      const dataIndex = triggerIndex + i;
+      if (dataIndex >= bufferLength) break;
+      
+      // Normalize waveform data: 0-255 -> -1 to +1, then scale with amplification
+      const normalizedValue = (this.waveformData[dataIndex] - 128) / 128.0;
+      // Amplify by 1.8x to use more vertical space (with 10% padding at top/bottom)
+      const amplification = 1.8;
+      const y = height / 2 - (normalizedValue * amplification * height / 2);
 
       if (i === 0) {
         this.ctx.moveTo(x, y);
@@ -284,7 +309,6 @@ export class WaveSurferVisualizer {
       x += sliceWidth;
     }
 
-    this.ctx.lineTo(width, height / 2);
     this.ctx.stroke();
     this.ctx.shadowBlur = 0;
   }
