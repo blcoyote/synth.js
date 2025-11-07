@@ -211,6 +211,40 @@
         
         <button class="toggle-btn" data-effect="chorus">Add to Bus</button>
       </div>
+
+      <!-- Flanger Effect -->
+      <div class="effect-card" id="flanger-card">
+        <div class="effect-header">
+          <div>
+            <div class="effect-title">Flanger</div>
+            <div class="effect-icon">🌀</div>
+          </div>
+        </div>
+        <div class="effect-desc">Sweeping jet plane effect. Metallic whoosh.</div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Preset</span>
+          </div>
+          <select id="flanger-preset">
+            <!-- Options will be populated by JavaScript -->
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Mix (Wet/Dry)</span>
+            <span class="control-value" id="flanger-mix">50%</span>
+          </div>
+          <input type="range" id="flanger-mix-slider" min="0" max="100" value="50" step="1">
+        </div>
+        
+        <div class="info-box" id="flanger-info">
+          Select a preset to see details
+        </div>
+        
+        <button class="toggle-btn" data-effect="flanger">Add to Bus</button>
+      </div>
     </div>
 
     <div class="info-box">
@@ -222,7 +256,8 @@
         <strong>Delay:</strong> Rhythmic echoes. Try 375ms (eighth note at 120 BPM).<br>
         <strong>Reverb:</strong> Adds space. Great on pads and leads.<br>
         <strong>Distortion:</strong> Adds harmonics and grit. Classic on bass and leads.<br>
-        <strong>Chorus:</strong> Thickens the sound. Beautiful on clean tones.
+        <strong>Chorus:</strong> Thickens the sound. Beautiful on clean tones.<br>
+        <strong>Flanger:</strong> Sweeping jet plane effect. Try the 'jet' preset!
       </p>
     </div>
   </div>

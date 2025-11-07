@@ -23,6 +23,7 @@ import {
   DistortionEffect,
   ChorusEffect,
   ShimmerEffect,
+  FlangerEffect,
 } from './components/effects';
 import { WaveSurferVisualizer } from './utils';
 import {
@@ -939,6 +940,7 @@ function setupEffectsChain() {
     ?.addEventListener('click', () => addEffect('distortion'));
   document.getElementById('add-chorus')?.addEventListener('click', () => addEffect('chorus'));
   document.getElementById('add-shimmer')?.addEventListener('click', () => addEffect('shimmer'));
+  document.getElementById('add-flanger')?.addEventListener('click', () => addEffect('flanger'));
 
   // Bypass chain toggle
   effectsToggle.addEventListener('click', () => {
@@ -956,7 +958,7 @@ function setupEffectsChain() {
     }
   });
 
-  function addEffect(type: 'delay' | 'reverb' | 'distortion' | 'chorus' | 'shimmer') {
+  function addEffect(type: 'delay' | 'reverb' | 'distortion' | 'chorus' | 'shimmer' | 'flanger') {
     if (!effectsChain) return;
 
     let effect;
@@ -979,6 +981,10 @@ function setupEffectsChain() {
         break;
       case 'shimmer':
         effect = new ShimmerEffect('ethereal'); // Use preset instead of parameters
+        effect.setParameter('mix', DEFAULT_EFFECT_MIX);
+        break;
+      case 'flanger':
+        effect = new FlangerEffect('classic'); // Use preset instead of parameters
         effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
     }
@@ -1014,6 +1020,7 @@ function setupEffectsChain() {
       const isDistortionEffect = slot.effect.getType() === 'Effect-distortion';
       const isChorusEffect = slot.effect.getType() === 'Effect-chorus';
       const isShimmerEffect = slot.effect.getType() === 'Effect-shimmer';
+      const isFlangerEffect = slot.effect.getType() === 'Effect-flanger';
       let presetSelector = '';
 
       if (isDelayEffect && 'getPresets' in slot.effect && 'getCurrentPreset' in slot.effect) {
@@ -1127,6 +1134,31 @@ function setupEffectsChain() {
               <span>Preset</span>
             </div>
             <select class="shimmer-preset-select" data-effect-id="${slot.id}">
+              ${Object.entries(presets)
+                .map(
+                  ([key, config]) => `
+                <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      } else if (
+        isFlangerEffect &&
+        'getPresets' in slot.effect &&
+        'getCurrentPreset' in slot.effect
+      ) {
+        const flangerEffect = slot.effect as FlangerEffect;
+        const presets = flangerEffect.getPresets();
+        const currentPreset = flangerEffect.getCurrentPreset();
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="flanger-preset-select" data-effect-id="${slot.id}">
               ${Object.entries(presets)
                 .map(
                   ([key, config]) => `
@@ -1291,6 +1323,22 @@ function setupEffectsChain() {
         const presetName = target.value;
 
         const effect = effectsChain!.getEffect(effectId) as ShimmerEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
+        }
+      });
+    });
+
+    // Add event listeners for flanger preset selectors
+    effectsList.querySelectorAll('.flanger-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as FlangerEffect;
         if (effect && 'loadPreset' in effect) {
           effect.loadPreset(presetName as any);
           // Re-render to update parameter displays

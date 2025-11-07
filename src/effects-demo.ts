@@ -5,7 +5,13 @@
 import { AudioEngine } from './core';
 import { BusManager } from './bus';
 import { SawtoothOscillator } from './components/oscillators';
-import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect } from './components/effects';
+import {
+  DelayEffect,
+  ReverbEffect,
+  DistortionEffect,
+  ChorusEffect,
+  FlangerEffect,
+} from './components/effects';
 
 let oscillator: SawtoothOscillator | null = null;
 let isPlaying = false;
@@ -16,6 +22,7 @@ const effects = {
   reverb: null as ReverbEffect | null,
   distortion: null as DistortionEffect | null,
   chorus: null as ChorusEffect | null,
+  flanger: null as FlangerEffect | null,
 };
 
 // Track effect IDs assigned by the bus (not just effect names)
@@ -34,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     effects.reverb = new ReverbEffect('hall');
     effects.distortion = new DistortionEffect('overdrive');
     effects.chorus = new ChorusEffect('classic');
+    effects.flanger = new FlangerEffect('classic');
 
     setupOscillatorControls();
     setupEffectControls();
@@ -147,6 +155,7 @@ function setupEffectControls() {
   setupReverbControls();
   setupDistortionControls();
   setupChorusControls();
+  setupFlangerControls();
 }
 
 function setupDelayControls() {
@@ -325,6 +334,50 @@ function setupChorusControls() {
     infoDiv.innerHTML = `
       <strong>${config.name}</strong>: ${config.description}<br>
       <small>Rate: ${config.rate.toFixed(1)} Hz | Depth: ${(config.depth * 100).toFixed(0)}%</small>
+    `;
+  }
+}
+
+function setupFlangerControls() {
+  const presetSelect = document.getElementById('flanger-preset') as HTMLSelectElement;
+  const mixSlider = document.getElementById('flanger-mix-slider') as HTMLInputElement;
+  const mixValue = document.getElementById('flanger-mix') as HTMLSpanElement;
+  const infoDiv = document.getElementById('flanger-info') as HTMLDivElement;
+
+  // Populate preset selector
+  if (effects.flanger && presetSelect) {
+    const presets = effects.flanger.getPresets();
+    Object.entries(presets).forEach(([key, config]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = config.name;
+      presetSelect.appendChild(option);
+    });
+    presetSelect.value = effects.flanger.getCurrentPreset();
+    updateFlangerInfo();
+  }
+
+  presetSelect?.addEventListener('change', () => {
+    const preset = presetSelect.value as any;
+    effects.flanger?.loadPreset(preset);
+    updateFlangerInfo();
+  });
+
+  mixSlider.addEventListener('input', () => {
+    const mix = parseFloat(mixSlider.value) / 100;
+    effects.flanger?.setParameter('mix', mix);
+    mixValue.textContent = `${mixSlider.value}%`;
+  });
+
+  function updateFlangerInfo() {
+    if (!effects.flanger || !infoDiv) return;
+    const presets = effects.flanger.getPresets();
+    const currentPreset = effects.flanger.getCurrentPreset();
+    const config = presets[currentPreset];
+
+    infoDiv.innerHTML = `
+      <strong>${config.name}</strong>: ${config.description}<br>
+      <small>Rate: ${config.rate.toFixed(1)} Hz | Depth: ${(config.depth * 100).toFixed(0)}% | Feedback: ${(config.feedback * 100).toFixed(0)}%</small>
     `;
   }
 }
