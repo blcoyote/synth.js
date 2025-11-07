@@ -7,4 +7,3 @@ export * from './filters';
 export * from './effects';
 export * from './envelopes';
 export * from './modulation';
-export * from './voice';
