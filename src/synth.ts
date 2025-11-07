@@ -48,10 +48,12 @@ import {
 // Voice represents a single note being played
 interface Voice {
   noteIndex: number;
+  baseFrequency: number; // Original note frequency (before octave/detune)
   oscillators: Array<{
     oscillator: BaseOscillator;
     panNode: StereoPannerNode;
     envelope: ADSREnvelope;
+    oscNum: number; // Which oscillator config this belongs to (1, 2, or 3)
   }>;
   isActive: boolean;
   releaseTimeout?: number;
@@ -375,8 +377,12 @@ function setupOscillatorControls() {
     const octaveValue = document.getElementById(`osc${oscNum}-octave-value`) as HTMLSpanElement;
     octaveSlider.addEventListener('input', () => {
       const config = oscillatorConfigs.get(oscNum)!;
-      config.octave = parseInt(octaveSlider.value);
+      const newOctave = parseInt(octaveSlider.value);
+      config.octave = newOctave;
       octaveValue.textContent = octaveSlider.value;
+
+      // Update all active voices in real-time
+      updateActiveVoiceParameters(oscNum, 'octave', newOctave);
     });
 
     // Detune control
@@ -384,8 +390,12 @@ function setupOscillatorControls() {
     const detuneValue = document.getElementById(`osc${oscNum}-detune-value`) as HTMLSpanElement;
     detuneSlider.addEventListener('input', () => {
       const config = oscillatorConfigs.get(oscNum)!;
-      config.detune = parseInt(detuneSlider.value);
+      const newDetune = parseInt(detuneSlider.value);
+      config.detune = newDetune;
       detuneValue.textContent = `${detuneSlider.value}¢`;
+
+      // Update all active voices in real-time
+      updateActiveVoiceParameters(oscNum, 'detune', newDetune);
     });
 
     // Volume control
@@ -1205,9 +1215,13 @@ function playNote(noteIndex: number) {
     cleanupVoice(noteIndex);
   }
 
+  const noteData = notes[noteIndex];
+  const baseFrequency = noteData.freq;
+
   // Create a new voice for this note
   const voice: Voice = {
     noteIndex,
+    baseFrequency,
     oscillators: [],
     isActive: true,
   };
@@ -1215,8 +1229,7 @@ function playNote(noteIndex: number) {
   // Create oscillators for each enabled config
   oscillatorConfigs.forEach((config, oscNum) => {
     if (config.enabled) {
-      const noteData = notes[noteIndex];
-      const freq = noteData.freq * Math.pow(2, config.octave);
+      const freq = baseFrequency * Math.pow(2, config.octave);
 
       // Create oscillator based on waveform
       let oscillator: BaseOscillator;
@@ -1327,7 +1340,7 @@ function playNote(noteIndex: number) {
       envelope.trigger(1.0);
 
       // Store oscillator data with metadata
-      voice.oscillators.push({ oscillator, panNode, envelope });
+      voice.oscillators.push({ oscillator, panNode, envelope, oscNum });
     }
   });
 
@@ -1473,6 +1486,52 @@ function setupMasterControls() {
   });
 }
 
+// Update all active voices when an oscillator parameter changes
+function updateActiveVoiceParameters(
+  oscNum: number,
+  paramType: 'octave' | 'detune',
+  value: number
+) {
+  const config = oscillatorConfigs.get(oscNum);
+  if (!config) return;
+
+  activeVoices.forEach((voice) => {
+    voice.oscillators.forEach((oscData) => {
+      // Only update oscillators that belong to the changed config
+      if (oscData.oscNum === oscNum) {
+        if (paramType === 'octave') {
+          // Recalculate frequency with new octave
+          const newFrequency = voice.baseFrequency * Math.pow(2, value);
+          oscData.oscillator.setParameter('frequency', newFrequency);
+        } else if (paramType === 'detune') {
+          // Update detune parameter
+          oscData.oscillator.setParameter('detune', value);
+        }
+      }
+    });
+  });
+}
+
+// Apply a pitch bend to all active voices (useful for pitch wheel, vibrato, etc.)
+// bendAmount: semitones to bend (+/- 12 typical range, +/- 2 for standard pitch wheel)
+function applyPitchBendToAllVoices(bendAmount: number) {
+  const bendMultiplier = Math.pow(2, bendAmount / 12); // Convert semitones to frequency multiplier
+
+  activeVoices.forEach((voice) => {
+    voice.oscillators.forEach((oscData) => {
+      const config = oscillatorConfigs.get(oscData.oscNum);
+      if (config) {
+        // Apply both the oscillator's octave setting AND the pitch bend
+        const newFrequency = voice.baseFrequency * Math.pow(2, config.octave) * bendMultiplier;
+        oscData.oscillator.setParameter('frequency', newFrequency);
+      }
+    });
+  });
+}
+
+// Expose pitch bend function for future MIDI/UI integration
+(window as any).applyPitchBend = applyPitchBendToAllVoices;
+
 // Helper function to convert MIDI note to frequency
 function midiToFrequency(midi: number): number {
   return 440 * Math.pow(2, (midi - 69) / 12);
@@ -1497,11 +1556,12 @@ function playMidiNote(midiNote: number) {
   }
 
   // Calculate frequency from MIDI note
-  const frequency = midiToFrequency(midiNote);
+  const baseFrequency = midiToFrequency(midiNote);
 
   // Create a new voice for this note
   const voice: Voice = {
     noteIndex: voiceId,
+    baseFrequency,
     oscillators: [],
     isActive: true,
   };
@@ -1509,7 +1569,7 @@ function playMidiNote(midiNote: number) {
   // Create oscillators for each enabled config
   oscillatorConfigs.forEach((config, oscNum) => {
     if (config.enabled) {
-      const freq = frequency * Math.pow(2, config.octave);
+      const freq = baseFrequency * Math.pow(2, config.octave);
 
       // Create oscillator based on waveform
       let oscillator: BaseOscillator;
@@ -1620,7 +1680,7 @@ function playMidiNote(midiNote: number) {
       envelope.trigger(1.0);
 
       // Store oscillator data
-      voice.oscillators.push({ oscillator, panNode, envelope });
+      voice.oscillators.push({ oscillator, panNode, envelope, oscNum });
     }
   });
 
