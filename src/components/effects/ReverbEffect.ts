@@ -56,11 +56,11 @@ const REVERB_PRESETS: Record<ReverbPreset, ReverbPresetConfig> = {
   hall: {
     name: 'Hall',
     description: 'Medium concert hall',
-    decay: 0.6,
+    decay: 0.5,
     predelay: 30,
-    damping: 3000,
-    spread: 0.8,
-    size: 0.7,
+    damping: 2200,
+    spread: 0.75,
+    size: 0.65,
   },
   chamber: {
     name: 'Chamber',
@@ -184,7 +184,7 @@ export class ReverbEffect extends BaseEffect {
     // Parallel comb filters with feedback (creates the reverb tail)
     for (let i = 0; i < combDelayTimes.length; i++) {
       const delay = this.engine.createDelay(0.3);
-      const feedbackGain = this.engine.createGain(this.decay * 0.7);
+      const feedbackGain = this.engine.createGain(this.decay * 0.5); // Reduced from 0.7 to 0.5 to reduce metallic ringing
       const damping = this.engine.createBiquadFilter('lowpass');
       damping.frequency.value = this.damping;
       const outputGain = this.engine.createGain(0.4 / combDelayTimes.length);
