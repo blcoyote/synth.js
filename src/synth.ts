@@ -17,7 +17,13 @@ import { ADSREnvelope } from './components/envelopes';
 import { LFO, MultiTargetLFO, Sequencer, Arpeggiator } from './components/modulation';
 import type { SequencerStep, ArpPattern, NoteDivision } from './components/modulation';
 import { Lowpass12Filter, Lowpass24Filter } from './components/filters';
-import { DelayEffect, ReverbEffect, DistortionEffect, ChorusEffect, ShimmerEffect } from './components/effects';
+import {
+  DelayEffect,
+  ReverbEffect,
+  DistortionEffect,
+  ChorusEffect,
+  ShimmerEffect,
+} from './components/effects';
 import { WaveSurferVisualizer } from './utils';
 import {
   DEFAULT_OSCILLATOR_VOLUME,
@@ -60,7 +66,7 @@ interface OscillatorConfig {
   volume: number;
   pan: number;
   fmEnabled?: boolean; // FM modulation enabled (for osc 2 & 3)
-  fmDepth?: number;    // FM modulation depth in Hz (for osc 2 & 3)
+  fmDepth?: number; // FM modulation depth in Hz (for osc 2 & 3)
 }
 
 const oscillatorConfigs: Map<number, OscillatorConfig> = new Map();
@@ -129,16 +135,16 @@ const envelopeSettings = {
 
 // Note frequencies (C2 to C5) - Danish keyboard layout
 const notes = [
-  { note: 'C2', freq: 65.41, key: '<', white: true },  // Bottom row start
-  { note: 'C#2', freq: 69.30, key: 'A', white: false },
+  { note: 'C2', freq: 65.41, key: '<', white: true }, // Bottom row start
+  { note: 'C#2', freq: 69.3, key: 'A', white: false },
   { note: 'D2', freq: 73.42, key: 'Z', white: true },
   { note: 'D#2', freq: 77.78, key: 'S', white: false },
   { note: 'E2', freq: 82.41, key: 'X', white: true },
   { note: 'F2', freq: 87.31, key: 'C', white: true },
-  { note: 'F#2', freq: 92.50, key: 'F', white: false },
-  { note: 'G2', freq: 98.00, key: 'V', white: true },
+  { note: 'F#2', freq: 92.5, key: 'F', white: false },
+  { note: 'G2', freq: 98.0, key: 'V', white: true },
   { note: 'G#2', freq: 103.83, key: 'G', white: false },
-  { note: 'A2', freq: 110.00, key: 'B', white: true },
+  { note: 'A2', freq: 110.0, key: 'B', white: true },
   { note: 'A#2', freq: 116.54, key: 'H', white: false },
   { note: 'B2', freq: 123.47, key: 'N', white: true },
   { note: 'C3', freq: 130.81, key: 'M', white: true },
@@ -147,10 +153,10 @@ const notes = [
   { note: 'D#3', freq: 155.56, key: 'L', white: false },
   { note: 'E3', freq: 164.81, key: '.', white: true },
   { note: 'F3', freq: 174.61, key: '-', white: true },
-  { note: 'F#3', freq: 185.00, key: null, white: false },
-  { note: 'G3', freq: 196.00, key: 'Q', white: true },  // Top letter row
+  { note: 'F#3', freq: 185.0, key: null, white: false },
+  { note: 'G3', freq: 196.0, key: 'Q', white: true }, // Top letter row
   { note: 'G#3', freq: 207.65, key: '2', white: false },
-  { note: 'A3', freq: 220.00, key: 'W', white: true },
+  { note: 'A3', freq: 220.0, key: 'W', white: true },
   { note: 'A#3', freq: 233.08, key: '3', white: false },
   { note: 'B3', freq: 246.94, key: 'E', white: true },
   { note: 'C4', freq: 261.63, key: 'R', white: true },
@@ -160,9 +166,9 @@ const notes = [
   { note: 'E4', freq: 329.63, key: 'Y', white: true },
   { note: 'F4', freq: 349.23, key: 'U', white: true },
   { note: 'F#4', freq: 369.99, key: '8', white: false },
-  { note: 'G4', freq: 392.00, key: 'I', white: true },
-  { note: 'G#4', freq: 415.30, key: '9', white: false },
-  { note: 'A4', freq: 440.00, key: 'O', white: true },
+  { note: 'G4', freq: 392.0, key: 'I', white: true },
+  { note: 'G#4', freq: 415.3, key: '9', white: false },
+  { note: 'A4', freq: 440.0, key: 'O', white: true },
   { note: 'A#4', freq: 466.16, key: '0', white: false },
   { note: 'B4', freq: 493.88, key: 'P', white: true },
   { note: 'C5', freq: 523.25, key: 'Å', white: true },
@@ -182,147 +188,147 @@ document.addEventListener('DOMContentLoaded', async () => {
     const engine = AudioEngine.getInstance();
     await engine.initialize({ latencyHint: 'interactive' });
 
-      const busManager = BusManager.getInstance();
-      busManager.initialize();
-      masterBus = busManager.getMasterBus();
+    const busManager = BusManager.getInstance();
+    busManager.initialize();
+    masterBus = busManager.getMasterBus();
 
-      // Create intermediate gain nodes for each oscillator with analysers
-      const context = engine.getContext();
-      const osc1Bus = context.createGain();
-      const osc2Bus = context.createGain();
-      const osc3Bus = context.createGain();
-      
-      analyser1 = context.createAnalyser();
-      analyser1.fftSize = 2048;
-      analyser2 = context.createAnalyser();
-      analyser2.fftSize = 2048;
-      analyser3 = context.createAnalyser();
-      analyser3.fftSize = 2048;
-      
-      // Connect: osc1Bus -> analyser1 -> masterBus
-      osc1Bus.connect(analyser1);
-      analyser1.connect(masterBus.getInputNode());
-      
-      // Connect: osc2Bus -> analyser2 -> masterBus
-      osc2Bus.connect(analyser2);
-      analyser2.connect(masterBus.getInputNode());
-      
-      // Connect: osc3Bus -> analyser3 -> masterBus
-      osc3Bus.connect(analyser3);
-      analyser3.connect(masterBus.getInputNode());
-      
-      // Store these buses globally so oscillators can connect to them
-      (window as unknown as Record<string, GainNode>).osc1Bus = osc1Bus;
-      (window as unknown as Record<string, GainNode>).osc2Bus = osc2Bus;
-      (window as unknown as Record<string, GainNode>).osc3Bus = osc3Bus;
+    // Create intermediate gain nodes for each oscillator with analysers
+    const context = engine.getContext();
+    const osc1Bus = context.createGain();
+    const osc2Bus = context.createGain();
+    const osc3Bus = context.createGain();
 
-      // Create LFO for vibrato (shared across all voices)
-      vibrato = new LFO({
-        frequency: 5.0,
-        depth: 0.05,
-        waveform: 'sine',
-      });
+    analyser1 = context.createAnalyser();
+    analyser1.fftSize = 2048;
+    analyser2 = context.createAnalyser();
+    analyser2.fftSize = 2048;
+    analyser3 = context.createAnalyser();
+    analyser3.fftSize = 2048;
 
-      // Create multi-target LFO for advanced modulation
-      multiLFO = new MultiTargetLFO({
-        frequency: 5.0,
-        waveform: 'sine',
-      });
+    // Connect: osc1Bus -> analyser1 -> masterBus
+    osc1Bus.connect(analyser1);
+    analyser1.connect(masterBus.getInputNode());
 
-      // Initialize oscillator configurations (not actual instances)
-      oscillatorConfigs.set(1, {
-        enabled: true,
-        waveform: 'sawtooth',
-        octave: 0,
-        detune: 0,
-        volume: DEFAULT_OSCILLATOR_VOLUME,
-        pan: 0,
-      });
+    // Connect: osc2Bus -> analyser2 -> masterBus
+    osc2Bus.connect(analyser2);
+    analyser2.connect(masterBus.getInputNode());
 
-      oscillatorConfigs.set(2, {
-        enabled: false,
-        waveform: 'sawtooth',
-        octave: -1,
-        detune: -7,
-        volume: 0.5,
-        pan: 0,
-        fmEnabled: false,
-        fmDepth: 0,
-      });
+    // Connect: osc3Bus -> analyser3 -> masterBus
+    osc3Bus.connect(analyser3);
+    analyser3.connect(masterBus.getInputNode());
 
-      oscillatorConfigs.set(3, {
-        enabled: false,
-        waveform: 'square',
-        octave: 1,
-        detune: 7,
-        volume: 0.4,
-        pan: 0,
-        fmEnabled: false,
-        fmDepth: 0,
-      });
+    // Store these buses globally so oscillators can connect to them
+    (window as unknown as Record<string, GainNode>).osc1Bus = osc1Bus;
+    (window as unknown as Record<string, GainNode>).osc2Bus = osc2Bus;
+    (window as unknown as Record<string, GainNode>).osc3Bus = osc3Bus;
 
-      // Create master filter and analyser
-      const audioEngine = AudioEngine.getInstance();
-      
-      // Create initial filter (basic lowpass)
-      if (filterSettings.type === 'lowpass12') {
-        currentCustomFilter = new Lowpass12Filter(filterSettings.cutoff);
-        currentCustomFilter.setParameter('resonance', filterSettings.resonance);
-        masterFilter = currentCustomFilter;
-      } else if (filterSettings.type === 'lowpass24') {
-        currentCustomFilter = new Lowpass24Filter(filterSettings.cutoff);
-        currentCustomFilter.setParameter('resonance', filterSettings.resonance);
-        masterFilter = currentCustomFilter;
-      } else {
-        currentCustomFilter = null;
-        masterFilter = audioEngine.createBiquadFilter(filterSettings.type as BiquadFilterType);
-        masterFilter.frequency.value = filterSettings.cutoff;
-        masterFilter.Q.value = filterSettings.resonance;
-      }
+    // Create LFO for vibrato (shared across all voices)
+    vibrato = new LFO({
+      frequency: 5.0,
+      depth: 0.05,
+      waveform: 'sine',
+    });
 
-      // Create analyser for visualization
-      analyser = audioEngine.createAnalyser();
-      analyser.fftSize = 8192; // Increased for better frequency resolution
-      analyser.smoothingTimeConstant = 0.75; // Slightly reduced for more responsive display
+    // Create multi-target LFO for advanced modulation
+    multiLFO = new MultiTargetLFO({
+      frequency: 5.0,
+      waveform: 'sine',
+    });
 
-      // Create effects chain
-      effectsChain = new EffectsChain();
+    // Initialize oscillator configurations (not actual instances)
+    oscillatorConfigs.set(1, {
+      enabled: true,
+      waveform: 'sawtooth',
+      octave: 0,
+      detune: 0,
+      volume: DEFAULT_OSCILLATOR_VOLUME,
+      pan: 0,
+    });
 
-      // Signal chain: master bus -> filter -> effects chain -> analyser -> destination
-      if (currentCustomFilter) {
-        masterBus.connect(currentCustomFilter.getInputNode());
-        currentCustomFilter.getOutputNode().connect(effectsChain.getInput());
-      } else if (masterFilter) {
-        masterBus.connect(masterFilter as BiquadFilterNode);
-        (masterFilter as BiquadFilterNode).connect(effectsChain.getInput());
-      } else {
-        // Fallback: connect directly if no filter
-        masterBus.connect(effectsChain.getInput());
-      }
-      effectsChain.getOutput().connect(analyser);
-      analyser.connect(audioEngine.getDestination());
+    oscillatorConfigs.set(2, {
+      enabled: false,
+      waveform: 'sawtooth',
+      octave: -1,
+      detune: -7,
+      volume: 0.5,
+      pan: 0,
+      fmEnabled: false,
+      fmDepth: 0,
+    });
 
-      setupOscillatorControls();
-      setupEnvelopeControls();
-      setupLFOControls();
-      setupFilterControls();
-      setupEffectsChain();
-      setupKeyboard();
-      setupWaveformVisualizer();
-      setupMasterControls();
-      setupSequencer();
-      setupArpeggiator();
-      setupCollapsibleSections();
+    oscillatorConfigs.set(3, {
+      enabled: false,
+      waveform: 'square',
+      octave: 1,
+      detune: 7,
+      volume: 0.4,
+      pan: 0,
+      fmEnabled: false,
+      fmDepth: 0,
+    });
 
-      initialized = true;
-      systemLed.classList.remove('initializing');
-      systemLed.classList.add('ready');
-      systemStatus.textContent = 'Ready';
-    } catch (error) {
-      console.error('Failed to initialize:', error);
-      systemLed.classList.remove('initializing');
-      systemStatus.textContent = 'Failed';
+    // Create master filter and analyser
+    const audioEngine = AudioEngine.getInstance();
+
+    // Create initial filter (basic lowpass)
+    if (filterSettings.type === 'lowpass12') {
+      currentCustomFilter = new Lowpass12Filter(filterSettings.cutoff);
+      currentCustomFilter.setParameter('resonance', filterSettings.resonance);
+      masterFilter = currentCustomFilter;
+    } else if (filterSettings.type === 'lowpass24') {
+      currentCustomFilter = new Lowpass24Filter(filterSettings.cutoff);
+      currentCustomFilter.setParameter('resonance', filterSettings.resonance);
+      masterFilter = currentCustomFilter;
+    } else {
+      currentCustomFilter = null;
+      masterFilter = audioEngine.createBiquadFilter(filterSettings.type as BiquadFilterType);
+      masterFilter.frequency.value = filterSettings.cutoff;
+      masterFilter.Q.value = filterSettings.resonance;
     }
+
+    // Create analyser for visualization
+    analyser = audioEngine.createAnalyser();
+    analyser.fftSize = 8192; // Increased for better frequency resolution
+    analyser.smoothingTimeConstant = 0.75; // Slightly reduced for more responsive display
+
+    // Create effects chain
+    effectsChain = new EffectsChain();
+
+    // Signal chain: master bus -> filter -> effects chain -> analyser -> destination
+    if (currentCustomFilter) {
+      masterBus.connect(currentCustomFilter.getInputNode());
+      currentCustomFilter.getOutputNode().connect(effectsChain.getInput());
+    } else if (masterFilter) {
+      masterBus.connect(masterFilter as BiquadFilterNode);
+      (masterFilter as BiquadFilterNode).connect(effectsChain.getInput());
+    } else {
+      // Fallback: connect directly if no filter
+      masterBus.connect(effectsChain.getInput());
+    }
+    effectsChain.getOutput().connect(analyser);
+    analyser.connect(audioEngine.getDestination());
+
+    setupOscillatorControls();
+    setupEnvelopeControls();
+    setupLFOControls();
+    setupFilterControls();
+    setupEffectsChain();
+    setupKeyboard();
+    setupWaveformVisualizer();
+    setupMasterControls();
+    setupSequencer();
+    setupArpeggiator();
+    setupCollapsibleSections();
+
+    initialized = true;
+    systemLed.classList.remove('initializing');
+    systemLed.classList.add('ready');
+    systemStatus.textContent = 'Ready';
+  } catch (error) {
+    console.error('Failed to initialize:', error);
+    systemLed.classList.remove('initializing');
+    systemStatus.textContent = 'Failed';
+  }
 });
 
 function setupOscillatorControls() {
@@ -350,7 +356,11 @@ function setupOscillatorControls() {
     const waveformBtns = document.querySelectorAll(`[data-osc="${oscNum}"]`);
     waveformBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
-        const waveform = btn.getAttribute('data-wave') as 'sine' | 'sawtooth' | 'square' | 'triangle';
+        const waveform = btn.getAttribute('data-wave') as
+          | 'sine'
+          | 'sawtooth'
+          | 'square'
+          | 'triangle';
         const config = oscillatorConfigs.get(oscNum)!;
         config.waveform = waveform;
 
@@ -409,7 +419,9 @@ function setupOscillatorControls() {
     if (oscNum >= 2) {
       const fmToggleBtn = document.getElementById(`osc${oscNum}-fm-toggle`) as HTMLButtonElement;
       const fmDepthSlider = document.getElementById(`osc${oscNum}-fm-depth`) as HTMLInputElement;
-      const fmDepthValue = document.getElementById(`osc${oscNum}-fm-depth-value`) as HTMLSpanElement;
+      const fmDepthValue = document.getElementById(
+        `osc${oscNum}-fm-depth-value`
+      ) as HTMLSpanElement;
 
       fmToggleBtn?.addEventListener('click', () => {
         const config = oscillatorConfigs.get(oscNum)!;
@@ -460,10 +472,10 @@ function setupEnvelopeParameter(
 function setupEnvelopeControls() {
   // Setup all three envelopes using the helper function
   // This eliminates ~100 lines of duplicated code
-  
+
   const envelopes: Array<1 | 2 | 3> = [1, 2, 3];
-  
-  envelopes.forEach(envNum => {
+
+  envelopes.forEach((envNum) => {
     // Attack: milliseconds to seconds
     setupEnvelopeParameter(
       envNum,
@@ -529,7 +541,7 @@ function setupLFOControls() {
   depthSlider.addEventListener('input', () => {
     const depth = parseFloat(depthSlider.value) / 100;
     vibrato?.setParameter('depth', depth);
-    
+
     // Update depth for all active targets in multiLFO
     if (multiLFO) {
       const depthValue = depth * LFO_PITCH_MODULATION_CENTS; // Scale for pitch modulation (cents)
@@ -546,7 +558,7 @@ function setupLFOControls() {
         multiLFO.setTargetDepth('filter', depth * MAX_FILTER_MODULATION_DEPTH); // Filter cutoff modulation (Hz)
       }
     }
-    
+
     depthValue.textContent = `${depthSlider.value}%`;
   });
 
@@ -587,15 +599,15 @@ function setupLFOControls() {
   // Helper function to update filter LFO target
   function updateFilterLFOTarget() {
     if (!multiLFO || !masterFilter) return;
-    
-    const filterParam = 'frequency' in masterFilter 
-      ? (masterFilter as BiquadFilterNode).frequency
-      : null;
-    
+
+    const filterParam =
+      'frequency' in masterFilter ? (masterFilter as BiquadFilterNode).frequency : null;
+
     if (filterParam && lfoState.targets.filter) {
       const currentCutoff = filterParam.value;
-      const depth = (parseFloat(depthSlider.value) / PERCENT_TO_DECIMAL) * MAX_FILTER_MODULATION_DEPTH;
-      
+      const depth =
+        (parseFloat(depthSlider.value) / PERCENT_TO_DECIMAL) * MAX_FILTER_MODULATION_DEPTH;
+
       if (multiLFO.hasTarget('filter')) {
         multiLFO.setTargetDepth('filter', depth);
         multiLFO.setTargetBaseline('filter', currentCutoff);
@@ -620,7 +632,7 @@ function setupLFOControls() {
 
   filterCheckbox.addEventListener('change', () => {
     lfoState.targets.filter = filterCheckbox.checked;
-    
+
     if (filterCheckbox.checked) {
       updateFilterLFOTarget();
       // Start LFO if in free-running mode and enabled
@@ -688,11 +700,11 @@ function setupFilterControls() {
   if (!filterContainer) {
     throw new Error('Filter visualizer container not found');
   }
-  
+
   // Hide the canvas, use the container instead
   const filterCanvas = document.getElementById('audio-visualizer') as HTMLCanvasElement;
   filterCanvas.style.display = 'none';
-  
+
   let filterNodeForViz: BiquadFilterNode | null = null;
   if (currentCustomFilter instanceof Lowpass24Filter) {
     filterNodeForViz = currentCustomFilter.getCascadedFrequencyResponse();
@@ -701,22 +713,23 @@ function setupFilterControls() {
   } else {
     filterNodeForViz = masterFilter as BiquadFilterNode | null;
   }
-  
+
   filterVisualizer = new WaveSurferVisualizer({
     container: filterContainer,
     filterNode: filterNodeForViz,
     analyserNode: analyser,
     filterEnabled: filterSettings.enabled,
     cutoffFrequency: filterSettings.cutoff,
-    sampleRate: AudioEngine.getInstance().getSampleRate()
+    sampleRate: AudioEngine.getInstance().getSampleRate(),
   });
   filterVisualizer.start();
 
   // Initialize slider to logarithmic value
   cutoffSlider.value = Math.log(filterSettings.cutoff).toString();
-  const initialFreqDisplay = filterSettings.cutoff >= 1000 
-    ? `${(filterSettings.cutoff / 1000).toFixed(2)} kHz`
-    : `${Math.round(filterSettings.cutoff)} Hz`;
+  const initialFreqDisplay =
+    filterSettings.cutoff >= 1000
+      ? `${(filterSettings.cutoff / 1000).toFixed(2)} kHz`
+      : `${Math.round(filterSettings.cutoff)} Hz`;
   cutoffValue.textContent = initialFreqDisplay;
 
   // Filter type
@@ -724,7 +737,7 @@ function setupFilterControls() {
     if (!masterFilter || !analyser) return;
     const newType = typeSelect.value as BiquadFilterType | 'lowpass12' | 'lowpass24';
     filterSettings.type = newType;
-    
+
     // Disconnect old filter
     masterBus.disconnect();
     if (currentCustomFilter) {
@@ -732,7 +745,7 @@ function setupFilterControls() {
     } else if (masterFilter) {
       (masterFilter as BiquadFilterNode).disconnect();
     }
-    
+
     // Create new filter
     const audioEngine = AudioEngine.getInstance();
     if (newType === 'lowpass12') {
@@ -755,7 +768,7 @@ function setupFilterControls() {
       masterBus.connect(masterFilter as BiquadFilterNode);
       (masterFilter as BiquadFilterNode).connect(effectsChain!.getInput());
     }
-    
+
     // Update filter visualizer filter node
     if (filterVisualizer) {
       let newFilterNode: BiquadFilterNode | null = null;
@@ -773,22 +786,23 @@ function setupFilterControls() {
   // Cutoff frequency (logarithmic scale)
   cutoffSlider.addEventListener('input', () => {
     if (!masterFilter || !filterVisualizer) return;
-    
+
     // Convert from logarithmic slider value to frequency
     // Slider range: log(MIN_FILTER_CUTOFF) to log(MAX_FILTER_CUTOFF) ≈ 2.996 to 9.903
     const logValue = parseFloat(cutoffSlider.value);
     filterSettings.cutoff = Math.exp(logValue); // e^x to get actual frequency
-    
+
     if (currentCustomFilter) {
       currentCustomFilter.setParameter('cutoff', filterSettings.cutoff);
     } else {
       (masterFilter as BiquadFilterNode).frequency.value = filterSettings.cutoff;
     }
-    
+
     // Format frequency display nicely
-    const freqDisplay = filterSettings.cutoff >= 1000 
-      ? `${(filterSettings.cutoff / 1000).toFixed(2)} kHz`
-      : `${Math.round(filterSettings.cutoff)} Hz`;
+    const freqDisplay =
+      filterSettings.cutoff >= 1000
+        ? `${(filterSettings.cutoff / 1000).toFixed(2)} kHz`
+        : `${Math.round(filterSettings.cutoff)} Hz`;
     cutoffValue.textContent = freqDisplay;
     filterVisualizer.updateConfig({ cutoffFrequency: filterSettings.cutoff });
   });
@@ -797,13 +811,13 @@ function setupFilterControls() {
   resonanceSlider.addEventListener('input', () => {
     if (!masterFilter) return;
     filterSettings.resonance = parseFloat(resonanceSlider.value) / 10;
-    
+
     if (currentCustomFilter) {
       currentCustomFilter.setParameter('resonance', filterSettings.resonance);
     } else {
       (masterFilter as BiquadFilterNode).Q.value = filterSettings.resonance;
     }
-    
+
     resonanceValue.textContent = filterSettings.resonance.toFixed(1);
   });
 
@@ -823,7 +837,7 @@ function setupFilterControls() {
         masterBus.connect(masterFilter as BiquadFilterNode);
         (masterFilter as BiquadFilterNode).connect(effectsChain!.getInput());
       }
-      
+
       toggleBtn.textContent = 'Disable Filter';
       toggleBtn.classList.add('active');
       powerIndicator.classList.add('on');
@@ -836,12 +850,12 @@ function setupFilterControls() {
         (masterFilter as BiquadFilterNode).disconnect();
       }
       masterBus.connect(effectsChain!.getInput());
-      
+
       toggleBtn.textContent = 'Enable Filter';
       toggleBtn.classList.remove('active');
       powerIndicator.classList.remove('on');
     }
-    
+
     filterVisualizer.updateConfig({ filterEnabled: filterSettings.enabled });
   });
 }
@@ -852,7 +866,7 @@ function setupWaveformVisualizer() {
   if (waveformCanvas1 && analyser1) {
     // Hide the old canvas
     waveformCanvas1.style.display = 'none';
-    
+
     // Get the parent container
     const container1 = waveformCanvas1.parentElement;
     if (container1) {
@@ -860,7 +874,7 @@ function setupWaveformVisualizer() {
         container: container1,
         analyserNode: analyser1,
         mode: 'waveform',
-        height: 120
+        height: 120,
       });
       waveformVisualizer1.start();
     }
@@ -871,7 +885,7 @@ function setupWaveformVisualizer() {
   if (waveformCanvas2 && analyser2) {
     // Hide the old canvas
     waveformCanvas2.style.display = 'none';
-    
+
     // Get the parent container
     const container2 = waveformCanvas2.parentElement;
     if (container2) {
@@ -879,7 +893,7 @@ function setupWaveformVisualizer() {
         container: container2,
         analyserNode: analyser2,
         mode: 'waveform',
-        height: 120
+        height: 120,
       });
       waveformVisualizer2.start();
     }
@@ -890,7 +904,7 @@ function setupWaveformVisualizer() {
   if (waveformCanvas3 && analyser3) {
     // Hide the old canvas
     waveformCanvas3.style.display = 'none';
-    
+
     // Get the parent container
     const container3 = waveformCanvas3.parentElement;
     if (container3) {
@@ -898,7 +912,7 @@ function setupWaveformVisualizer() {
         container: container3,
         analyserNode: analyser3,
         mode: 'waveform',
-        height: 120
+        height: 120,
       });
       waveformVisualizer3.start();
     }
@@ -916,7 +930,9 @@ function setupEffectsChain() {
   // Add effect buttons
   document.getElementById('add-delay')?.addEventListener('click', () => addEffect('delay'));
   document.getElementById('add-reverb')?.addEventListener('click', () => addEffect('reverb'));
-  document.getElementById('add-distortion')?.addEventListener('click', () => addEffect('distortion'));
+  document
+    .getElementById('add-distortion')
+    ?.addEventListener('click', () => addEffect('distortion'));
   document.getElementById('add-chorus')?.addEventListener('click', () => addEffect('chorus'));
   document.getElementById('add-shimmer')?.addEventListener('click', () => addEffect('shimmer'));
 
@@ -924,7 +940,7 @@ function setupEffectsChain() {
   effectsToggle.addEventListener('click', () => {
     const bypassed = effectsChain!.isChainBypassed();
     effectsChain!.bypassChain(!bypassed);
-    
+
     if (bypassed) {
       effectsToggle.classList.add('active');
       effectsToggle.textContent = 'Bypass Effects Chain';
@@ -974,7 +990,8 @@ function setupEffectsChain() {
     effectsCount.textContent = effects.length.toString();
 
     if (effects.length === 0) {
-      effectsList.innerHTML = '<div style="color: #666; text-align: center; font-size: 0.85rem;">No effects added</div>';
+      effectsList.innerHTML =
+        '<div style="color: #666; text-align: center; font-size: 0.85rem;">No effects added</div>';
       return;
     }
 
@@ -998,9 +1015,10 @@ function setupEffectsChain() {
           </div>
         </div>
         <div class="effect-parameters">
-          ${params.map(param => {
-            const currentValue = slot.effect.getParameter(param.name);
-            return `
+          ${params
+            .map((param) => {
+              const currentValue = slot.effect.getParameter(param.name);
+              return `
             <div class="effect-param">
               <div class="effect-param-label">
                 <span>${param.name}</span>
@@ -1014,7 +1032,9 @@ function setupEffectsChain() {
                 step="0.01" 
                 value="${currentValue}">
             </div>
-          `}).join('')}
+          `;
+            })
+            .join('')}
         </div>
       `;
 
@@ -1022,11 +1042,11 @@ function setupEffectsChain() {
     });
 
     // Add event listeners for controls
-    effectsList.querySelectorAll('[data-action="bypass"]').forEach(btn => {
+    effectsList.querySelectorAll('[data-action="bypass"]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const target = e.target as HTMLButtonElement;
         const id = target.getAttribute('data-id')!;
-        const slot = effectsChain!.getEffects().find(s => s.id === id);
+        const slot = effectsChain!.getEffects().find((s) => s.id === id);
         if (slot) {
           effectsChain!.bypassEffect(id, !slot.bypassed);
           renderEffectsList();
@@ -1034,7 +1054,7 @@ function setupEffectsChain() {
       });
     });
 
-    effectsList.querySelectorAll('[data-action="remove"]').forEach(btn => {
+    effectsList.querySelectorAll('[data-action="remove"]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const target = e.target as HTMLButtonElement;
         const id = target.getAttribute('data-id')!;
@@ -1043,7 +1063,7 @@ function setupEffectsChain() {
       });
     });
 
-    effectsList.querySelectorAll('input[type="range"]').forEach(slider => {
+    effectsList.querySelectorAll('input[type="range"]').forEach((slider) => {
       slider.addEventListener('input', (e) => {
         const target = e.target as HTMLInputElement;
         const effectId = target.getAttribute('data-effect-id')!;
@@ -1053,7 +1073,7 @@ function setupEffectsChain() {
         const effect = effectsChain!.getEffect(effectId);
         if (effect) {
           effect.setParameter(paramName, value);
-          
+
           // Update display
           const valueDisplay = document.getElementById(`param-${effectId}-${paramName}`);
           if (valueDisplay) {
@@ -1072,26 +1092,26 @@ function setupKeyboard() {
   // First pass: create all white keys (they go in the back)
   let whiteKeyIndex = 0;
   const whiteKeyPositions: Map<number, number> = new Map();
-  
+
   notes.forEach((noteData, index) => {
     if (noteData.white) {
       const keyDiv = document.createElement('div');
       keyDiv.classList.add('key', 'white');
       keyDiv.style.left = `${whiteKeyIndex * 62}px`;
-      
+
       // Create combined note and keyboard key label
       const noteLabel = document.createElement('div');
       noteLabel.classList.add('key-label');
       noteLabel.style.fontWeight = 'bold';
       noteLabel.style.fontSize = '14px';
-      
+
       // Combine note and keyboard key in one line
       if (noteData.key) {
         noteLabel.innerHTML = `${noteData.note}<br><span style="font-size: 10px; opacity: 0.6;">${noteData.key}</span>`;
       } else {
         noteLabel.textContent = noteData.note;
       }
-      
+
       keyDiv.appendChild(noteLabel);
 
       keyDiv.addEventListener('mousedown', () => playNote(index));
@@ -1100,7 +1120,7 @@ function setupKeyboard() {
 
       keyboardContainer.appendChild(keyDiv);
       keyElements.set(index, keyDiv);
-      
+
       whiteKeyPositions.set(index, whiteKeyIndex);
       whiteKeyIndex++;
     }
@@ -1111,7 +1131,7 @@ function setupKeyboard() {
     if (!noteData.white) {
       const keyDiv = document.createElement('div');
       keyDiv.classList.add('key', 'black');
-      
+
       // Find the white key position just before this black key
       let prevWhiteKeyPos = 0;
       for (let i = index - 1; i >= 0; i--) {
@@ -1120,26 +1140,26 @@ function setupKeyboard() {
           break;
         }
       }
-      
+
       // Position black key overlapping between white keys
       // White keys are 60px wide (+ 2px border = 62px spacing)
       // Black key is 40px wide, should be centered between white keys
       // Offset: 62px (white key width) - 20px (half of black key) = 42px from left edge
       keyDiv.style.left = `${prevWhiteKeyPos * 62 + 42}px`;
-      
+
       // Create combined note and keyboard key label
       const noteLabel = document.createElement('div');
       noteLabel.classList.add('key-label');
       noteLabel.style.fontWeight = 'bold';
       noteLabel.style.fontSize = '11px';
-      
+
       // Combine note and keyboard key in one line
       if (noteData.key) {
         noteLabel.innerHTML = `${noteData.note}<br><span style="font-size: 9px; opacity: 0.7;">${noteData.key}</span>`;
       } else {
         noteLabel.textContent = noteData.note;
       }
-      
+
       keyDiv.appendChild(noteLabel);
 
       keyDiv.addEventListener('mousedown', () => playNote(index));
@@ -1152,7 +1172,9 @@ function setupKeyboard() {
   });
 
   // Computer keyboard support
-  const keyMap = new Map(notes.filter(n => n.key !== null).map(n => [n.key!.toLowerCase(), notes.indexOf(n)]));
+  const keyMap = new Map(
+    notes.filter((n) => n.key !== null).map((n) => [n.key!.toLowerCase(), notes.indexOf(n)])
+  );
   const pressedKeys = new Set<string>();
 
   document.addEventListener('keydown', (e) => {
@@ -1247,13 +1269,15 @@ function playNote(noteIndex: number) {
         // Volume modulation (tremolo) - modulate envelope output gain
         if (lfoState.targets.volume && multiLFO && envelopeGain && envelopeGain.gain) {
           const targetName = `volume_${noteIndex}_${oscNum}`;
-          const depth = (parseFloat((document.getElementById('lfo-depth') as HTMLInputElement).value) / 100) * 0.3;
+          const depth =
+            (parseFloat((document.getElementById('lfo-depth') as HTMLInputElement).value) / 100) *
+            0.3;
           const baseline = envelopeGain.gain.value;
-          
+
           if (!multiLFO.hasTarget(targetName)) {
             multiLFO.addTarget(targetName, envelopeGain.gain, depth, baseline);
           }
-          
+
           // Start multiLFO in trigger mode
           if (lfoState.mode === 'trigger' && !multiLFO.isEnabled()) {
             multiLFO.start();
@@ -1263,13 +1287,14 @@ function playNote(noteIndex: number) {
         // Pan modulation (auto-pan)
         if (lfoState.targets.pan && multiLFO && panNode && panNode.pan) {
           const targetName = `pan_${noteIndex}_${oscNum}`;
-          const depth = parseFloat((document.getElementById('lfo-depth') as HTMLInputElement).value) / 100;
+          const depth =
+            parseFloat((document.getElementById('lfo-depth') as HTMLInputElement).value) / 100;
           const baseline = panNode.pan.value;
-          
+
           if (!multiLFO.hasTarget(targetName)) {
             multiLFO.addTarget(targetName, panNode.pan, depth, baseline);
           }
-          
+
           // Start multiLFO in trigger mode
           if (lfoState.mode === 'trigger' && !multiLFO.isEnabled()) {
             multiLFO.start();
@@ -1278,11 +1303,12 @@ function playNote(noteIndex: number) {
       }
 
       // Get the appropriate oscillator bus
-      const oscBus = oscNum === 1 
-        ? (window as unknown as Record<string, GainNode>).osc1Bus
-        : oscNum === 2
-        ? (window as unknown as Record<string, GainNode>).osc2Bus
-        : (window as unknown as Record<string, GainNode>).osc3Bus;
+      const oscBus =
+        oscNum === 1
+          ? (window as unknown as Record<string, GainNode>).osc1Bus
+          : oscNum === 2
+            ? (window as unknown as Record<string, GainNode>).osc2Bus
+            : (window as unknown as Record<string, GainNode>).osc3Bus;
 
       // Check if this oscillator should do FM modulation
       const shouldModulateOsc1 = config.fmEnabled && oscNum >= 2;
@@ -1308,7 +1334,7 @@ function playNote(noteIndex: number) {
   // Now handle FM modulation connections
   // Connect FM modulators (osc 2 & 3) to oscillator 1's frequency parameter
   const engine = AudioEngine.getInstance();
-  
+
   voice.oscillators.forEach((modulatorData, idx) => {
     // Find which oscillator number this is by matching config order
     let oscNum = 0;
@@ -1336,7 +1362,7 @@ function playNote(noteIndex: number) {
         if (carrierOscNum === 1) {
           // Get the carrier's (osc 1) frequency parameter
           const carrierNode = carrierData.oscillator.getOscillatorNode();
-          
+
           if (carrierNode && carrierNode.frequency) {
             // Create a gain node to scale the FM depth
             const fmGain = engine.getContext().createGain();
@@ -1358,7 +1384,8 @@ function playNote(noteIndex: number) {
   activeVoices.set(noteIndex, voice);
 
   // Visual feedback
-  const keyElements = (window as unknown as Record<string, Map<number, HTMLDivElement>>).keyElements;
+  const keyElements = (window as unknown as Record<string, Map<number, HTMLDivElement>>)
+    .keyElements;
   const keyDiv = keyElements.get(noteIndex);
   if (keyDiv) {
     keyDiv.classList.add('playing');
@@ -1378,16 +1405,20 @@ function releaseNote(noteIndex: number) {
 
   // Schedule cleanup after release phase (use longest release time)
   const maxReleaseTime = Math.max(
-    envelopeSettings[1].release, 
+    envelopeSettings[1].release,
     envelopeSettings[2].release,
     envelopeSettings[3].release
   );
-  voice.releaseTimeout = window.setTimeout(() => {
-    cleanupVoice(noteIndex);
-  }, maxReleaseTime * 1000 + 50);
+  voice.releaseTimeout = window.setTimeout(
+    () => {
+      cleanupVoice(noteIndex);
+    },
+    maxReleaseTime * 1000 + 50
+  );
 
   // Visual feedback
-  const keyElements = (window as unknown as Record<string, Map<number, HTMLDivElement>>).keyElements;
+  const keyElements = (window as unknown as Record<string, Map<number, HTMLDivElement>>)
+    .keyElements;
   const keyDiv = keyElements.get(noteIndex);
   if (keyDiv) {
     keyDiv.classList.remove('playing');
@@ -1455,6 +1486,196 @@ function midiToNoteName(midi: number): string {
   return `${noteName}${octave}`;
 }
 
+// Play note directly from MIDI number (supports full C1-C8 range)
+function playMidiNote(midiNote: number) {
+  // Use MIDI note number as unique identifier (offset to avoid conflicts with keyboard notes)
+  const voiceId = 1000 + midiNote;
+
+  // If note is still releasing, clean it up first to allow retrigger
+  if (activeVoices.has(voiceId)) {
+    cleanupVoice(voiceId);
+  }
+
+  // Calculate frequency from MIDI note
+  const frequency = midiToFrequency(midiNote);
+
+  // Create a new voice for this note
+  const voice: Voice = {
+    noteIndex: voiceId,
+    oscillators: [],
+    isActive: true,
+  };
+
+  // Create oscillators for each enabled config
+  oscillatorConfigs.forEach((config, oscNum) => {
+    if (config.enabled) {
+      const freq = frequency * Math.pow(2, config.octave);
+
+      // Create oscillator based on waveform
+      let oscillator: BaseOscillator;
+      switch (config.waveform) {
+        case 'sine':
+          oscillator = new SineOscillator(freq);
+          break;
+        case 'sawtooth':
+          oscillator = new SawtoothOscillator(freq);
+          break;
+        case 'square':
+          oscillator = new SquareOscillator(freq);
+          break;
+        case 'triangle':
+          oscillator = new TriangleOscillator(freq);
+          break;
+      }
+
+      // Apply settings
+      oscillator.setParameter('volume', config.volume);
+      oscillator.setParameter('detune', config.detune);
+
+      // Create pan node
+      const engine = AudioEngine.getInstance();
+      const panNode = engine.getContext().createStereoPanner();
+      panNode.pan.value = config.pan;
+
+      // Create envelope for this oscillator
+      const envelope = new ADSREnvelope(envelopeSettings[oscNum as 1 | 2 | 3]);
+
+      // Get the envelope's gain node for volume modulation
+      const envelopeGain = envelope.getOutputNode() as GainNode;
+
+      // Connect LFO targets (if enabled)
+      if (lfoState.enabled) {
+        // Pitch modulation (vibrato)
+        if (lfoState.targets.pitch) {
+          // eslint-disable-line @typescript-eslint/no-explicit-any
+          const oscNode = (oscillator as any).oscillatorNode as OscillatorNode;
+          if (oscNode && oscNode.frequency) {
+            // In trigger mode, start LFO on note press
+            if (lfoState.mode === 'trigger' && !vibrato!.isEnabled()) {
+              vibrato!.start();
+            }
+            // Always connect to this oscillator's frequency
+            vibrato?.connectToParam(oscNode.frequency);
+          }
+        }
+
+        // Volume modulation (tremolo) - modulate envelope output gain
+        if (lfoState.targets.volume && multiLFO && envelopeGain && envelopeGain.gain) {
+          const targetName = `volume_${voiceId}_${oscNum}`;
+          const depth =
+            (parseFloat((document.getElementById('lfo-depth') as HTMLInputElement).value) / 100) *
+            0.3;
+          const baseline = envelopeGain.gain.value;
+
+          if (!multiLFO.hasTarget(targetName)) {
+            multiLFO.addTarget(targetName, envelopeGain.gain, depth, baseline);
+          }
+
+          // Start multiLFO in trigger mode
+          if (lfoState.mode === 'trigger' && !multiLFO.isEnabled()) {
+            multiLFO.start();
+          }
+        }
+
+        // Pan modulation (auto-pan)
+        if (lfoState.targets.pan && multiLFO && panNode && panNode.pan) {
+          const targetName = `pan_${voiceId}_${oscNum}`;
+          const depth =
+            parseFloat((document.getElementById('lfo-depth') as HTMLInputElement).value) / 100;
+          const baseline = panNode.pan.value;
+
+          if (!multiLFO.hasTarget(targetName)) {
+            multiLFO.addTarget(targetName, panNode.pan, depth, baseline);
+          }
+
+          // Start multiLFO in trigger mode
+          if (lfoState.mode === 'trigger' && !multiLFO.isEnabled()) {
+            multiLFO.start();
+          }
+        }
+      }
+
+      // Get the appropriate oscillator bus
+      const oscBus =
+        oscNum === 1
+          ? (window as unknown as Record<string, GainNode>).osc1Bus
+          : oscNum === 2
+            ? (window as unknown as Record<string, GainNode>).osc2Bus
+            : (window as unknown as Record<string, GainNode>).osc3Bus;
+
+      // Check if this oscillator should do FM modulation
+      const shouldModulateOsc1 = config.fmEnabled && oscNum >= 2;
+
+      if (!shouldModulateOsc1) {
+        // Normal audio path: Signal chain: oscillator -> pan -> envelope -> oscillator bus
+        oscillator.connect(panNode);
+        panNode.connect(envelope.getInputNode());
+        envelope.connect(oscBus);
+      }
+
+      // Always start the oscillator
+      oscillator.start();
+
+      // Trigger the envelope
+      envelope.trigger(1.0);
+
+      // Store oscillator data
+      voice.oscillators.push({ oscillator, panNode, envelope });
+    }
+  });
+
+  // Handle FM modulation connections (same logic as playNote)
+  const engine = AudioEngine.getInstance();
+
+  voice.oscillators.forEach((modulatorData, idx) => {
+    let oscNum = 0;
+    let currentIdx = 0;
+    oscillatorConfigs.forEach((cfg, num) => {
+      if (cfg.enabled) {
+        if (currentIdx === idx) oscNum = num;
+        currentIdx++;
+      }
+    });
+
+    const config = oscillatorConfigs.get(oscNum);
+    if (config?.fmEnabled && oscNum >= 2 && config.fmDepth && config.fmDepth > 0) {
+      voice.oscillators.forEach((carrierData, carrierIdx) => {
+        let carrierOscNum = 0;
+        let carrierCurrentIdx = 0;
+        oscillatorConfigs.forEach((cfg, num) => {
+          if (cfg.enabled) {
+            if (carrierCurrentIdx === carrierIdx) carrierOscNum = num;
+            carrierCurrentIdx++;
+          }
+        });
+
+        if (carrierOscNum === 1) {
+          const carrierNode = carrierData.oscillator.getOscillatorNode();
+
+          if (carrierNode && carrierNode.frequency) {
+            const fmGain = engine.getContext().createGain();
+            fmGain.gain.value = config.fmDepth || 0;
+
+            modulatorData.oscillator.connect(modulatorData.panNode);
+            modulatorData.panNode.connect(modulatorData.envelope.getInputNode());
+            modulatorData.envelope.connect(fmGain);
+            fmGain.connect(carrierNode.frequency);
+          }
+        }
+      });
+    }
+  });
+
+  // Store active voice
+  activeVoices.set(voiceId, voice);
+}
+
+// Release note by MIDI number
+function releaseMidiNote(midiNote: number) {
+  const voiceId = 1000 + midiNote;
+  releaseNote(voiceId);
+}
+
 function setupSequencer() {
   // Create sequencer instance
   sequencer = new Sequencer({
@@ -1476,7 +1697,7 @@ function setupSequencer() {
         // Toggle gate
         sequencer!.setStep(i, { gate: !step.gate });
         updateStepButton(i);
-        
+
         // Select this step for editing
         selectedStepIndex = i;
         updateStepEditor();
@@ -1549,11 +1770,11 @@ function setupSequencer() {
     btn.addEventListener('click', () => {
       const steps = parseInt(btn.getAttribute('data-steps')!);
       sequencer!.setSteps(steps as 4 | 8 | 16 | 32);
-      
+
       // Update active button
       stepButtons.forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      
+
       // Rebuild step grid
       rebuildStepGrid(steps);
     });
@@ -1614,29 +1835,21 @@ function setupSequencer() {
   // Setup step callback to trigger notes
   sequencer.onStep((stepIndex: number, stepData: SequencerStep) => {
     if (stepData.gate) {
-      const frequency = midiToFrequency(stepData.pitch);
-      
-      // Find if this note exists in our keyboard notes array
-      const matchingNote = notes.find(n => Math.abs(n.freq - frequency) < 0.5);
-      
-      if (matchingNote) {
-        // Use existing playNote for notes in keyboard range
-        const noteIndex = notes.indexOf(matchingNote);
-        playNote(noteIndex);
-        
-        // Release after step length
-        const stepDuration = (60000 / sequencer!.getTempo()) / 4; // 16th note duration
-        const noteDuration = stepDuration * stepData.length;
-        
-        setTimeout(() => {
-          releaseNote(noteIndex);
-        }, noteDuration);
-      }
+      // Use playMidiNote to support full C1-C8 range
+      playMidiNote(stepData.pitch);
+
+      // Release after step length
+      const stepDuration = 60000 / sequencer!.getTempo() / 4; // 16th note duration
+      const noteDuration = stepDuration * stepData.length;
+
+      setTimeout(() => {
+        releaseMidiNote(stepData.pitch);
+      }, noteDuration);
     }
-    
+
     // Update visual feedback
     updateAllStepButtons();
-    
+
     // Update current step display
     const currentStepDisplay = document.getElementById('seq-current-step') as HTMLSpanElement;
     currentStepDisplay.textContent = `Step: ${stepIndex + 1}`;
@@ -1650,24 +1863,24 @@ function setupSequencer() {
 function updateStepButton(index: number) {
   const stepBtn = document.querySelector(`[data-step="${index}"]`) as HTMLButtonElement;
   if (!stepBtn) return;
-  
+
   const step = sequencer!.getStep(index);
   if (!step) return;
-  
+
   // Update gate state
   if (step.gate) {
     stepBtn.classList.add('active');
   } else {
     stepBtn.classList.remove('active');
   }
-  
+
   // Update playing state
   if (sequencer!.isRunning() && sequencer!.getCurrentStep() === index) {
     stepBtn.classList.add('playing');
   } else {
     stepBtn.classList.remove('playing');
   }
-  
+
   // Update selected state
   if (selectedStepIndex === index) {
     stepBtn.classList.add('selected');
@@ -1685,22 +1898,22 @@ function updateAllStepButtons() {
 
 function updateStepEditor() {
   if (selectedStepIndex === null) return;
-  
+
   const step = sequencer!.getStep(selectedStepIndex);
   if (!step) return;
-  
+
   const editStepDisplay = document.getElementById('seq-edit-step') as HTMLSpanElement;
   const noteSlider = document.getElementById('seq-note') as HTMLInputElement;
   const noteValue = document.getElementById('seq-note-value') as HTMLSpanElement;
   const velocitySlider = document.getElementById('seq-velocity') as HTMLInputElement;
   const velocityValue = document.getElementById('seq-velocity-value') as HTMLSpanElement;
-  
+
   editStepDisplay.textContent = `${selectedStepIndex + 1}`;
   noteSlider.value = step.pitch.toString();
   noteValue.textContent = midiToNoteName(step.pitch);
   velocitySlider.value = step.velocity.toString();
   velocityValue.textContent = step.velocity.toString();
-  
+
   updateAllStepButtons();
 }
 
@@ -1708,7 +1921,7 @@ function rebuildStepGrid(steps: number) {
   const stepGrid = document.getElementById('step-grid') as HTMLDivElement;
   stepGrid.innerHTML = '';
   stepGrid.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
-  
+
   for (let i = 0; i < steps; i++) {
     const stepBtn = document.createElement('button');
     stepBtn.className = 'step-button';
@@ -1724,7 +1937,7 @@ function rebuildStepGrid(steps: number) {
     });
     stepGrid.appendChild(stepBtn);
   }
-  
+
   updateAllStepButtons();
 }
 
@@ -1745,54 +1958,58 @@ function setupArpeggiator() {
 
   // Register note callback
   arpeggiator.onNote((note) => {
-    const frequency = midiToFrequency(note.pitch);
-    
-    // Find if this note exists in our keyboard notes array
-    const matchingNote = notes.find(n => Math.abs(n.freq - frequency) < 0.5);
-    
-    if (matchingNote) {
-      // Use existing playNote for notes in keyboard range
-      const noteIndex = notes.indexOf(matchingNote);
-      playNote(noteIndex);
-      
-      // Calculate note duration
-      const tempo = arpeggiator!.getTempo();
-      const division = arpeggiator!.getDivision();
-      const quarterNoteDuration = 60000 / tempo;
-      
-      let noteDuration = quarterNoteDuration / 4; // Default to 1/16
-      switch (division) {
-        case '1/4': noteDuration = quarterNoteDuration; break;
-        case '1/8': noteDuration = quarterNoteDuration / 2; break;
-        case '1/16': noteDuration = quarterNoteDuration / 4; break;
-        case '1/8T': noteDuration = (quarterNoteDuration / 2) * (2/3); break;
-        case '1/16T': noteDuration = (quarterNoteDuration / 4) * (2/3); break;
-        case '1/32': noteDuration = quarterNoteDuration / 8; break;
-      }
-      
-      const gateDuration = noteDuration * note.gate;
-      
-      // Release after gate duration
-      setTimeout(() => {
-        releaseNote(noteIndex);
-      }, gateDuration);
+    // Use playMidiNote to support full C1-C8 range
+    playMidiNote(note.pitch);
+
+    // Calculate note duration
+    const tempo = arpeggiator!.getTempo();
+    const division = arpeggiator!.getDivision();
+    const quarterNoteDuration = 60000 / tempo;
+
+    let noteDuration = quarterNoteDuration / 4; // Default to 1/16
+    switch (division) {
+      case '1/4':
+        noteDuration = quarterNoteDuration;
+        break;
+      case '1/8':
+        noteDuration = quarterNoteDuration / 2;
+        break;
+      case '1/16':
+        noteDuration = quarterNoteDuration / 4;
+        break;
+      case '1/8T':
+        noteDuration = (quarterNoteDuration / 2) * (2 / 3);
+        break;
+      case '1/16T':
+        noteDuration = (quarterNoteDuration / 4) * (2 / 3);
+        break;
+      case '1/32':
+        noteDuration = quarterNoteDuration / 8;
+        break;
     }
+
+    const gateDuration = noteDuration * note.gate;
+
+    // Release after gate duration
+    setTimeout(() => {
+      releaseMidiNote(note.pitch);
+    }, gateDuration);
   });
 
   // Enable/Disable toggle
   const enableBtn = document.getElementById('arp-enable') as HTMLButtonElement;
   const powerIndicator = document.getElementById('arpeggiator-power') as HTMLDivElement;
-  
+
   enableBtn.addEventListener('click', () => {
     arpeggiatorEnabled = !arpeggiatorEnabled;
-    
+
     if (arpeggiatorEnabled) {
       // Disable sequencer if running
       if (sequencer?.isRunning()) {
         sequencer.stop();
         document.getElementById('sequencer-power')?.classList.remove('on');
       }
-      
+
       arpeggiator!.start();
       powerIndicator.classList.add('on');
       enableBtn.textContent = '⏸ Pause';
@@ -1847,17 +2064,23 @@ function setupArpeggiator() {
 
   // Pattern buttons
   const patterns: ArpPattern[] = [
-    'up', 'down', 'updown', 'updown2', 'converge', 'diverge', 'random'
+    'up',
+    'down',
+    'updown',
+    'updown2',
+    'converge',
+    'diverge',
+    'random',
   ];
 
-  patterns.forEach(pattern => {
+  patterns.forEach((pattern) => {
     const btn = document.getElementById(`arp-pattern-${pattern}`) as HTMLButtonElement;
     if (btn) {
       btn.addEventListener('click', () => {
         arpeggiator!.setPattern(pattern);
-        
+
         // Update active state
-        patterns.forEach(p => {
+        patterns.forEach((p) => {
           document.getElementById(`arp-pattern-${p}`)?.classList.remove('active');
         });
         btn.classList.add('active');
@@ -1866,7 +2089,10 @@ function setupArpeggiator() {
   });
 
   // Chord type buttons
-  const chordTypes: Array<{ id: string; type: 'major' | 'minor' | 'major7' | 'minor7' | 'dom7' | 'sus4' }> = [
+  const chordTypes: Array<{
+    id: string;
+    type: 'major' | 'minor' | 'major7' | 'minor7' | 'dom7' | 'sus4';
+  }> = [
     { id: 'major', type: 'major' },
     { id: 'minor', type: 'minor' },
     { id: 'major7', type: 'major7' },
@@ -1875,17 +2101,25 @@ function setupArpeggiator() {
     { id: 'sus4', type: 'sus4' },
   ];
 
-  const rootNoteSelect = document.getElementById('arp-root') as HTMLSelectElement;
+  const rootNoteSelect = document.getElementById('arp-root-note') as HTMLSelectElement;
+  const rootOctaveSelect = document.getElementById('arp-root-octave') as HTMLSelectElement;
 
-  chordTypes.forEach(chord => {
+  // Helper to calculate MIDI note from note + octave
+  const getRootMidiNote = (): number => {
+    const note = parseInt(rootNoteSelect.value);
+    const octave = parseInt(rootOctaveSelect.value);
+    return (octave + 1) * 12 + note; // MIDI: C-1 = 0, C0 = 12, C1 = 24, etc.
+  };
+
+  chordTypes.forEach((chord) => {
     const btn = document.getElementById(`arp-chord-${chord.id}`) as HTMLButtonElement;
     if (btn) {
       btn.addEventListener('click', () => {
-        const rootNote = parseInt(rootNoteSelect.value);
+        const rootNote = getRootMidiNote();
         arpeggiator!.setChord(rootNote, chord.type);
-        
+
         // Update active state
-        chordTypes.forEach(c => {
+        chordTypes.forEach((c) => {
           document.getElementById(`arp-chord-${c.id}`)?.classList.remove('active');
         });
         btn.classList.add('active');
@@ -1893,19 +2127,22 @@ function setupArpeggiator() {
     }
   });
 
-  // Root note change
-  rootNoteSelect.addEventListener('change', () => {
+  // Root note or octave change - re-trigger active chord
+  const updateChord = () => {
     const activeChordBtn = document.querySelector('.arp-chord-btn.active') as HTMLButtonElement;
     if (activeChordBtn) {
       activeChordBtn.click();
     }
-  });
+  };
+
+  rootNoteSelect.addEventListener('change', updateChord);
+  rootOctaveSelect.addEventListener('change', updateChord);
 }
 
 function setupCollapsibleSections() {
   // Find all collapsible headers
   const collapsibleHeaders = document.querySelectorAll('.module-header.collapsible');
-  
+
   collapsibleHeaders.forEach((header) => {
     // Initialize collapsed state based on content element
     const targetId = header.getAttribute('data-collapse');
@@ -1915,17 +2152,17 @@ function setupCollapsibleSections() {
         header.classList.add('collapsed');
       }
     }
-    
+
     header.addEventListener('click', () => {
       const targetId = header.getAttribute('data-collapse');
       if (!targetId) return;
-      
+
       const contentElement = document.getElementById(`${targetId}-content`);
       if (!contentElement) return;
-      
+
       // Toggle collapsed state
       const isCollapsed = contentElement.classList.contains('collapsed');
-      
+
       if (isCollapsed) {
         // Expand
         contentElement.classList.remove('collapsed');
@@ -1938,5 +2175,3 @@ function setupCollapsibleSections() {
     });
   });
 }
-
-

@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
       initialized = true;
       initBtn.textContent = '✓ System Ready';
       initBtn.style.background = 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)';
-      
+
       // Update display
       updateSequenceDisplay();
     } catch (error) {
@@ -110,7 +110,7 @@ function playNote(midiNote: number, velocity: number, gateLength: number) {
 
   // Start oscillator
   osc.start();
-  
+
   // Trigger envelope
   env.trigger(velocity);
 
@@ -122,17 +122,29 @@ function playNote(midiNote: number, velocity: number, gateLength: number) {
   const tempo = arpeggiator!.getTempo();
   const division = arpeggiator!.getDivision();
   const quarterNoteDuration = 60000 / tempo;
-  
+
   let noteDuration = quarterNoteDuration / 4; // Default to 1/16
   switch (division) {
-    case '1/4': noteDuration = quarterNoteDuration; break;
-    case '1/8': noteDuration = quarterNoteDuration / 2; break;
-    case '1/16': noteDuration = quarterNoteDuration / 4; break;
-    case '1/8T': noteDuration = (quarterNoteDuration / 2) * (2/3); break;
-    case '1/16T': noteDuration = (quarterNoteDuration / 4) * (2/3); break;
-    case '1/32': noteDuration = quarterNoteDuration / 8; break;
+    case '1/4':
+      noteDuration = quarterNoteDuration;
+      break;
+    case '1/8':
+      noteDuration = quarterNoteDuration / 2;
+      break;
+    case '1/16':
+      noteDuration = quarterNoteDuration / 4;
+      break;
+    case '1/8T':
+      noteDuration = (quarterNoteDuration / 2) * (2 / 3);
+      break;
+    case '1/16T':
+      noteDuration = (quarterNoteDuration / 4) * (2 / 3);
+      break;
+    case '1/32':
+      noteDuration = quarterNoteDuration / 8;
+      break;
   }
-  
+
   const gateDuration = noteDuration * gateLength;
 
   // Schedule release
@@ -206,7 +218,7 @@ function setupControls() {
 
   playBtn.addEventListener('click', () => {
     if (!initialized || !arpeggiator) return;
-    
+
     if (arpeggiator.isRunning()) {
       arpeggiator.pause();
       playBtn.textContent = '▶ Play';
@@ -225,34 +237,48 @@ function setupControls() {
 
 function setupPatternButtons() {
   const patterns: ArpPattern[] = [
-    'up', 'down', 'updown', 'downup', 'updown2', 'downup2',
-    'converge', 'diverge', 'pinchedUp', 'pinchedDown', 'random', 'shuffle', 'chord'
+    'up',
+    'down',
+    'updown',
+    'downup',
+    'updown2',
+    'downup2',
+    'converge',
+    'diverge',
+    'pinchedUp',
+    'pinchedDown',
+    'random',
+    'shuffle',
+    'chord',
   ];
 
   const container = document.getElementById('pattern-buttons');
   if (!container) return;
 
-  patterns.forEach(pattern => {
+  patterns.forEach((pattern) => {
     const btn = document.createElement('button');
     btn.textContent = pattern;
     btn.className = 'pattern-btn';
     if (pattern === 'up') btn.classList.add('active');
-    
+
     btn.addEventListener('click', () => {
       arpeggiator?.setPattern(pattern);
       updateSequenceDisplay();
-      
+
       // Update active state
-      container.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+      container.querySelectorAll('.pattern-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
     });
-    
+
     container.appendChild(btn);
   });
 }
 
 function setupChordButtons() {
-  const chords: Array<{ name: string; type: 'major' | 'minor' | 'major7' | 'minor7' | 'dom7' | 'sus4' | 'sus2' | 'dim' | 'aug' }> = [
+  const chords: Array<{
+    name: string;
+    type: 'major' | 'minor' | 'major7' | 'minor7' | 'dom7' | 'sus4' | 'sus2' | 'dim' | 'aug';
+  }> = [
     { name: 'Major', type: 'major' },
     { name: 'Minor', type: 'minor' },
     { name: 'Maj7', type: 'major7' },
@@ -268,33 +294,44 @@ function setupChordButtons() {
   if (!container) return;
 
   const rootNoteSelect = document.getElementById('root-note') as HTMLSelectElement;
-  
-  chords.forEach(chord => {
+  const rootOctaveSelect = document.getElementById('root-octave') as HTMLSelectElement;
+
+  // Helper to calculate MIDI note from note + octave
+  const getRootMidiNote = (): number => {
+    const note = parseInt(rootNoteSelect.value);
+    const octave = parseInt(rootOctaveSelect.value);
+    return (octave + 1) * 12 + note; // MIDI: C-1 = 0, C0 = 12, C1 = 24, etc.
+  };
+
+  chords.forEach((chord) => {
     const btn = document.createElement('button');
     btn.textContent = chord.name;
     btn.className = 'chord-btn';
     if (chord.type === 'major') btn.classList.add('active');
-    
+
     btn.addEventListener('click', () => {
-      const rootNote = parseInt(rootNoteSelect.value);
+      const rootNote = getRootMidiNote();
       arpeggiator?.setChord(rootNote, chord.type);
       updateSequenceDisplay();
-      
+
       // Update active state
-      container.querySelectorAll('.chord-btn').forEach(b => b.classList.remove('active'));
+      container.querySelectorAll('.chord-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
     });
-    
+
     container.appendChild(btn);
   });
 
-  // Root note change
-  rootNoteSelect.addEventListener('change', () => {
+  // Root note or octave change - re-trigger active chord
+  const updateChord = () => {
     const activeChordBtn = container.querySelector('.chord-btn.active');
     if (activeChordBtn) {
       (activeChordBtn as HTMLButtonElement).click();
     }
-  });
+  };
+
+  rootNoteSelect.addEventListener('change', updateChord);
+  rootOctaveSelect.addEventListener('change', updateChord);
 }
 
 function setupProgressionButtons() {
@@ -303,28 +340,39 @@ function setupProgressionButtons() {
   if (!container) return;
 
   const rootNoteSelect = document.getElementById('root-note') as HTMLSelectElement;
+  const rootOctaveSelect = document.getElementById('root-octave') as HTMLSelectElement;
 
-  progressions.forEach(progName => {
+  // Helper to calculate MIDI note from note + octave
+  const getRootMidiNote = (): number => {
+    const note = parseInt(rootNoteSelect.value);
+    const octave = parseInt(rootOctaveSelect.value);
+    return (octave + 1) * 12 + note; // MIDI: C-1 = 0, C0 = 12, C1 = 24, etc.
+  };
+
+  progressions.forEach((progName) => {
     const progression = Arpeggiator.getProgression(progName);
     if (!progression) return;
 
     const btn = document.createElement('button');
     btn.textContent = progression.name;
     btn.className = 'progression-btn';
-    
+
     btn.addEventListener('click', () => {
-      const rootNote = parseInt(rootNoteSelect.value);
+      const rootNote = getRootMidiNote();
       arpeggiator?.loadProgression(progName, rootNote);
       updateSequenceDisplay();
-      
+
       // Update active state
-      container.querySelectorAll('.progression-btn').forEach(b => b.classList.remove('active'));
+      container.querySelectorAll('.progression-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      
+
       // Clear chord button active state
-      document.getElementById('chord-buttons')?.querySelectorAll('.chord-btn').forEach(b => b.classList.remove('active'));
+      document
+        .getElementById('chord-buttons')
+        ?.querySelectorAll('.chord-btn')
+        .forEach((b) => b.classList.remove('active'));
     });
-    
+
     container.appendChild(btn);
   });
 }
@@ -335,10 +383,10 @@ function updateSequenceDisplay() {
   const sequence = arpeggiator.getSequence();
   const notesDisplay = document.getElementById('notes-display');
   const sequenceDisplay = document.getElementById('sequence-display');
-  
+
   if (notesDisplay) {
     const notes = arpeggiator.getNotes();
-    notesDisplay.textContent = `Current Notes: ${notes.map(n => midiToNoteName(n)).join(', ')}`;
+    notesDisplay.textContent = `Current Notes: ${notes.map((n) => midiToNoteName(n)).join(', ')}`;
   }
 
   if (sequenceDisplay) {
@@ -346,7 +394,7 @@ function updateSequenceDisplay() {
     if (pattern === 'random' || pattern === 'shuffle') {
       sequenceDisplay.textContent = `Pattern: ${pattern} (${sequence.length} notes)`;
     } else {
-      sequenceDisplay.textContent = `Sequence: ${sequence.map(n => midiToNoteName(n)).join(' → ')}`;
+      sequenceDisplay.textContent = `Sequence: ${sequence.map((n) => midiToNoteName(n)).join(' → ')}`;
     }
   }
 }
