@@ -119,7 +119,7 @@ See [PROJECT_RULES.md](./PROJECT_RULES.md) for detailed development guidelines a
 ### Phase 2: Expansion ✅
 
 - [x] Filters (10 types: Lowpass, Highpass, Bandpass, Notch, Allpass, Peaking, Lowshelf, Highshelf, Lowpass24)
-- [x] Effects (Delay, Reverb, Distortion, Chorus, Shimmer)
+- [x] Effects (Delay, Reverb, Distortion, Chorus, Shimmer, Flanger, Phazer, Ring Mod., Compressor)
 - [x] Dynamic effect routing and bus system
 
 ### Phase 3: Advanced Features ✅
@@ -155,7 +155,6 @@ See [PROJECT_RULES.md](./PROJECT_RULES.md) for detailed development guidelines a
 - [ ] Preset save/load system
 - [ ] MIDI controller integration
 - [ ] Additional waveforms (noise, custom)
-- [ ] More effect types (phaser, flanger)
 - [ ] Recording/export functionality
 - [ ] Visual patch cable system
 - [ ] Modulation matrix
