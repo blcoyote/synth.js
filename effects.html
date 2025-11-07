@@ -4,214 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Effects Test - Modular Synthesizer</title>
+  <link rel="stylesheet" href="demo.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff;
-      min-height: 100vh;
-      padding: 20px;
-    }
-
+    /* Page-specific overrides */
     .container {
       max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-      text-align: center;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .subtitle {
-      text-align: center;
-      font-size: 1.1rem;
-      margin-bottom: 30px;
-      opacity: 0.9;
-    }
-
-    .init-section {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .control-panel {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    .section-title {
-      font-size: 1.3rem;
-      margin-bottom: 15px;
-      font-weight: 600;
     }
 
     .oscillator-controls {
-      display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 15px;
-    }
-
-    .effects-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-    }
-
-    .effect-card {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
-      padding: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s ease;
-    }
-
-    .effect-card:hover {
-      border-color: rgba(255, 255, 255, 0.4);
-    }
-
-    .effect-card.active {
-      border-color: #4ade80;
-      box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
-    }
-
-    .effect-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    .effect-title {
-      font-size: 1.2rem;
-      font-weight: 600;
     }
 
     .effect-icon {
       font-size: 1.5rem;
     }
 
-    .effect-desc {
-      font-size: 0.85rem;
-      opacity: 0.8;
-      margin-bottom: 15px;
-      line-height: 1.3;
-    }
-
-    .control-group {
-      margin-bottom: 12px;
-    }
-
-    .control-label {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 5px;
-      font-size: 0.85rem;
-      opacity: 0.9;
-    }
-
-    .control-value {
-      font-weight: 600;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      height: 4px;
-      border-radius: 2px;
-      background: rgba(255, 255, 255, 0.2);
-      outline: none;
-      -webkit-appearance: none;
-      appearance: none;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #ffffff;
-      cursor: pointer;
-    }
-
-    input[type="range"]::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #ffffff;
-      cursor: pointer;
-      border: none;
-    }
-
     button {
-      background: rgba(255, 255, 255, 0.2);
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      color: white;
-      padding: 10px 20px;
-      font-size: 0.9rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-weight: 600;
-      text-transform: uppercase;
       width: 100%;
-    }
-
-    button:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    button.primary {
-      background: rgba(74, 222, 128, 0.3);
-      border-color: rgba(74, 222, 128, 0.5);
-    }
-
-    button.primary:hover {
-      background: rgba(74, 222, 128, 0.4);
-    }
-
-    button.active {
-      background: rgba(74, 222, 128, 0.5);
-      border-color: rgba(74, 222, 128, 0.8);
     }
 
     .toggle-btn {
       margin-top: 10px;
-    }
-
-    .info-box {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 10px;
-      padding: 15px;
-      margin-top: 20px;
-      font-size: 0.85rem;
-      line-height: 1.6;
-    }
-
-    .info-box h3 {
-      margin-bottom: 10px;
-      font-size: 1.1rem;
     }
 
     .bus-info {
@@ -271,30 +84,27 @@
             <div class="effect-icon">🔁</div>
           </div>
         </div>
-        <div class="effect-desc">Rhythmic echoes. Classic slapback to ambient textures.</div>
+        <div class="effect-desc">Rhythmic echoes with preset styles.</div>
         
         <div class="control-group">
           <div class="control-label">
-            <span>Time</span>
-            <span class="control-value" id="delay-time">375 ms</span>
+            <span>Preset</span>
           </div>
-          <input type="range" id="delay-time-slider" min="50" max="1000" value="375" step="1">
+          <select id="delay-preset">
+            <!-- Options will be populated by JavaScript -->
+          </select>
         </div>
         
         <div class="control-group">
           <div class="control-label">
-            <span>Feedback</span>
-            <span class="control-value" id="delay-feedback">30%</span>
-          </div>
-          <input type="range" id="delay-feedback-slider" min="0" max="90" value="30" step="1">
-        </div>
-        
-        <div class="control-group">
-          <div class="control-label">
-            <span>Mix</span>
+            <span>Mix (Wet/Dry)</span>
             <span class="control-value" id="delay-mix">50%</span>
           </div>
           <input type="range" id="delay-mix-slider" min="0" max="100" value="50" step="1">
+        </div>
+        
+        <div class="info-box" id="delay-info">
+          Select a preset to see details
         </div>
         
         <button class="toggle-btn" data-effect="delay">Add to Bus</button>
@@ -312,18 +122,23 @@
         
         <div class="control-group">
           <div class="control-label">
-            <span>Decay</span>
-            <span class="control-value" id="reverb-decay">50%</span>
+            <span>Preset</span>
           </div>
-          <input type="range" id="reverb-decay-slider" min="0" max="100" value="50" step="1">
+          <select id="reverb-preset">
+            <!-- Options will be populated by JavaScript -->
+          </select>
         </div>
         
         <div class="control-group">
           <div class="control-label">
-            <span>Mix</span>
+            <span>Mix (Wet/Dry)</span>
             <span class="control-value" id="reverb-mix">30%</span>
           </div>
           <input type="range" id="reverb-mix-slider" min="0" max="100" value="30" step="1">
+        </div>
+        
+        <div class="info-box" id="reverb-info">
+          Select a preset to see details
         </div>
         
         <button class="toggle-btn" data-effect="reverb">Add to Bus</button>
@@ -341,26 +156,23 @@
         
         <div class="control-group">
           <div class="control-label">
-            <span>Drive</span>
-            <span class="control-value" id="distortion-drive">50%</span>
+            <span>Preset</span>
           </div>
-          <input type="range" id="distortion-drive-slider" min="0" max="100" value="50" step="1">
+          <select id="distortion-preset">
+            <!-- Options will be populated by JavaScript -->
+          </select>
         </div>
         
         <div class="control-group">
           <div class="control-label">
-            <span>Tone</span>
-            <span class="control-value" id="distortion-tone">50%</span>
-          </div>
-          <input type="range" id="distortion-tone-slider" min="0" max="100" value="50" step="1">
-        </div>
-        
-        <div class="control-group">
-          <div class="control-label">
-            <span>Mix</span>
+            <span>Mix (Wet/Dry)</span>
             <span class="control-value" id="distortion-mix">80%</span>
           </div>
           <input type="range" id="distortion-mix-slider" min="0" max="100" value="80" step="1">
+        </div>
+        
+        <div class="info-box" id="distortion-info">
+          Select a preset to see details
         </div>
         
         <button class="toggle-btn" data-effect="distortion">Add to Bus</button>
@@ -378,26 +190,23 @@
         
         <div class="control-group">
           <div class="control-label">
-            <span>Rate</span>
-            <span class="control-value" id="chorus-rate">1.5 Hz</span>
+            <span>Preset</span>
           </div>
-          <input type="range" id="chorus-rate-slider" min="1" max="100" value="15" step="1">
+          <select id="chorus-preset">
+            <!-- Options will be populated by JavaScript -->
+          </select>
         </div>
         
         <div class="control-group">
           <div class="control-label">
-            <span>Depth</span>
-            <span class="control-value" id="chorus-depth">50%</span>
-          </div>
-          <input type="range" id="chorus-depth-slider" min="0" max="100" value="50" step="1">
-        </div>
-        
-        <div class="control-group">
-          <div class="control-label">
-            <span>Mix</span>
+            <span>Mix (Wet/Dry)</span>
             <span class="control-value" id="chorus-mix">50%</span>
           </div>
           <input type="range" id="chorus-mix-slider" min="0" max="100" value="50" step="1">
+        </div>
+        
+        <div class="info-box" id="chorus-info">
+          Select a preset to see details
         </div>
         
         <button class="toggle-btn" data-effect="chorus">Add to Bus</button>

@@ -30,10 +30,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     busManager.initialize();
 
     // Create all effects
-    effects.delay = new DelayEffect(0.375, 0.3);
-    effects.reverb = new ReverbEffect(0.5);
-    effects.distortion = new DistortionEffect(0.5);
-    effects.chorus = new ChorusEffect(1.5, 0.5);
+    effects.delay = new DelayEffect('medium');
+    effects.reverb = new ReverbEffect('hall');
+    effects.distortion = new DistortionEffect('overdrive');
+    effects.chorus = new ChorusEffect('classic');
 
     setupOscillatorControls();
     setupEffectControls();
@@ -150,23 +150,26 @@ function setupEffectControls() {
 }
 
 function setupDelayControls() {
-  const timeSlider = document.getElementById('delay-time-slider') as HTMLInputElement;
-  const timeValue = document.getElementById('delay-time') as HTMLSpanElement;
-  const feedbackSlider = document.getElementById('delay-feedback-slider') as HTMLInputElement;
-  const feedbackValue = document.getElementById('delay-feedback') as HTMLSpanElement;
+  const presetSelect = document.getElementById('delay-preset') as HTMLSelectElement;
   const mixSlider = document.getElementById('delay-mix-slider') as HTMLInputElement;
   const mixValue = document.getElementById('delay-mix') as HTMLSpanElement;
 
-  timeSlider.addEventListener('input', () => {
-    const time = parseFloat(timeSlider.value) / 1000;
-    effects.delay?.setParameter('delayTime', time);
-    timeValue.textContent = `${timeSlider.value} ms`;
-  });
+  // Populate preset options
+  if (effects.delay) {
+    const presets = effects.delay.getPresets();
+    Object.entries(presets).forEach(([key, config]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = config.name;
+      presetSelect.appendChild(option);
+    });
+    presetSelect.value = effects.delay.getCurrentPreset();
+  }
 
-  feedbackSlider.addEventListener('input', () => {
-    const feedback = parseFloat(feedbackSlider.value) / 100;
-    effects.delay?.setParameter('feedback', feedback);
-    feedbackValue.textContent = `${feedbackSlider.value}%`;
+  presetSelect.addEventListener('change', () => {
+    effects.delay?.loadPreset(presetSelect.value as any);
+    // Update info display
+    updateDelayInfo();
   });
 
   mixSlider.addEventListener('input', () => {
@@ -174,18 +177,49 @@ function setupDelayControls() {
     effects.delay?.setParameter('mix', mix);
     mixValue.textContent = `${mixSlider.value}%`;
   });
+
+  // Initial info display
+  updateDelayInfo();
+}
+
+function updateDelayInfo() {
+  const infoDiv = document.getElementById('delay-info');
+  if (!effects.delay || !infoDiv) return;
+
+  const presets = effects.delay.getPresets();
+  const currentPreset = effects.delay.getCurrentPreset();
+  const config = presets[currentPreset];
+
+  infoDiv.innerHTML = `
+    <strong>${config.name}</strong><br>
+    ${config.description}<br>
+    <small>Time: ${(config.delayTime * 1000).toFixed(0)}ms | Feedback: ${(config.feedback * 100).toFixed(0)}%</small>
+  `;
 }
 
 function setupReverbControls() {
-  const decaySlider = document.getElementById('reverb-decay-slider') as HTMLInputElement;
-  const decayValue = document.getElementById('reverb-decay') as HTMLSpanElement;
+  const presetSelect = document.getElementById('reverb-preset') as HTMLSelectElement;
   const mixSlider = document.getElementById('reverb-mix-slider') as HTMLInputElement;
   const mixValue = document.getElementById('reverb-mix') as HTMLSpanElement;
+  const infoDiv = document.getElementById('reverb-info') as HTMLDivElement;
 
-  decaySlider.addEventListener('input', () => {
-    const decay = parseFloat(decaySlider.value) / 100;
-    effects.reverb?.setParameter('decay', decay);
-    decayValue.textContent = `${decaySlider.value}%`;
+  // Populate preset selector
+  if (effects.reverb && presetSelect) {
+    const presets = effects.reverb.getPresets();
+    Object.entries(presets).forEach(([key, config]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = config.name;
+      presetSelect.appendChild(option);
+    });
+    presetSelect.value = effects.reverb.getCurrentPreset();
+    updateReverbInfo();
+  }
+
+  presetSelect?.addEventListener('change', () => {
+    const preset = presetSelect.value as any;
+    effects.reverb?.loadPreset(preset);
+    updateReverbInfo();
   });
 
   mixSlider.addEventListener('input', () => {
@@ -193,26 +227,43 @@ function setupReverbControls() {
     effects.reverb?.setParameter('mix', mix);
     mixValue.textContent = `${mixSlider.value}%`;
   });
+
+  function updateReverbInfo() {
+    if (!effects.reverb || !infoDiv) return;
+    const presets = effects.reverb.getPresets();
+    const currentPreset = effects.reverb.getCurrentPreset();
+    const config = presets[currentPreset];
+
+    infoDiv.innerHTML = `
+      <strong>${config.name}</strong>: ${config.description}<br>
+      <small>Decay: ${(config.decay * 100).toFixed(0)}% | Pre-delay: ${config.predelay}ms | Size: ${(config.size * 100).toFixed(0)}%</small>
+    `;
+  }
 }
 
 function setupDistortionControls() {
-  const driveSlider = document.getElementById('distortion-drive-slider') as HTMLInputElement;
-  const driveValue = document.getElementById('distortion-drive') as HTMLSpanElement;
-  const toneSlider = document.getElementById('distortion-tone-slider') as HTMLInputElement;
-  const toneValue = document.getElementById('distortion-tone') as HTMLSpanElement;
+  const presetSelect = document.getElementById('distortion-preset') as HTMLSelectElement;
   const mixSlider = document.getElementById('distortion-mix-slider') as HTMLInputElement;
   const mixValue = document.getElementById('distortion-mix') as HTMLSpanElement;
+  const infoDiv = document.getElementById('distortion-info') as HTMLDivElement;
 
-  driveSlider.addEventListener('input', () => {
-    const drive = parseFloat(driveSlider.value) / 100;
-    effects.distortion?.setParameter('drive', drive);
-    driveValue.textContent = `${driveSlider.value}%`;
-  });
+  // Populate preset selector
+  if (effects.distortion && presetSelect) {
+    const presets = effects.distortion.getPresets();
+    Object.entries(presets).forEach(([key, config]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = config.name;
+      presetSelect.appendChild(option);
+    });
+    presetSelect.value = effects.distortion.getCurrentPreset();
+    updateDistortionInfo();
+  }
 
-  toneSlider.addEventListener('input', () => {
-    const tone = parseFloat(toneSlider.value) / 100;
-    effects.distortion?.setParameter('tone', tone);
-    toneValue.textContent = `${toneSlider.value}%`;
+  presetSelect?.addEventListener('change', () => {
+    const preset = presetSelect.value as any;
+    effects.distortion?.loadPreset(preset);
+    updateDistortionInfo();
   });
 
   mixSlider.addEventListener('input', () => {
@@ -220,26 +271,43 @@ function setupDistortionControls() {
     effects.distortion?.setParameter('mix', mix);
     mixValue.textContent = `${mixSlider.value}%`;
   });
+
+  function updateDistortionInfo() {
+    if (!effects.distortion || !infoDiv) return;
+    const presets = effects.distortion.getPresets();
+    const currentPreset = effects.distortion.getCurrentPreset();
+    const config = presets[currentPreset];
+
+    infoDiv.innerHTML = `
+      <strong>${config.name}</strong>: ${config.description}<br>
+      <small>Drive: ${(config.drive * 100).toFixed(0)}% | Tone: ${(config.tone * 100).toFixed(0)}%</small>
+    `;
+  }
 }
 
 function setupChorusControls() {
-  const rateSlider = document.getElementById('chorus-rate-slider') as HTMLInputElement;
-  const rateValue = document.getElementById('chorus-rate') as HTMLSpanElement;
-  const depthSlider = document.getElementById('chorus-depth-slider') as HTMLInputElement;
-  const depthValue = document.getElementById('chorus-depth') as HTMLSpanElement;
+  const presetSelect = document.getElementById('chorus-preset') as HTMLSelectElement;
   const mixSlider = document.getElementById('chorus-mix-slider') as HTMLInputElement;
   const mixValue = document.getElementById('chorus-mix') as HTMLSpanElement;
+  const infoDiv = document.getElementById('chorus-info') as HTMLDivElement;
 
-  rateSlider.addEventListener('input', () => {
-    const rate = parseFloat(rateSlider.value) / 10; // Scale 1-100 to 0.1-10 Hz
-    effects.chorus?.setParameter('rate', rate);
-    rateValue.textContent = `${rate.toFixed(1)} Hz`;
-  });
+  // Populate preset selector
+  if (effects.chorus && presetSelect) {
+    const presets = effects.chorus.getPresets();
+    Object.entries(presets).forEach(([key, config]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = config.name;
+      presetSelect.appendChild(option);
+    });
+    presetSelect.value = effects.chorus.getCurrentPreset();
+    updateChorusInfo();
+  }
 
-  depthSlider.addEventListener('input', () => {
-    const depth = parseFloat(depthSlider.value) / 100;
-    effects.chorus?.setParameter('depth', depth);
-    depthValue.textContent = `${depthSlider.value}%`;
+  presetSelect?.addEventListener('change', () => {
+    const preset = presetSelect.value as any;
+    effects.chorus?.loadPreset(preset);
+    updateChorusInfo();
   });
 
   mixSlider.addEventListener('input', () => {
@@ -247,4 +315,16 @@ function setupChorusControls() {
     effects.chorus?.setParameter('mix', mix);
     mixValue.textContent = `${mixSlider.value}%`;
   });
+
+  function updateChorusInfo() {
+    if (!effects.chorus || !infoDiv) return;
+    const presets = effects.chorus.getPresets();
+    const currentPreset = effects.chorus.getCurrentPreset();
+    const config = presets[currentPreset];
+
+    infoDiv.innerHTML = `
+      <strong>${config.name}</strong>: ${config.description}<br>
+      <small>Rate: ${config.rate.toFixed(1)} Hz | Depth: ${(config.depth * 100).toFixed(0)}%</small>
+    `;
+  }
 }

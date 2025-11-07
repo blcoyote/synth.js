@@ -33,12 +33,6 @@ import {
   MAX_FILTER_MODULATION_DEPTH,
   MAX_TREMOLO_DEPTH,
   DEFAULT_EFFECT_MIX,
-  DEFAULT_DELAY_TIME,
-  DEFAULT_DELAY_FEEDBACK,
-  DEFAULT_REVERB_DECAY,
-  DEFAULT_CHORUS_RATE,
-  DEFAULT_CHORUS_DEPTH,
-  DEFAULT_SHIMMER_AMOUNT,
   MS_TO_SECONDS,
   PERCENT_TO_DECIMAL,
   LFO_RATE_SLIDER_FACTOR,
@@ -968,23 +962,23 @@ function setupEffectsChain() {
     let effect;
     switch (type) {
       case 'delay':
-        effect = new DelayEffect(DEFAULT_DELAY_TIME, DEFAULT_DELAY_FEEDBACK);
+        effect = new DelayEffect('medium'); // Use preset instead of parameters
         effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
       case 'reverb':
-        effect = new ReverbEffect(DEFAULT_REVERB_DECAY);
+        effect = new ReverbEffect('hall'); // Use preset instead of decay parameter
         effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
       case 'distortion':
-        effect = new DistortionEffect(20); // Increased drive for more grit
+        effect = new DistortionEffect('distortion'); // Use preset instead of drive parameter
         effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
       case 'chorus':
-        effect = new ChorusEffect(DEFAULT_CHORUS_RATE, DEFAULT_CHORUS_DEPTH);
+        effect = new ChorusEffect('classic'); // Use preset instead of parameters
         effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
       case 'shimmer':
-        effect = new ShimmerEffect(DEFAULT_REVERB_DECAY, DEFAULT_SHIMMER_AMOUNT);
+        effect = new ShimmerEffect('ethereal'); // Use preset instead of parameters
         effect.setParameter('mix', DEFAULT_EFFECT_MIX);
         break;
     }
@@ -1014,6 +1008,137 @@ function setupEffectsChain() {
       const effectName = slot.effect.getName();
       const params = slot.effect.getParameters();
 
+      // Check if this is a DelayEffect or ReverbEffect to show preset selector
+      const isDelayEffect = slot.effect.getType() === 'Effect-delay';
+      const isReverbEffect = slot.effect.getType() === 'Effect-reverb';
+      const isDistortionEffect = slot.effect.getType() === 'Effect-distortion';
+      const isChorusEffect = slot.effect.getType() === 'Effect-chorus';
+      const isShimmerEffect = slot.effect.getType() === 'Effect-shimmer';
+      let presetSelector = '';
+
+      if (isDelayEffect && 'getPresets' in slot.effect && 'getCurrentPreset' in slot.effect) {
+        const delayEffect = slot.effect as DelayEffect;
+        const presets = delayEffect.getPresets();
+        const currentPreset = delayEffect.getCurrentPreset();
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="delay-preset-select" data-effect-id="${slot.id}">
+              ${Object.entries(presets)
+                .map(
+                  ([key, config]) => `
+                <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      } else if (
+        isReverbEffect &&
+        'getPresets' in slot.effect &&
+        'getCurrentPreset' in slot.effect
+      ) {
+        const reverbEffect = slot.effect as ReverbEffect;
+        const presets = reverbEffect.getPresets();
+        const currentPreset = reverbEffect.getCurrentPreset();
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="reverb-preset-select" data-effect-id="${slot.id}">
+              ${Object.entries(presets)
+                .map(
+                  ([key, config]) => `
+                <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      } else if (
+        isDistortionEffect &&
+        'getPresets' in slot.effect &&
+        'getCurrentPreset' in slot.effect
+      ) {
+        const distortionEffect = slot.effect as DistortionEffect;
+        const presets = distortionEffect.getPresets();
+        const currentPreset = distortionEffect.getCurrentPreset();
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="distortion-preset-select" data-effect-id="${slot.id}">
+              ${Object.entries(presets)
+                .map(
+                  ([key, config]) => `
+                <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      } else if (
+        isChorusEffect &&
+        'getPresets' in slot.effect &&
+        'getCurrentPreset' in slot.effect
+      ) {
+        const chorusEffect = slot.effect as ChorusEffect;
+        const presets = chorusEffect.getPresets();
+        const currentPreset = chorusEffect.getCurrentPreset();
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="chorus-preset-select" data-effect-id="${slot.id}">
+              ${Object.entries(presets)
+                .map(
+                  ([key, config]) => `
+                <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      } else if (
+        isShimmerEffect &&
+        'getPresets' in slot.effect &&
+        'getCurrentPreset' in slot.effect
+      ) {
+        const shimmerEffect = slot.effect as ShimmerEffect;
+        const presets = shimmerEffect.getPresets();
+        const currentPreset = shimmerEffect.getCurrentPreset();
+
+        presetSelector = `
+          <div class="effect-param">
+            <div class="effect-param-label">
+              <span>Preset</span>
+            </div>
+            <select class="shimmer-preset-select" data-effect-id="${slot.id}">
+              ${Object.entries(presets)
+                .map(
+                  ([key, config]) => `
+                <option value="${key}" ${currentPreset === key ? 'selected' : ''}>${config.name}</option>
+              `
+                )
+                .join('')}
+            </select>
+          </div>
+        `;
+      }
+
       effectDiv.innerHTML = `
         <div class="effect-header">
           <div class="effect-name">${index + 1}. ${effectName}</div>
@@ -1025,6 +1150,7 @@ function setupEffectsChain() {
           </div>
         </div>
         <div class="effect-parameters">
+          ${presetSelector}
           ${params
             .map((param) => {
               const currentValue = slot.effect.getParameter(param.name);
@@ -1089,6 +1215,86 @@ function setupEffectsChain() {
           if (valueDisplay) {
             valueDisplay.textContent = value.toFixed(2);
           }
+        }
+      });
+    });
+
+    // Add event listeners for delay preset selectors
+    effectsList.querySelectorAll('.delay-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as DelayEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
+        }
+      });
+    });
+
+    // Add event listeners for reverb preset selectors
+    effectsList.querySelectorAll('.reverb-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as ReverbEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
+        }
+      });
+    });
+
+    // Add event listeners for distortion preset selectors
+    effectsList.querySelectorAll('.distortion-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as DistortionEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
+        }
+      });
+    });
+
+    // Add event listeners for chorus preset selectors
+    effectsList.querySelectorAll('.chorus-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as ChorusEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
+        }
+      });
+    });
+
+    // Add event listeners for shimmer preset selectors
+    effectsList.querySelectorAll('.shimmer-preset-select').forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const effectId = target.getAttribute('data-effect-id')!;
+        const presetName = target.value;
+
+        const effect = effectsChain!.getEffect(effectId) as ShimmerEffect;
+        if (effect && 'loadPreset' in effect) {
+          effect.loadPreset(presetName as any);
+          // Re-render to update parameter displays
+          renderEffectsList();
         }
       });
     });
