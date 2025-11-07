@@ -2,9 +2,16 @@
 
 A modular synthesizer built with TypeScript and Web Audio API, focusing on reusable components and dynamic effect routing.
 
+## Live Demo
+
+**Try it now: [https://blcoyote.github.io/synth.js/](https://blcoyote.github.io/synth.js/)**
+
+The synthesizer is deployed and available online via GitHub Pages. No installation required - just open the link and start making sounds!
+
 ## Project Philosophy
 
 This project is designed as a learning journey to understand:
+
 - Digital Signal Processing (DSP)
 - Audio synthesis and sound design
 - Modular architecture patterns
@@ -22,6 +29,7 @@ This project is designed as a learning journey to understand:
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js (v18 or higher)
 - npm or yarn
 
@@ -63,21 +71,27 @@ npm test
 ## Core Concepts
 
 ### Components
+
 All audio components follow a consistent interface:
+
 - Connect/disconnect to other components
 - Parameter control with validation
 - Enable/disable functionality
 - Type-safe implementation
 
 ### Bus System
+
 The bus system allows dynamic signal routing:
+
 - **Master Bus**: Final output destination
 - **Aux Buses**: Parallel effect processing
 - **Insert Effects**: Serial signal chain
 - **Send/Return**: Wet/dry mix control
 
 ### Parameters
+
 All parameters feature:
+
 - Min/max range validation
 - Smooth value transitions
 - Automation support
