@@ -174,11 +174,11 @@ const notes = [
   { note: 'C5', freq: 523.25, key: 'Å', white: true },
 ];
 
-document.addEventListener('DOMContentLoaded', async () => {
+// Initialize audio system after user gesture
+async function initializeAudioSystem() {
   const systemLed = document.getElementById('systemLed') as HTMLDivElement;
   const systemStatus = document.getElementById('systemStatus') as HTMLDivElement;
 
-  // Auto-initialize on page load
   if (initialized) return;
 
   systemLed.classList.add('initializing');
@@ -329,6 +329,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     systemLed.classList.remove('initializing');
     systemStatus.textContent = 'Failed';
   }
+}
+
+// Set up UI and wait for user gesture to start audio
+document.addEventListener('DOMContentLoaded', () => {
+  const systemStatus = document.getElementById('systemStatus') as HTMLDivElement;
+  systemStatus.textContent = 'Click anywhere to start';
+
+  // Initialize audio on first user interaction
+  const startAudio = () => {
+    initializeAudioSystem();
+    document.removeEventListener('click', startAudio);
+    document.removeEventListener('keydown', startAudio);
+  };
+
+  document.addEventListener('click', startAudio, { once: true });
+  document.addEventListener('keydown', startAudio, { once: true });
 });
 
 function setupOscillatorControls() {
