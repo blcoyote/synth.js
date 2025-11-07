@@ -76,8 +76,8 @@ const activeVoices: Map<number, Voice> = new Map(); // noteIndex -> Voice
 let initialized = false;
 let masterBus: ReturnType<typeof BusManager.prototype.getMasterBus>;
 let effectsChain: EffectsChain | null = null;
-let vibrato: LFO | null = null; // Keep old LFO for backward compatibility
-let multiLFO: MultiTargetLFO | null = null; // New multi-target LFO
+let lfo: LFO | null = null; // Basic LFO for pitch modulation (legacy compatibility)
+let multiLFO: MultiTargetLFO | null = null; // Advanced multi-target LFO
 let masterFilter: BiquadFilterNode | Lowpass12Filter | Lowpass24Filter | null = null;
 let sequencer: Sequencer | null = null;
 let selectedStepIndex: number | null = null;
@@ -224,8 +224,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     (window as unknown as Record<string, GainNode>).osc2Bus = osc2Bus;
     (window as unknown as Record<string, GainNode>).osc3Bus = osc3Bus;
 
-    // Create LFO for vibrato (shared across all voices)
-    vibrato = new LFO({
+    // Create basic LFO for pitch modulation (shared across all voices)
+    lfo = new LFO({
       frequency: 5.0,
       depth: 0.05,
       waveform: 'sine',
@@ -542,7 +542,7 @@ function setupLFOControls() {
   // Rate control
   rateSlider.addEventListener('input', () => {
     const rate = parseFloat(rateSlider.value) / LFO_RATE_SLIDER_FACTOR; // 0.1 to 20 Hz
-    vibrato?.setParameter('frequency', rate);
+    lfo?.setParameter('frequency', rate);
     multiLFO?.setFrequency(rate);
     rateValue.textContent = `${rate.toFixed(1)} Hz`;
   });
@@ -550,7 +550,7 @@ function setupLFOControls() {
   // Depth control
   depthSlider.addEventListener('input', () => {
     const depth = parseFloat(depthSlider.value) / 100;
-    vibrato?.setParameter('depth', depth);
+    lfo?.setParameter('depth', depth);
 
     // Update depth for all active targets in multiLFO
     if (multiLFO) {
@@ -575,7 +575,7 @@ function setupLFOControls() {
   // Waveform control
   waveformSelect.addEventListener('change', () => {
     const waveform = waveformSelect.value as 'sine' | 'triangle' | 'square' | 'sawtooth' | 'random';
-    vibrato?.setWaveform(waveform);
+    lfo?.setWaveform(waveform);
     multiLFO?.setWaveform(waveform);
   });
 
@@ -597,8 +597,8 @@ function setupLFOControls() {
     if (triggerModeRadio.checked) {
       lfoState.mode = 'trigger';
       // Stop free-running LFO (will restart on next note)
-      if (vibrato?.isEnabled()) {
-        vibrato.stop();
+      if (lfo?.isEnabled()) {
+        lfo.stop();
       }
       if (multiLFO?.isEnabled()) {
         multiLFO.stop();
@@ -661,7 +661,7 @@ function setupLFOControls() {
 
   // Toggle LFO
   toggleBtn.addEventListener('click', () => {
-    if (!vibrato || !multiLFO) return;
+    if (!lfo || !multiLFO) return;
 
     lfoState.enabled = !lfoState.enabled;
 
@@ -673,7 +673,7 @@ function setupLFOControls() {
       // Start LFOs in free-running mode
       if (lfoState.mode === 'free') {
         if (lfoState.targets.pitch) {
-          vibrato.start();
+          lfo.start();
         }
         if (lfoState.targets.volume || lfoState.targets.pan || lfoState.targets.filter) {
           // Set up filter target if needed
@@ -690,7 +690,7 @@ function setupLFOControls() {
       powerIndicator.classList.remove('on');
 
       // Stop all LFOs
-      vibrato.stop();
+      lfo.stop();
       multiLFO.stop();
     }
   });
@@ -1265,17 +1265,17 @@ function playNote(noteIndex: number) {
 
       // Connect LFO targets (if enabled)
       if (lfoState.enabled) {
-        // Pitch modulation (vibrato)
+        // Pitch modulation
         if (lfoState.targets.pitch) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const oscNode = (oscillator as any).oscillatorNode as OscillatorNode;
           if (oscNode && oscNode.frequency) {
             // In trigger mode, start LFO on note press
-            if (lfoState.mode === 'trigger' && !vibrato!.isEnabled()) {
-              vibrato!.start();
+            if (lfoState.mode === 'trigger' && !lfo!.isEnabled()) {
+              lfo!.start();
             }
             // Always connect to this oscillator's frequency
-            vibrato?.connectToParam(oscNode.frequency);
+            lfo?.connectToParam(oscNode.frequency);
           }
         }
 
@@ -1470,7 +1470,7 @@ function cleanupVoice(noteIndex: number) {
 
   // In trigger mode, stop LFOs when all notes are released
   if (lfoState.mode === 'trigger' && activeVoices.size === 0) {
-    vibrato?.stop();
+    lfo?.stop();
     multiLFO?.stop();
   }
 }
@@ -1512,7 +1512,7 @@ function updateActiveVoiceParameters(
   });
 }
 
-// Apply a pitch bend to all active voices (useful for pitch wheel, vibrato, etc.)
+// Apply a pitch bend to all active voices (useful for pitch wheel, LFO modulation, etc.)
 // bendAmount: semitones to bend (+/- 12 typical range, +/- 2 for standard pitch wheel)
 function applyPitchBendToAllVoices(bendAmount: number) {
   const bendMultiplier = Math.pow(2, bendAmount / 12); // Convert semitones to frequency multiplier
@@ -1605,17 +1605,17 @@ function playMidiNote(midiNote: number) {
 
       // Connect LFO targets (if enabled)
       if (lfoState.enabled) {
-        // Pitch modulation (vibrato)
+        // Pitch modulation
         if (lfoState.targets.pitch) {
           // eslint-disable-line @typescript-eslint/no-explicit-any
           const oscNode = (oscillator as any).oscillatorNode as OscillatorNode;
           if (oscNode && oscNode.frequency) {
             // In trigger mode, start LFO on note press
-            if (lfoState.mode === 'trigger' && !vibrato!.isEnabled()) {
-              vibrato!.start();
+            if (lfoState.mode === 'trigger' && !lfo!.isEnabled()) {
+              lfo!.start();
             }
             // Always connect to this oscillator's frequency
-            vibrato?.connectToParam(oscNode.frequency);
+            lfo?.connectToParam(oscNode.frequency);
           }
         }
 
