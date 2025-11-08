@@ -15,6 +15,7 @@ import { EffectsPanel } from './components/EffectsPanel';
 import { LFOPanel } from './components/LFOPanel';
 import { ArpeggiatorPanel } from './components/ArpeggiatorPanel';
 import { SequencerPanel } from './components/SequencerPanel';
+import { MasterOutputPanel } from './components/MasterOutputPanel';
 import { CollapsiblePanel } from './components/common/CollapsiblePanel';
 import { voiceState, audioState } from '../state';
 
@@ -87,6 +88,11 @@ function SynthControls() {
       <div className="main-content" key={refreshKey}>
         {/* Top Section: Status & Presets */}
         <div className="top-section">
+          <section className="presets-section">
+            <CollapsiblePanel title="Presets" defaultOpen={false}>
+              <PresetPanel onPresetLoad={handlePresetLoad} />
+            </CollapsiblePanel>
+          </section>          
           <div className="status-badge">
             <span className={`status-indicator ${isInitialized ? 'active' : 'inactive'}`}>
               {isInitialized ? '●' : '○'}
@@ -95,11 +101,7 @@ function SynthControls() {
               {isInitialized ? `${activeVoices} voices` : 'Click to start'}
             </span>
           </div>
-          <section className="presets-section">
-            <CollapsiblePanel title="Presets" defaultOpen={false}>
-              <PresetPanel onPresetLoad={handlePresetLoad} />
-            </CollapsiblePanel>
-          </section>
+
         </div>
 
         {/* Three Column Layout */}
@@ -202,6 +204,9 @@ function SynthControls() {
               <h2>🎛️ Filter & Effects</h2>
             </div>
             <div className="column-content">
+              <CollapsiblePanel title="Master Output" defaultOpen={true}>
+                <MasterOutputPanel />
+              </CollapsiblePanel>
               <CollapsiblePanel 
                 title="Master Filter" 
                 defaultOpen={true}
