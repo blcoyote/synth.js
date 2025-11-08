@@ -16,7 +16,14 @@ const MAX_CUTOFF = 20000; // 20 kHz
 
 export function FilterPanel() {
   const { engine } = useSynthEngine();
-  const audioEngine = engine.getAudioEngine();
+  
+  // Safely get manager (will be null before initialization)
+  let audioEngine;
+  try {
+    audioEngine = engine.getAudioEngine();
+  } catch {
+    audioEngine = null;
+  }
 
   const [enabled, setEnabled] = useState(audioState.filterSettings.enabled);
   const [filterType, setFilterType] = useState(audioState.filterSettings.type);
@@ -56,6 +63,8 @@ export function FilterPanel() {
 
   // Handle filter type change
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!audioEngine) return;
+    
     const newType = e.target.value as BiquadFilterType | 'lowpass12' | 'lowpass24';
     audioState.filterSettings.type = newType;
     setFilterType(newType);

@@ -13,15 +13,22 @@ interface PresetPanelProps {
 
 export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
   const { engine } = useSynthEngine();
-  const presetManager = engine.getPresetManager();
+  
+  // Safely get manager (will be null before initialization)
+  let presetManager;
+  try {
+    presetManager = engine.getPresetManager();
+  } catch {
+    presetManager = null;
+  }
 
   const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
-  const [userPresets, setUserPresets] = useState<string[]>(presetManager.getUserPresetNames());
+  const [userPresets, setUserPresets] = useState<string[]>(presetManager?.getUserPresetNames() ?? []);
 
   const handleLoadPreset = (presetName: string) => {
-    if (!presetName) return;
+    if (!presetName || !presetManager) return;
 
     // Check factory presets first
     const factoryPreset = FACTORY_PRESETS.find(p => p.name === presetName);
@@ -44,7 +51,7 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
   };
 
   const handleSavePreset = () => {
-    if (!newPresetName.trim()) return;
+    if (!newPresetName.trim() || !presetManager) return;
 
     try {
       presetManager.savePreset(newPresetName.trim(), 'User');
@@ -58,7 +65,7 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
   };
 
   const handleDeletePreset = (presetName: string) => {
-    if (!confirm(`Delete preset "${presetName}"?`)) return;
+    if (!confirm(`Delete preset "${presetName}"?`) || !presetManager) return;
 
     if (presetManager.deletePreset(presetName)) {
       setUserPresets(presetManager.getUserPresetNames());
@@ -69,6 +76,8 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
   };
 
   const handleExport = () => {
+    if (!presetManager) return;
+    
     const currentPreset = presetManager.getCurrentPreset();
     const json = presetManager.exportPreset(currentPreset);
     
@@ -83,12 +92,14 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
   };
 
   const handleImport = () => {
+    if (!presetManager) return;
+    
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+      if (!file || !presetManager) return;
 
       const reader = new FileReader();
       reader.onload = (event) => {

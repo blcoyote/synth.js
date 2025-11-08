@@ -17,17 +17,26 @@ interface KeyboardProps {
 
 export function SimpleKeyboard({ startOctave = 3, octaves = 2, extraKeys = 0 }: KeyboardProps) {
   const { engine } = useSynthEngine();
-  const voiceManager = engine.getVoiceManager();
+  
+  // Safely get manager (will be null before initialization)
+  let voiceManager;
+  try {
+    voiceManager = engine.getVoiceManager();
+  } catch {
+    voiceManager = null;
+  }
   
   // Track which keys are currently pressed
   const [activeKeys, setActiveKeys] = useState<Set<number>>(new Set());
 
   const handleNoteOn = (noteIndex: number) => {
+    if (!voiceManager) return;
     setActiveKeys((prev) => new Set(prev).add(noteIndex));
     voiceManager.playNote(noteIndex, 0.8);
   };
 
   const handleNoteOff = (noteIndex: number) => {
+    if (!voiceManager) return;
     setActiveKeys((prev) => {
       const next = new Set(prev);
       next.delete(noteIndex);

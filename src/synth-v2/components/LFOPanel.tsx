@@ -21,7 +21,14 @@ interface LFOTargets {
 
 export function LFOPanel() {
   const { engine: synthEngine } = useSynthEngine();
-  const lfoManager = synthEngine.getLFOManager();
+  
+  // Safely get manager (will be null before initialization)
+  let lfoManager;
+  try {
+    lfoManager = synthEngine.getLFOManager();
+  } catch {
+    lfoManager = null;
+  }
   
   const [enabled, setEnabled] = useState(false);
   const [mode, setMode] = useState<LFOMode>('free');
@@ -37,6 +44,7 @@ export function LFOPanel() {
 
   // Handle enable/disable
   const handleToggle = () => {
+    if (!lfoManager) return;
     const newEnabled = !enabled;
     setEnabled(newEnabled);
     lfoManager.setEnabled(newEnabled);
@@ -44,6 +52,7 @@ export function LFOPanel() {
 
   // Handle mode change (free vs trigger)
   const handleModeChange = (newMode: LFOMode) => {
+    if (!lfoManager) return;
     setMode(newMode);
     // In trigger mode, LFO starts on note press (handled in VoiceManager)
     // In free mode, LFO runs continuously
@@ -56,12 +65,14 @@ export function LFOPanel() {
 
   // Handle rate change
   const handleRateChange = (value: number) => {
+    if (!lfoManager) return;
     setRate(value);
     lfoManager.setRate(value);
   };
 
   // Handle depth change
   const handleDepthChange = (value: number) => {
+    if (!lfoManager) return;
     setDepth(value);
     // Update depth for all active targets
     const depthValue = value / 100; // Convert percentage to 0-1
@@ -73,12 +84,15 @@ export function LFOPanel() {
 
   // Handle waveform change
   const handleWaveformChange = (newWaveform: LFOWaveform) => {
+    if (!lfoManager) return;
     setWaveform(newWaveform);
     lfoManager.setWaveform(newWaveform);
   };
 
   // Handle target toggle
   const handleTargetToggle = (target: keyof LFOTargets) => {
+    if (!lfoManager) return;
+    
     const newTargets = { ...targets, [target]: !targets[target] };
     setTargets(newTargets);
 

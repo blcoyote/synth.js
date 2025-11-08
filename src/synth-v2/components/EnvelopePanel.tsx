@@ -16,7 +16,15 @@ interface EnvelopePanelProps {
  */
 export function EnvelopePanel({ envNum }: EnvelopePanelProps) {
   const { engine } = useSynthEngine();
-  const paramManager = engine.getParameterManager();
+  
+  // Safely get manager (will be null before initialization)
+  let paramManager;
+  try {
+    paramManager = engine.getParameterManager();
+  } catch {
+    paramManager = null;
+  }
+  
   const envelope = voiceState.envelopeSettings[envNum];
 
   // Local state for real-time updates
@@ -37,28 +45,28 @@ export function EnvelopePanel({ envNum }: EnvelopePanelProps) {
     // Convert from ms (0-2000) to seconds (0-2.0)
     const seconds = value / 1000;
     setAttack(seconds);
-    paramManager.updateEnvelopeParameter(envNum, 'attack', seconds);
+    if (paramManager) paramManager.updateEnvelopeParameter(envNum, 'attack', seconds);
   };
 
   const handleDecayChange = (value: number) => {
     // Convert from ms (0-2000) to seconds (0-2.0)
     const seconds = value / 1000;
     setDecay(seconds);
-    paramManager.updateEnvelopeParameter(envNum, 'decay', seconds);
+    if (paramManager) paramManager.updateEnvelopeParameter(envNum, 'decay', seconds);
   };
 
   const handleSustainChange = (value: number) => {
     // Sustain is 0-100% -> 0-1.0
     const level = value / 100;
     setSustain(level);
-    paramManager.updateEnvelopeParameter(envNum, 'sustain', level);
+    if (paramManager) paramManager.updateEnvelopeParameter(envNum, 'sustain', level);
   };
 
   const handleReleaseChange = (value: number) => {
     // Convert from ms (0-5000) to seconds (0-5.0)
     const seconds = value / 1000;
     setRelease(seconds);
-    paramManager.updateEnvelopeParameter(envNum, 'release', seconds);
+    if (paramManager) paramManager.updateEnvelopeParameter(envNum, 'release', seconds);
   };
 
   return (

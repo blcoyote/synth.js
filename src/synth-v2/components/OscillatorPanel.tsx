@@ -15,7 +15,15 @@ interface OscillatorPanelProps {
 
 export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
   const { engine, voiceState } = useSynthEngine();
-  const paramManager = engine.getParameterManager();
+  
+  // Safely get manager (will be null before initialization)
+  let paramManager;
+  try {
+    paramManager = engine.getParameterManager();
+  } catch {
+    paramManager = null;
+  }
+  
   const config = voiceState.oscillatorConfigs.get(oscNum);
 
   // If config doesn't exist yet (before initialization), use defaults
@@ -26,7 +34,7 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
   const [fmEnabled, setFmEnabled] = useState(config?.fmEnabled ?? false);
 
   const handleToggle = () => {
-    if (!config) return;
+    if (!config || !paramManager) return;
     config.enabled = !config.enabled;
     setEnabled(config.enabled);
   };
@@ -38,30 +46,34 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
   };
 
   const handleVolumeChange = (value: number) => {
+    if (!paramManager) return;
     paramManager.updateOscillatorParameter(oscNum, 'volume', value / 100);
   };
 
   const handlePanChange = (value: number) => {
+    if (!paramManager) return;
     paramManager.updateOscillatorParameter(oscNum, 'pan', value / 100);
   };
 
   const handleOctaveChange = (value: number) => {
+    if (!paramManager) return;
     paramManager.updateOscillatorParameter(oscNum, 'octave', value);
   };
 
   const handleDetuneChange = (value: number) => {
+    if (!paramManager) return;
     paramManager.updateOscillatorParameter(oscNum, 'detune', value);
   };
 
   const handleFmToggle = () => {
-    if (!config || oscNum < 2) return;
+    if (!config || !paramManager || oscNum < 2) return;
     const newFmEnabled = !config.fmEnabled;
     paramManager.updateFMEnabled(oscNum as 2 | 3, newFmEnabled);
     setFmEnabled(newFmEnabled);
   };
 
   const handleFmDepthChange = (value: number) => {
-    if (!config || oscNum < 2) return;
+    if (!config || !paramManager || oscNum < 2) return;
     paramManager.updateFMDepth(oscNum as 2 | 3, value);
   };
 

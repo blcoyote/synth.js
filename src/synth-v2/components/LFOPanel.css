@@ -133,14 +133,15 @@
 }
 
 .lfo-targets {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
   padding-top: 10px;
   border-top: 1px solid #3a3a3a;
 }
 
 .lfo-targets h4 {
+  grid-column: 1 / -1;
   margin: 0 0 10px 0;
   font-size: 1rem;
   color: #4a9eff;
