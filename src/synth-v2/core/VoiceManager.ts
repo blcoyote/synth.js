@@ -22,6 +22,7 @@ import {
   BaseOscillator 
 } from '../../components/oscillators';
 import { ADSREnvelope } from '../../components/envelopes/ADSREnvelope';
+import type { LFOManager } from './LFOManager';
 
 // Note frequencies (C2 to C7, chromatic scale)
 const NOTE_FREQUENCIES = [
@@ -42,6 +43,12 @@ export class VoiceManager {
   private osc1Bus: GainNode;
   private osc2Bus: GainNode;
   private osc3Bus: GainNode;
+  private lfoManager: LFOManager | null = null;
+  private lfoTargets: {
+    pitch: boolean;
+    volume: boolean;
+    pan: boolean;
+  } = { pitch: false, volume: false, pan: false };
 
   /**
    * Creates a new VoiceManager
@@ -83,6 +90,121 @@ export class VoiceManager {
    */
   getMasterGainNode(): GainNode {
     return this.masterGain;
+  }
+
+  /**
+   * Set the LFO manager for voice modulation
+   * @param lfoManager - LFO manager instance
+   */
+  setLFOManager(lfoManager: LFOManager): void {
+    this.lfoManager = lfoManager;
+    console.log('🌊 LFO manager set for VoiceManager');
+  }
+
+  /**
+   * Enable/disable LFO modulation for pitch
+   * @param enabled - Whether pitch modulation is enabled
+   * @param depth - Modulation depth percentage (0-100)
+   */
+  setLFOPitchTarget(enabled: boolean, depth: number): void {
+    this.lfoTargets.pitch = enabled;
+    
+    if (!this.lfoManager) return;
+    
+    if (enabled) {
+      // Add pitch targets for all active voices
+      this.voiceState.activeVoices.forEach((voice, noteIndex) => {
+        voice.oscillators.forEach((oscData) => {
+          const targetName = `pitch_${noteIndex}_${oscData.oscNum}`;
+          const oscNode = oscData.oscillator.getOscillatorNode();
+          if (oscNode && oscNode.frequency) {
+            const baseline = oscNode.frequency.value;
+            // Depth: percentage to Hz (max 100 cents = semitone)
+            const depthHz = (depth / 100) * baseline * 0.06; // ~100 cents at 100%
+            this.lfoManager!.addTarget(targetName, oscNode.frequency, depthHz, baseline);
+          }
+        });
+      });
+      console.log(`🎯 LFO pitch modulation enabled (depth: ${depth}%)`);
+    } else {
+      // Remove all pitch targets
+      this.voiceState.activeVoices.forEach((voice, noteIndex) => {
+        voice.oscillators.forEach((oscData) => {
+          const targetName = `pitch_${noteIndex}_${oscData.oscNum}`;
+          this.lfoManager!.removeTarget(targetName);
+        });
+      });
+      console.log('🎯 LFO pitch modulation disabled');
+    }
+  }
+
+  /**
+   * Enable/disable LFO modulation for volume
+   * @param enabled - Whether volume modulation is enabled
+   * @param depth - Modulation depth percentage (0-100)
+   */
+  setLFOVolumeTarget(enabled: boolean, depth: number): void {
+    this.lfoTargets.volume = enabled;
+    
+    if (!this.lfoManager) return;
+    
+    if (enabled) {
+      // Add volume targets for all active voices
+      this.voiceState.activeVoices.forEach((voice, noteIndex) => {
+        voice.oscillators.forEach((oscData) => {
+          const targetName = `volume_${noteIndex}_${oscData.oscNum}`;
+          const gainNode = oscData.oscillator.getOutputNode() as GainNode;
+          const baseline = gainNode.gain.value;
+          // Depth: percentage to gain (max 100% = full modulation)
+          const depthValue = (depth / 100) * baseline;
+          this.lfoManager!.addTarget(targetName, gainNode.gain, depthValue, baseline);
+        });
+      });
+      console.log(`🎯 LFO volume modulation enabled (depth: ${depth}%)`);
+    } else {
+      // Remove all volume targets
+      this.voiceState.activeVoices.forEach((voice, noteIndex) => {
+        voice.oscillators.forEach((oscData) => {
+          const targetName = `volume_${noteIndex}_${oscData.oscNum}`;
+          this.lfoManager!.removeTarget(targetName);
+        });
+      });
+      console.log('🎯 LFO volume modulation disabled');
+    }
+  }
+
+  /**
+   * Enable/disable LFO modulation for pan
+   * @param enabled - Whether pan modulation is enabled
+   * @param depth - Modulation depth percentage (0-100)
+   */
+  setLFOPanTarget(enabled: boolean, depth: number): void {
+    this.lfoTargets.pan = enabled;
+    
+    if (!this.lfoManager) return;
+    
+    if (enabled) {
+      // Add pan targets for all active voices
+      this.voiceState.activeVoices.forEach((voice, noteIndex) => {
+        voice.oscillators.forEach((oscData) => {
+          const targetName = `pan_${noteIndex}_${oscData.oscNum}`;
+          const baseline = oscData.panNode.pan.value;
+          // Depth: percentage to pan (-1 to 1 range)
+          const depthValue = (depth / 100) * 1.0; // Max 1.0 at 100%
+          this.lfoManager!.addTarget(targetName, oscData.panNode.pan, depthValue, baseline);
+        });
+      });
+      console.log(`🎯 LFO pan modulation enabled (depth: ${depth}%)`);
+    } else {
+      // Remove all pan targets
+      this.voiceState.activeVoices.forEach((voice, noteIndex) => {
+        voice.oscillators.forEach((oscData) => {
+          const targetName = `pan_${noteIndex}_${oscData.oscNum}`;
+          this.lfoManager!.removeTarget(targetName);
+        });
+      });
+      console.log('🎯 LFO pan modulation disabled');
+    }
   }
 
   /**
@@ -168,10 +290,50 @@ export class VoiceManager {
     // Oscillators 2 and 3 can modulate oscillator 1's frequency
     this.setupFMRouting(voice);
     
+    // Add LFO targets for this voice (if enabled)
+    this.addLFOTargetsForVoice(voice, noteIndex);
+    
     // Store the voice
     this.voiceState.activeVoices.set(noteIndex, voice);
 
     console.log(`🎹 Playing note ${noteIndex} (${baseFrequency.toFixed(2)} Hz) with ${voice.oscillators.length} oscillator(s)`);
+  }
+
+  /**
+   * Add LFO targets for a newly created voice
+   */
+  private addLFOTargetsForVoice(voice: Voice, noteIndex: number): void {
+    if (!this.lfoManager) return;
+
+    voice.oscillators.forEach((oscData) => {
+      // Add pitch target if enabled
+      if (this.lfoTargets.pitch) {
+        const oscNode = oscData.oscillator.getOscillatorNode();
+        if (oscNode && oscNode.frequency) {
+          const targetName = `pitch_${noteIndex}_${oscData.oscNum}`;
+          const baseline = oscNode.frequency.value;
+          const depthHz = baseline * 0.06; // ~100 cents max
+          this.lfoManager!.addTarget(targetName, oscNode.frequency, depthHz, baseline);
+        }
+      }
+
+      // Add volume target if enabled
+      if (this.lfoTargets.volume) {
+        const targetName = `volume_${noteIndex}_${oscData.oscNum}`;
+        const gainNode = oscData.oscillator.getOutputNode() as GainNode;
+        const baseline = gainNode.gain.value;
+        const depthValue = baseline; // Full range
+        this.lfoManager!.addTarget(targetName, gainNode.gain, depthValue, baseline);
+      }
+
+      // Add pan target if enabled
+      if (this.lfoTargets.pan) {
+        const targetName = `pan_${noteIndex}_${oscData.oscNum}`;
+        const baseline = oscData.panNode.pan.value;
+        const depthValue = 1.0; // Full pan range
+        this.lfoManager!.addTarget(targetName, oscData.panNode.pan, depthValue, baseline);
+      }
+    });
   }
 
   /**
@@ -247,6 +409,9 @@ export class VoiceManager {
     const voice = this.voiceState.activeVoices.get(noteIndex);
     if (!voice) return;
 
+    // Remove LFO targets for this voice
+    this.removeLFOTargetsForVoice(voice, noteIndex);
+
     // Stop and disconnect all oscillators
     voice.oscillators.forEach(({ oscillator, panNode, envelope }) => {
       oscillator.stop();
@@ -259,6 +424,24 @@ export class VoiceManager {
     this.voiceState.activeVoices.delete(noteIndex);
     
     console.log(`🧹 Cleaned up note ${noteIndex}`);
+  }
+
+  /**
+   * Remove LFO targets for a voice being cleaned up
+   */
+  private removeLFOTargetsForVoice(voice: Voice, noteIndex: number): void {
+    if (!this.lfoManager) return;
+
+    voice.oscillators.forEach((oscData) => {
+      // Remove all possible target types
+      const pitchTarget = `pitch_${noteIndex}_${oscData.oscNum}`;
+      const volumeTarget = `volume_${noteIndex}_${oscData.oscNum}`;
+      const panTarget = `pan_${noteIndex}_${oscData.oscNum}`;
+      
+      this.lfoManager!.removeTarget(pitchTarget);
+      this.lfoManager!.removeTarget(volumeTarget);
+      this.lfoManager!.removeTarget(panTarget);
+    });
   }
 
   /**

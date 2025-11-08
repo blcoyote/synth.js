@@ -14,11 +14,12 @@
  */
 
 import { AudioEngine } from '../../core/AudioEngine';
-import { voiceState, audioState, visualizationState } from '../../state';
+import { voiceState, audioState, visualizationState, modulationState } from '../../state';
 import { VoiceManager } from './VoiceManager';
 import { ParameterManager } from './ParameterManager';
 import { PresetManager } from './PresetManager';
 import { EffectsManager } from './EffectsManager';
+import { LFOManager } from './LFOManager';
 
 export class SynthEngine {
   private audioEngine: AudioEngine;
@@ -26,6 +27,7 @@ export class SynthEngine {
   private parameterManager: ParameterManager | null = null;
   private presetManager: PresetManager | null = null;
   private effectsManager: EffectsManager | null = null;
+  private lfoManager: LFOManager | null = null;
   private isInitialized: boolean = false;
 
   constructor() {
@@ -144,6 +146,15 @@ export class SynthEngine {
       // Create preset manager
       this.presetManager = new PresetManager(voiceState);
       
+      // Create LFO manager
+      this.lfoManager = new LFOManager();
+      modulationState.setMultiLFO(this.lfoManager.getLFO());
+      console.log('🌊 Created LFO manager');
+      
+      // Connect LFO manager to voice manager for voice-level modulation
+      this.voiceManager.setLFOManager(this.lfoManager);
+      console.log('🔗 Connected LFO manager to voice manager');
+      
       this.isInitialized = true;
       console.log('✅ SynthEngine initialized successfully');
     } catch (error) {
@@ -194,6 +205,17 @@ export class SynthEngine {
       throw new Error('EffectsManager not initialized. Call initialize() first.');
     }
     return this.effectsManager;
+  }
+
+  /**
+   * Get the LFOManager instance
+   * @throws Error if called before initialization
+   */
+  getLFOManager(): LFOManager {
+    if (!this.lfoManager) {
+      throw new Error('LFOManager not initialized. Call initialize() first.');
+    }
+    return this.lfoManager;
   }
 
   /**

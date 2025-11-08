@@ -12,6 +12,7 @@ import { SimpleKeyboard } from './components/SimpleKeyboard';
 import { PresetPanel } from './components/PresetPanel';
 import { FilterPanel } from './components/FilterPanel';
 import { EffectsPanel } from './components/EffectsPanel';
+import { LFOPanel } from './components/LFOPanel';
 
 // Create synth engine instance (singleton, created once)
 const synthEngine = new SynthEngine();
@@ -118,6 +119,12 @@ function SynthControls() {
         <section className="effects-section">
           <h2>Effects</h2>
           <EffectsPanel />
+        </section>
+
+        {/* LFO */}
+        <section className="lfo-section">
+          <h2>LFO</h2>
+          <LFOPanel />
         </section>
 
         {/* Status */}
