@@ -258,8 +258,9 @@ describe('SimpleKeyboard', () => {
       
       const labels = container.querySelectorAll('.key-label');
       
-      // Should have label for each key
-      expect(labels).toHaveLength(12);
+      // Should have 2 labels per key (computer-key and note-name)
+      // 1 octave = 12 keys × 2 labels = 24 labels
+      expect(labels).toHaveLength(24);
     });
   });
 

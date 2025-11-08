@@ -367,4 +367,157 @@ describe('ParameterManager', () => {
       expect(mockVoiceState.oscillatorConfigs.get(1)!.octave).toBe(-2);
     });
   });
+
+  describe('FM Synthesis Parameters', () => {
+    describe('updateFMEnabled', () => {
+      it('should enable FM modulation for oscillator 2', () => {
+        const config = mockVoiceState.oscillatorConfigs.get(2)!;
+        expect(config.fmEnabled).toBeFalsy();
+        
+        paramManager.updateFMEnabled(2, true);
+        
+        expect(config.fmEnabled).toBe(true);
+      });
+
+      it('should enable FM modulation for oscillator 3', () => {
+        const config = mockVoiceState.oscillatorConfigs.get(3)!;
+        expect(config.fmEnabled).toBeFalsy();
+        
+        paramManager.updateFMEnabled(3, true);
+        
+        expect(config.fmEnabled).toBe(true);
+      });
+
+      it('should disable FM modulation', () => {
+        const config = mockVoiceState.oscillatorConfigs.get(2)!;
+        config.fmEnabled = true;
+        
+        paramManager.updateFMEnabled(2, false);
+        
+        expect(config.fmEnabled).toBe(false);
+      });
+
+      it('should toggle FM state', () => {
+        const config = mockVoiceState.oscillatorConfigs.get(2)!;
+        
+        paramManager.updateFMEnabled(2, true);
+        expect(config.fmEnabled).toBe(true);
+        
+        paramManager.updateFMEnabled(2, false);
+        expect(config.fmEnabled).toBe(false);
+        
+        paramManager.updateFMEnabled(2, true);
+        expect(config.fmEnabled).toBe(true);
+      });
+
+      it('should handle both oscillators independently', () => {
+        paramManager.updateFMEnabled(2, true);
+        paramManager.updateFMEnabled(3, false);
+        
+        expect(mockVoiceState.oscillatorConfigs.get(2)!.fmEnabled).toBe(true);
+        expect(mockVoiceState.oscillatorConfigs.get(3)!.fmEnabled).toBe(false);
+      });
+
+      it('should handle invalid oscillator number gracefully', () => {
+        // @ts-expect-error - testing invalid input
+        paramManager.updateFMEnabled(1, true);
+        
+        expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('config not found'));
+      });
+
+      it('should only affect new notes, not active voices', () => {
+        paramManager.updateFMEnabled(2, true);
+        
+        // FM routing happens during note creation, not on active voices
+        expect(mockVoiceManager.updateActiveVoices).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('updateFMDepth', () => {
+      it('should update FM depth for oscillator 2', () => {
+        paramManager.updateFMDepth(2, 500);
+        
+        expect(mockVoiceState.oscillatorConfigs.get(2)!.fmDepth).toBe(500);
+      });
+
+      it('should update FM depth for oscillator 3', () => {
+        paramManager.updateFMDepth(3, 1000);
+        
+        expect(mockVoiceState.oscillatorConfigs.get(3)!.fmDepth).toBe(1000);
+      });
+
+      it('should update both config and active voices', () => {
+        paramManager.updateFMDepth(2, 750);
+        
+        expect(mockVoiceState.oscillatorConfigs.get(2)!.fmDepth).toBe(750);
+        expect(mockVoiceManager.updateActiveVoices).toHaveBeenCalledWith(2, 'fmDepth', 750);
+      });
+
+      it('should handle zero depth', () => {
+        paramManager.updateFMDepth(2, 0);
+        
+        expect(mockVoiceState.oscillatorConfigs.get(2)!.fmDepth).toBe(0);
+      });
+
+      it('should handle maximum depth', () => {
+        paramManager.updateFMDepth(2, 5000);
+        
+        expect(mockVoiceState.oscillatorConfigs.get(2)!.fmDepth).toBe(5000);
+      });
+
+      it('should update depth for both oscillators independently', () => {
+        paramManager.updateFMDepth(2, 300);
+        paramManager.updateFMDepth(3, 800);
+        
+        expect(mockVoiceState.oscillatorConfigs.get(2)!.fmDepth).toBe(300);
+        expect(mockVoiceState.oscillatorConfigs.get(3)!.fmDepth).toBe(800);
+      });
+
+      it('should affect active voices immediately', () => {
+        vi.clearAllMocks();
+        
+        paramManager.updateFMDepth(2, 1500);
+        
+        expect(mockVoiceManager.updateActiveVoices).toHaveBeenCalledTimes(1);
+        expect(mockVoiceManager.updateActiveVoices).toHaveBeenCalledWith(2, 'fmDepth', 1500);
+      });
+    });
+
+    describe('FM Integration', () => {
+      it('should work with both FM enabled and depth set', () => {
+        paramManager.updateFMEnabled(2, true);
+        paramManager.updateFMDepth(2, 600);
+        
+        const config = mockVoiceState.oscillatorConfigs.get(2)!;
+        expect(config.fmEnabled).toBe(true);
+        expect(config.fmDepth).toBe(600);
+      });
+
+      it('should allow depth changes when FM is disabled', () => {
+        paramManager.updateFMEnabled(2, false);
+        paramManager.updateFMDepth(2, 400);
+        
+        const config = mockVoiceState.oscillatorConfigs.get(2)!;
+        expect(config.fmEnabled).toBe(false);
+        expect(config.fmDepth).toBe(400);
+      });
+
+      it('should allow enabling FM with existing depth', () => {
+        paramManager.updateFMDepth(2, 700);
+        paramManager.updateFMEnabled(2, true);
+        
+        const config = mockVoiceState.oscillatorConfigs.get(2)!;
+        expect(config.fmEnabled).toBe(true);
+        expect(config.fmDepth).toBe(700);
+      });
+
+      it('should maintain depth when toggling FM on/off', () => {
+        paramManager.updateFMDepth(2, 900);
+        paramManager.updateFMEnabled(2, true);
+        paramManager.updateFMEnabled(2, false);
+        
+        expect(mockVoiceState.oscillatorConfigs.get(2)!.fmDepth).toBe(900);
+      });
+    });
+  });
 });

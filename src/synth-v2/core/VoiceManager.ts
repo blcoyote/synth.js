@@ -138,10 +138,50 @@ export class VoiceManager {
       }
     });
     
+    // Handle FM modulation routing
+    // Oscillators 2 and 3 can modulate oscillator 1's frequency
+    this.setupFMRouting(voice);
+    
     // Store the voice
     this.voiceState.activeVoices.set(noteIndex, voice);
 
     console.log(`🎹 Playing note ${noteIndex} (${baseFrequency.toFixed(2)} Hz) with ${voice.oscillators.length} oscillator(s)`);
+  }
+
+  /**
+   * Setup FM modulation routing for a voice
+   * Oscillators 2 and 3 can modulate oscillator 1's frequency
+   */
+  private setupFMRouting(voice: Voice): void {
+    const context = this.audioEngine.getContext();
+    
+    // Find oscillator 1 (carrier)
+    const osc1Data = voice.oscillators.find(data => data.oscNum === 1);
+    if (!osc1Data) return; // No carrier to modulate
+    
+    const carrierNode = osc1Data.oscillator.getOscillatorNode();
+    if (!carrierNode || !carrierNode.frequency) return;
+    
+    // Check oscillators 2 and 3 for FM modulation
+    voice.oscillators.forEach(modulatorData => {
+      const oscNum = modulatorData.oscNum;
+      if (oscNum < 2) return; // Only osc 2 & 3 can be modulators
+      
+      const config = this.voiceState.oscillatorConfigs.get(oscNum);
+      if (!config?.fmEnabled || !config.fmDepth || config.fmDepth === 0) return;
+      
+      // Create FM gain node to scale modulation depth
+      const fmGain = context.createGain();
+      fmGain.gain.value = config.fmDepth;
+      
+      // FM routing: modulator oscillator -> fmGain -> carrier frequency parameter
+      // Note: The modulator is already connected to its envelope/pan
+      // We need to connect it to the FM path as well
+      modulatorData.oscillator.connect(fmGain);
+      fmGain.connect(carrierNode.frequency);
+      
+      console.log(`🎛️ FM: Osc${oscNum} -> Osc1 (depth: ${config.fmDepth} Hz)`);
+    });
   }
 
   /**

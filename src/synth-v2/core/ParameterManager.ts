@@ -69,17 +69,55 @@ export class ParameterManager {
 
   /**
    * Update an envelope parameter
+   * Updates both config (for new notes) and active voices (for sustained notes)
    */
   updateEnvelopeParameter(
     envNum: 1 | 2 | 3,
     parameterName: 'attack' | 'decay' | 'sustain' | 'release',
     value: number
   ): void {
-    // Update envelope settings
+    // 1. Update envelope settings (for new notes)
     this.voiceState.envelopeSettings[envNum][parameterName] = value;
     
-    // TODO: Update active voice envelopes
+    // 2. Update active voice envelopes (for sustained notes)
+    this.voiceState.activeVoices.forEach((voice) => {
+      voice.oscillators.forEach((oscData) => {
+        if (oscData.oscNum === envNum) {
+          // Update the envelope parameter in real-time
+          oscData.envelope.setParameter(parameterName, value);
+        }
+      });
+    });
+    
     console.log(`✅ Updated env${envNum}.${parameterName} = ${value}`);
+  }
+
+  /**
+   * Toggle FM modulation on/off for an oscillator (2 or 3)
+   * When enabled, the oscillator modulates oscillator 1's frequency
+   */
+  updateFMEnabled(oscNum: 2 | 3, enabled: boolean): void {
+    const config = this.voiceState.oscillatorConfigs.get(oscNum);
+    if (!config) {
+      console.warn(`Oscillator ${oscNum} config not found`);
+      return;
+    }
+
+    config.fmEnabled = enabled;
+    
+    // Note: FM routing happens during note creation in VoiceManager
+    // Changing this on active voices would require complex rerouting
+    // So this only affects new notes
+    console.log(`✅ Updated osc${oscNum}.fmEnabled = ${enabled}`);
+  }
+
+  /**
+   * Update FM depth for an oscillator (2 or 3)
+   * Updates both config and active voices
+   */
+  updateFMDepth(oscNum: 2 | 3, depth: number): void {
+    // Use the existing updateOscillatorParameter for FM depth
+    this.updateOscillatorParameter(oscNum, 'fmDepth', depth);
   }
 
   /**

@@ -17,11 +17,13 @@ import { AudioEngine } from '../../core/AudioEngine';
 import { voiceState, audioState } from '../../state';
 import { VoiceManager } from './VoiceManager';
 import { ParameterManager } from './ParameterManager';
+import { PresetManager } from './PresetManager';
 
 export class SynthEngine {
   private audioEngine: AudioEngine;
   private voiceManager: VoiceManager | null = null;
   private parameterManager: ParameterManager | null = null;
+  private presetManager: PresetManager | null = null;
   private isInitialized: boolean = false;
 
   constructor() {
@@ -49,6 +51,9 @@ export class SynthEngine {
       
       // Create parameter manager with dependencies
       this.parameterManager = new ParameterManager(this.voiceManager, voiceState, audioState);
+      
+      // Create preset manager
+      this.presetManager = new PresetManager(voiceState);
       
       // Initialize oscillator configurations (3 oscillators)
       voiceState.oscillatorConfigs.set(1, {
@@ -111,6 +116,17 @@ export class SynthEngine {
       throw new Error('ParameterManager not initialized. Call initialize() first.');
     }
     return this.parameterManager;
+  }
+
+  /**
+   * Get the PresetManager instance
+   * @throws Error if called before initialization
+   */
+  getPresetManager(): PresetManager {
+    if (!this.presetManager) {
+      throw new Error('PresetManager not initialized. Call initialize() first.');
+    }
+    return this.presetManager;
   }
 
   /**

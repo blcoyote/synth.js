@@ -21,6 +21,7 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
   const [waveform, setWaveform] = useState<'sine' | 'sawtooth' | 'square' | 'triangle'>(
     config?.waveform ?? 'sine'
   );
+  const [fmEnabled, setFmEnabled] = useState(config?.fmEnabled ?? false);
 
   const handleToggle = () => {
     if (!config) return;
@@ -48,6 +49,18 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
 
   const handleDetuneChange = (value: number) => {
     paramManager.updateOscillatorParameter(oscNum, 'detune', value);
+  };
+
+  const handleFmToggle = () => {
+    if (!config || oscNum < 2) return;
+    const newFmEnabled = !config.fmEnabled;
+    paramManager.updateFMEnabled(oscNum as 2 | 3, newFmEnabled);
+    setFmEnabled(newFmEnabled);
+  };
+
+  const handleFmDepthChange = (value: number) => {
+    if (!config || oscNum < 2) return;
+    paramManager.updateFMDepth(oscNum as 2 | 3, value);
   };
 
   return (
@@ -118,6 +131,32 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
             unit="¢"
             onChange={handleDetuneChange}
           />
+
+          {/* FM Controls - Only for oscillators 2 and 3 */}
+          {oscNum >= 2 && (
+            <div className="fm-controls">
+              <div className="fm-header">
+                <label>FM Modulation (→ Osc 1)</label>
+                <button
+                  className={`toggle-btn small ${fmEnabled ? 'active' : ''}`}
+                  onClick={handleFmToggle}
+                >
+                  {fmEnabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+              
+              {fmEnabled && (
+                <Slider
+                  label="FM Depth"
+                  min={0}
+                  max={5000}
+                  initialValue={config?.fmDepth ?? 0}
+                  unit="Hz"
+                  onChange={handleFmDepthChange}
+                />
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

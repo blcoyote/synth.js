@@ -7,7 +7,9 @@ import { useState } from 'react';
 import { SynthProvider, useSynthEngine } from './context/SynthContext';
 import { SynthEngine } from './core/SynthEngine';
 import { OscillatorPanel } from './components/OscillatorPanel';
+import { EnvelopePanel } from './components/EnvelopePanel';
 import { SimpleKeyboard } from './components/SimpleKeyboard';
+import { PresetPanel } from './components/PresetPanel';
 
 // Create synth engine instance (singleton, created once)
 const synthEngine = new SynthEngine();
@@ -16,6 +18,12 @@ function SynthControls() {
   const { engine, voiceState } = useSynthEngine();
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handlePresetLoad = () => {
+    // Force re-render of all components by changing the key
+    setRefreshKey(prev => prev + 1);
+  };
 
   const handleStartAudio = async () => {
     try {
@@ -65,12 +73,17 @@ function SynthControls() {
         </div>
       </header>
 
-      <div className="main-content">
+      <div className="main-content" key={refreshKey}>
+        {/* Presets */}
+        <section className="presets-section">
+          <PresetPanel onPresetLoad={handlePresetLoad} />
+        </section>
+
         {/* Keyboard */}
         <section className="keyboard-section">
           <h2>Keyboard</h2>
-          <p>Click keys to play notes (C3-B4)</p>
-          <SimpleKeyboard startOctave={3} octaves={2} />
+          <p>Click keys or use your computer keyboard (AZSX... / QWER...) to play notes (C2-C5)</p>
+          <SimpleKeyboard startOctave={2} octaves={3} extraKeys={1} />
         </section>
 
         {/* Oscillators */}
@@ -80,6 +93,16 @@ function SynthControls() {
             <OscillatorPanel oscNum={1} />
             <OscillatorPanel oscNum={2} />
             <OscillatorPanel oscNum={3} />
+          </div>
+        </section>
+
+        {/* Envelopes */}
+        <section className="envelopes-section">
+          <h2>Envelopes</h2>
+          <div className="envelope-grid">
+            <EnvelopePanel envNum={1} />
+            <EnvelopePanel envNum={2} />
+            <EnvelopePanel envNum={3} />
           </div>
         </section>
 

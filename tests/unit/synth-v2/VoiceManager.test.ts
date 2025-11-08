@@ -13,12 +13,14 @@ import type { VoiceStateManager } from '../../../src/state';
 vi.mock('../../../src/components/oscillators/SineOscillator', () => {
   return {
     SineOscillator: class MockSineOscillator {
+      private mockOscillatorNode = { frequency: { value: 440 } };
       connect = vi.fn();
       disconnect = vi.fn();
       start = vi.fn();
       stop = vi.fn();
       setParameter = vi.fn();
       getParameter = vi.fn(() => 0);
+      getOscillatorNode = vi.fn(() => this.mockOscillatorNode);
     },
   };
 });
@@ -26,12 +28,14 @@ vi.mock('../../../src/components/oscillators/SineOscillator', () => {
 vi.mock('../../../src/components/oscillators/SawtoothOscillator', () => {
   return {
     SawtoothOscillator: class MockSawtoothOscillator {
+      private mockOscillatorNode = { frequency: { value: 440 } };
       connect = vi.fn();
       disconnect = vi.fn();
       start = vi.fn();
       stop = vi.fn();
       setParameter = vi.fn();
       getParameter = vi.fn(() => 0);
+      getOscillatorNode = vi.fn(() => this.mockOscillatorNode);
     },
   };
 });
@@ -39,12 +43,14 @@ vi.mock('../../../src/components/oscillators/SawtoothOscillator', () => {
 vi.mock('../../../src/components/oscillators/SquareOscillator', () => {
   return {
     SquareOscillator: class MockSquareOscillator {
+      private mockOscillatorNode = { frequency: { value: 440 } };
       connect = vi.fn();
       disconnect = vi.fn();
       start = vi.fn();
       stop = vi.fn();
       setParameter = vi.fn();
       getParameter = vi.fn(() => 0);
+      getOscillatorNode = vi.fn(() => this.mockOscillatorNode);
     },
   };
 });
@@ -52,12 +58,14 @@ vi.mock('../../../src/components/oscillators/SquareOscillator', () => {
 vi.mock('../../../src/components/oscillators/TriangleOscillator', () => {
   return {
     TriangleOscillator: class MockTriangleOscillator {
+      private mockOscillatorNode = { frequency: { value: 440 } };
       connect = vi.fn();
       disconnect = vi.fn();
       start = vi.fn();
       stop = vi.fn();
       setParameter = vi.fn();
       getParameter = vi.fn(() => 0);
+      getOscillatorNode = vi.fn(() => this.mockOscillatorNode);
     },
   };
 });
