@@ -576,9 +576,167 @@
       min-height: 200px;
       background: rgba(0, 0, 0, 0.2);
       border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    /* Arpeggiator Panel */
+    .arp-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .arp-transport {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+
+    .transport-btn {
+      padding: 0.75rem 2rem;
+      background: rgba(16, 185, 129, 0.2);
+      border: 2px solid rgba(16, 185, 129, 0.3);
+      border-radius: 6px;
+      color: #10b981;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.95rem;
+    }
+
+    .transport-btn:hover:not(:disabled) {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .transport-btn.active {
+      background: #10b981;
+      border-color: #10b981;
+      color: white;
+    }
+
+    .transport-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pattern-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .pattern-btn {
+      padding: 0.6rem 1rem;
+      background: rgba(139, 92, 246, 0.2);
+      border: 2px solid rgba(139, 92, 246, 0.3);
+      border-radius: 6px;
+      color: #a78bfa;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.85rem;
+    }
+
+    .pattern-btn:hover:not(:disabled) {
+      background: rgba(139, 92, 246, 0.3);
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+
+    .pattern-btn.active {
+      background: #8b5cf6;
+      border-color: #8b5cf6;
+      color: white;
+    }
+
+    .pattern-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .division-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .division-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(59, 130, 246, 0.2);
+      border: 2px solid rgba(59, 130, 246, 0.3);
+      border-radius: 6px;
+      color: #60a5fa;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.85rem;
+      min-width: 50px;
+    }
+
+    .division-btn:hover:not(:disabled) {
+      background: rgba(59, 130, 246, 0.3);
+      border-color: rgba(59, 130, 246, 0.5);
+    }
+
+    .division-btn.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
+    }
+
+    .division-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .control-label {
+      font-weight: 600;
+      color: #a0aec0;
+      font-size: 0.9rem;
+    }
+
+    .checkbox-label {
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      color: #e0e0e0;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      accent-color: #8b5cf6;
+    }
+
+    .control-hint {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .warning-message {
+      padding: 1rem;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 6px;
+      color: #f87171;
+      text-align: center;
+      font-size: 0.9rem;
     }
 
     /* Keyboard */

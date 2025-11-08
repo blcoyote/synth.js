@@ -13,6 +13,7 @@ import { PresetPanel } from './components/PresetPanel';
 import { FilterPanel } from './components/FilterPanel';
 import { EffectsPanel } from './components/EffectsPanel';
 import { LFOPanel } from './components/LFOPanel';
+import { ArpeggiatorPanel } from './components/ArpeggiatorPanel';
 import { CollapsiblePanel } from './components/common/CollapsiblePanel';
 import { voiceState, audioState } from '../state';
 
@@ -250,9 +251,13 @@ function SynthControls() {
                 </button>
               </div>
               <div className="arp-seq-content">
-                <p style={{ color: '#9ca3af', textAlign: 'center', padding: '2rem' }}>
-                  {arpSeqMode === 'arpeggiator' ? 'Arpeggiator' : 'Sequencer'} controls will be added here
-                </p>
+                {arpSeqMode === 'arpeggiator' ? (
+                  <ArpeggiatorPanel />
+                ) : (
+                  <p style={{ color: '#9ca3af', textAlign: 'center', padding: '2rem' }}>
+                    Sequencer controls will be added here
+                  </p>
+                )}
               </div>
             </div>
           </CollapsiblePanel>

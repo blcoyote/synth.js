@@ -20,6 +20,7 @@ import { ParameterManager } from './ParameterManager';
 import { PresetManager } from './PresetManager';
 import { EffectsManager } from './EffectsManager';
 import { LFOManager } from './LFOManager';
+import { ArpeggiatorManager } from './ArpeggiatorManager';
 
 export class SynthEngine {
   private audioEngine: AudioEngine;
@@ -28,6 +29,7 @@ export class SynthEngine {
   private presetManager: PresetManager | null = null;
   private effectsManager: EffectsManager | null = null;
   private lfoManager: LFOManager | null = null;
+  private arpeggiatorManager: ArpeggiatorManager | null = null;
   private isInitialized: boolean = false;
 
   constructor() {
@@ -155,6 +157,20 @@ export class SynthEngine {
       this.voiceManager.setLFOManager(this.lfoManager);
       console.log('🔗 Connected LFO manager to voice manager');
       
+      // Create Arpeggiator manager
+      this.arpeggiatorManager = new ArpeggiatorManager();
+      
+      // Connect arpeggiator to voice manager
+      this.arpeggiatorManager.onNote((note) => {
+        this.voiceManager?.playNote(note.pitch, note.velocity / 127);
+      });
+      
+      this.arpeggiatorManager.onNoteOff((pitch) => {
+        this.voiceManager?.releaseNote(pitch);
+      });
+      
+      console.log('🎹 Created Arpeggiator manager');
+      
       this.isInitialized = true;
       console.log('✅ SynthEngine initialized successfully');
     } catch (error) {
@@ -216,6 +232,17 @@ export class SynthEngine {
       throw new Error('LFOManager not initialized. Call initialize() first.');
     }
     return this.lfoManager;
+  }
+
+  /**
+   * Get the ArpeggiatorManager instance
+   * @throws Error if called before initialization
+   */
+  getArpeggiatorManager(): ArpeggiatorManager {
+    if (!this.arpeggiatorManager) {
+      throw new Error('ArpeggiatorManager not initialized. Call initialize() first.');
+    }
+    return this.arpeggiatorManager;
   }
 
   /**
