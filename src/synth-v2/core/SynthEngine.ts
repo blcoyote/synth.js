@@ -18,12 +18,14 @@ import { voiceState, audioState, visualizationState } from '../../state';
 import { VoiceManager } from './VoiceManager';
 import { ParameterManager } from './ParameterManager';
 import { PresetManager } from './PresetManager';
+import { EffectsManager } from './EffectsManager';
 
 export class SynthEngine {
   private audioEngine: AudioEngine;
   private voiceManager: VoiceManager | null = null;
   private parameterManager: ParameterManager | null = null;
   private presetManager: PresetManager | null = null;
+  private effectsManager: EffectsManager | null = null;
   private isInitialized: boolean = false;
 
   constructor() {
@@ -120,14 +122,20 @@ export class SynthEngine {
       spectrumAnalyser.smoothingTimeConstant = 0.75;
       visualizationState.setAnalyser(spectrumAnalyser);
       
-      // Reconnect masterGain through filter and analyser
+      // Create effects manager
+      this.effectsManager = new EffectsManager(this.audioEngine);
+      audioState.setEffectsManager(this.effectsManager);
+      console.log('🎛️ Created effects manager');
+      
+      // Reconnect masterGain through filter -> effects -> analyser
       const masterGainNode = this.voiceManager.getMasterGainNode();
       masterGainNode.disconnect();
       masterGainNode.connect(masterFilter);
-      masterFilter.connect(spectrumAnalyser);
+      masterFilter.connect(this.effectsManager.getInputNode());
+      this.effectsManager.getOutputNode().connect(spectrumAnalyser);
       spectrumAnalyser.connect(context.destination);
       
-      console.log('🔗 Audio chain: oscBuses -> analyzers -> masterGain -> filter -> spectrumAnalyser -> destination');
+      console.log('🔗 Audio chain: oscBuses -> analyzers -> masterGain -> filter -> effects -> spectrumAnalyser -> destination');
       console.log('📊 Created spectrum analyser for filter visualization');
       
       // Create parameter manager with dependencies
@@ -135,8 +143,6 @@ export class SynthEngine {
       
       // Create preset manager
       this.presetManager = new PresetManager(voiceState);
-      
-      // TODO: Set up effects chain
       
       this.isInitialized = true;
       console.log('✅ SynthEngine initialized successfully');
@@ -177,6 +183,17 @@ export class SynthEngine {
       throw new Error('PresetManager not initialized. Call initialize() first.');
     }
     return this.presetManager;
+  }
+
+  /**
+   * Get the EffectsManager instance
+   * @throws Error if called before initialization
+   */
+  getEffectsManager(): EffectsManager {
+    if (!this.effectsManager) {
+      throw new Error('EffectsManager not initialized. Call initialize() first.');
+    }
+    return this.effectsManager;
   }
 
   /**

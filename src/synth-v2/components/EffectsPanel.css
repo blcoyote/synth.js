@@ -1,0 +1,254 @@
+/* EffectsPanel.css - Styling for effects chain controls */
+
+.effects-panel {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #2a2a2a;
+}
+
+.effects-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.effects-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #ff8800;
+}
+
+.effects-count {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.effects-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.effects-add-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.effects-add-btn {
+  background: #2a2a2a;
+  color: #ff8800;
+  border: 1px solid #ff8800;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.effects-add-btn:hover {
+  background: #ff8800;
+  color: #000;
+}
+
+.effects-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.effects-chain-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  background: #252525;
+  border-radius: 6px;
+  border: 1px solid #3a3a3a;
+  transition: all 0.2s;
+}
+
+.effects-chain-toggle:hover {
+  border-color: #ff8800;
+  background: #2a2a2a;
+}
+
+.effects-chain-toggle label {
+  color: #ccc;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  flex: 1;
+}
+
+.effects-chain-toggle input[type="checkbox"] {
+  /* Hide default checkbox */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  width: 44px;
+  height: 22px;
+  background: #3a3a3a;
+  border: 2px solid #555;
+  border-radius: 11px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.effects-chain-toggle input[type="checkbox"]:hover {
+  border-color: #ff8800;
+}
+
+.effects-chain-toggle input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  top: 1px;
+  left: 1px;
+  background: #888;
+  transition: all 0.3s ease;
+}
+
+.effects-chain-toggle input[type="checkbox"]:checked {
+  background: #ff8800;
+  border-color: #ff8800;
+}
+
+.effects-chain-toggle input[type="checkbox"]:checked::before {
+  left: 23px;
+  background: #fff;
+}
+
+.effects-chain-toggle input[type="checkbox"]:focus {
+  box-shadow: 0 0 0 3px rgba(255, 136, 0, 0.2);
+}
+
+.effects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.effect-card {
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 15px;
+  transition: opacity 0.2s;
+}
+
+.effect-card.bypassed {
+  opacity: 0.5;
+}
+
+.effect-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.effect-card-title {
+  font-size: 1rem;
+  color: #ff8800;
+  margin: 0;
+}
+
+.effect-card-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.effect-btn {
+  background: #3a3a3a;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.effect-btn:hover {
+  background: #4a4a4a;
+  border-color: #ff8800;
+}
+
+.effect-btn.bypass {
+  color: #ffaa00;
+}
+
+.effect-btn.bypass.active {
+  background: #ffaa00;
+  color: #000;
+  border-color: #ffaa00;
+}
+
+.effect-btn.remove {
+  color: #ff4444;
+}
+
+.effect-btn.remove:hover {
+  background: #ff4444;
+  color: #000;
+  border-color: #ff4444;
+}
+
+.effect-preset-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.effect-preset-selector label {
+  color: #aaa;
+  font-size: 0.9rem;
+  min-width: 50px;
+}
+
+.effect-preset-selector select {
+  flex: 1;
+  background: #3a3a3a;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.effect-preset-selector select:hover {
+  border-color: #ff8800;
+}
+
+.effect-preset-selector select:focus {
+  outline: none;
+  border-color: #ff8800;
+}
+
+.effect-parameters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-effects {
+  text-align: center;
+  color: #666;
+  padding: 30px;
+  font-style: italic;
+}

@@ -7,6 +7,7 @@
 import type { BusManager } from '../bus/BusManager';
 import type { EffectsChain } from '../bus/EffectsChain';
 import type { Lowpass12Filter, Lowpass24Filter } from '../components/filters';
+import type { EffectsManager } from '../synth-v2/core/EffectsManager';
 
 const DEFAULT_FILTER_CUTOFF = 2000;
 
@@ -14,6 +15,7 @@ export class AudioStateManager {
   // Audio routing
   private _masterBus: ReturnType<typeof BusManager.prototype.getMasterBus> | null = null;
   private _effectsChain: EffectsChain | null = null;
+  private _effectsManager: EffectsManager | null = null; // V2 effects manager
   
   // Filter instances
   private _masterFilter: BiquadFilterNode | Lowpass12Filter | Lowpass24Filter | null = null;
@@ -65,6 +67,22 @@ export class AudioStateManager {
 
   setCurrentCustomFilter(filter: Lowpass12Filter | Lowpass24Filter | null) {
     this._currentCustomFilter = filter;
+  }
+
+  // V2 Effects Manager
+  getEffectsManager(): EffectsManager {
+    if (this._effectsManager === null) {
+      throw new Error('EffectsManager is not initialized. Call initialize() first.');
+    }
+    return this._effectsManager;
+  }
+
+  getEffectsManagerOrNull(): EffectsManager | null {
+    return this._effectsManager;
+  }
+
+  setEffectsManager(manager: EffectsManager) {
+    this._effectsManager = manager;
   }
 }
 
