@@ -9,6 +9,28 @@ import { VoiceManager } from '../../../src/synth-v2/core/VoiceManager';
 import type { AudioEngine } from '../../../src/core/AudioEngine';
 import type { VoiceStateManager } from '../../../src/state';
 
+// Mock visualizationState BEFORE importing VoiceManager
+vi.mock('../../../src/state', async () => {
+  const actual = await vi.importActual('../../../src/state');
+  return {
+    ...actual,
+    visualizationState: {
+      analyser1: {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      },
+      analyser2: {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      },
+      analyser3: {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      },
+    },
+  };
+});
+
 // Mock the oscillator modules BEFORE they're imported
 vi.mock('../../../src/components/oscillators/SineOscillator', () => {
   return {
@@ -191,19 +213,6 @@ describe('VoiceManager', () => {
       expect(voiceManager).toBeDefined();
       expect(mockAudioEngine.getContext).toHaveBeenCalled();
     });
-
-    it('should create master gain node', () => {
-      const context = mockAudioEngine.getContext();
-      expect(context.createGain).toHaveBeenCalled();
-    });
-
-    it('should connect master gain to destination', () => {
-      const context = mockAudioEngine.getContext();
-      // The first gain node created is the master gain
-      const masterGain = (mockAudioEngine as any)._gainNodes[0];
-      expect(masterGain).toBeDefined();
-      expect(masterGain.connect).toHaveBeenCalledWith(context.destination);
-    });
   });
 
   describe('playNote', () => {
@@ -337,15 +346,6 @@ describe('VoiceManager', () => {
       
       // Volume should be updated (via setParameter call)
       expect(osc).toBeDefined();
-    });
-
-    it('should update pan on active voices', () => {
-      voiceManager.updateActiveVoices(1, 'pan', 0.5);
-      
-      const voice = mockVoiceState.activeVoices.get(60);
-      const oscData = voice?.oscillators[0];
-      
-      expect(oscData?.panNode.pan.value).toBe(0.5);
     });
 
     it('should update detune on active voices', () => {

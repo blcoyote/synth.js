@@ -12,7 +12,7 @@
  * the provided VoiceStateManager interface.
  */
 
-import { VoiceStateManager, Voice } from '../../state';
+import { VoiceStateManager, Voice, visualizationState } from '../../state';
 import { AudioEngine } from '../../core/AudioEngine';
 import { 
   SineOscillator, 
@@ -39,6 +39,9 @@ export class VoiceManager {
   private audioEngine: AudioEngine;
   private voiceState: VoiceStateManager;
   private masterGain: GainNode;
+  private osc1Bus: GainNode;
+  private osc2Bus: GainNode;
+  private osc3Bus: GainNode;
 
   /**
    * Creates a new VoiceManager
@@ -55,10 +58,30 @@ export class VoiceManager {
     this.masterGain.gain.value = DEFAULT_MASTER_VOLUME;
     this.masterGain.connect(context.destination);
     
-    console.log('🎵 VoiceManager created and initialized');
+    // Create per-oscillator buses for routing through analyzers
+    this.osc1Bus = context.createGain();
+    this.osc2Bus = context.createGain();
+    this.osc3Bus = context.createGain();
+    
+    // Connect buses through analyzers to master gain
+    // Signal flow: oscBus -> analyser -> masterGain -> destination
+    this.osc1Bus.connect(visualizationState.analyser1);
+    visualizationState.analyser1.connect(this.masterGain);
+    
+    this.osc2Bus.connect(visualizationState.analyser2);
+    visualizationState.analyser2.connect(this.masterGain);
+    
+    this.osc3Bus.connect(visualizationState.analyser3);
+    visualizationState.analyser3.connect(this.masterGain);
+    
+    console.log('🎵 VoiceManager created with oscillator buses and analyzers');
   }
 
-  private getMasterGain(): GainNode {
+  /**
+   * Get the master gain node for external routing
+   * @returns The master gain node
+   */
+  getMasterGainNode(): GainNode {
     return this.masterGain;
   }
 
@@ -122,10 +145,13 @@ export class VoiceManager {
         // Create envelope for this oscillator
         const envelope = new ADSREnvelope(this.voiceState.envelopeSettings[oscNum as 1 | 2 | 3]);
 
-        // Connect: oscillator -> pan -> envelope -> master gain -> destination
+        // Get the appropriate oscillator bus
+        const oscBus = oscNum === 1 ? this.osc1Bus : oscNum === 2 ? this.osc2Bus : this.osc3Bus;
+
+        // Connect: oscillator -> pan -> envelope -> oscBus (-> analyser -> master gain -> destination)
         oscillator.connect(panNode);
         panNode.connect(envelope.getInputNode());
-        envelope.connect(this.getMasterGain());
+        envelope.connect(oscBus);
 
         // Start the oscillator
         oscillator.start();

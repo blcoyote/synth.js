@@ -48,6 +48,23 @@ class VisualizationStateManager {
     return this._analyser3;
   }
 
+  // Safe getters that return null instead of throwing
+  getAnalyserOrNull(): AnalyserNode | null {
+    return this._analyser;
+  }
+
+  getAnalyser1OrNull(): AnalyserNode | null {
+    return this._analyser1;
+  }
+
+  getAnalyser2OrNull(): AnalyserNode | null {
+    return this._analyser2;
+  }
+
+  getAnalyser3OrNull(): AnalyserNode | null {
+    return this._analyser3;
+  }
+
   get filterVisualizer() {
     return this._filterVisualizer;
   }

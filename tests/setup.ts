@@ -160,6 +160,22 @@ class MockAudioContext {
     };
   }
 
+  createAnalyser() {
+    return {
+      fftSize: 2048,
+      frequencyBinCount: 1024,
+      minDecibels: -100,
+      maxDecibels: -30,
+      smoothingTimeConstant: 0.8,
+      getByteFrequencyData: vi.fn(),
+      getByteTimeDomainData: vi.fn(),
+      getFloatFrequencyData: vi.fn(),
+      getFloatTimeDomainData: vi.fn(),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    };
+  }
+
   resume() {
     return Promise.resolve();
   }

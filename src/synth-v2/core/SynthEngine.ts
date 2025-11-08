@@ -14,7 +14,7 @@
  */
 
 import { AudioEngine } from '../../core/AudioEngine';
-import { voiceState, audioState } from '../../state';
+import { voiceState, audioState, visualizationState } from '../../state';
 import { VoiceManager } from './VoiceManager';
 import { ParameterManager } from './ParameterManager';
 import { PresetManager } from './PresetManager';
@@ -46,14 +46,25 @@ export class SynthEngine {
       // Initialize audio engine
       await this.audioEngine.initialize();
       
-      // Now create voice manager with initialized audio engine
-      this.voiceManager = new VoiceManager(this.audioEngine, voiceState);
+      // Create analyser nodes BEFORE VoiceManager (it needs them in constructor)
+      const context = this.audioEngine.getContext();
       
-      // Create parameter manager with dependencies
-      this.parameterManager = new ParameterManager(this.voiceManager, voiceState, audioState);
+      const analyser1 = context.createAnalyser();
+      analyser1.fftSize = 2048;
+      analyser1.smoothingTimeConstant = 0.9; // More smoothing for stable waveforms
+      visualizationState.setAnalyser1(analyser1);
       
-      // Create preset manager
-      this.presetManager = new PresetManager(voiceState);
+      const analyser2 = context.createAnalyser();
+      analyser2.fftSize = 2048;
+      analyser2.smoothingTimeConstant = 0.9;
+      visualizationState.setAnalyser2(analyser2);
+      
+      const analyser3 = context.createAnalyser();
+      analyser3.fftSize = 2048;
+      analyser3.smoothingTimeConstant = 0.9;
+      visualizationState.setAnalyser3(analyser3);
+      
+      console.log('📊 Created waveform analyzers for 3 oscillators');
       
       // Initialize oscillator configurations (3 oscillators)
       voiceState.oscillatorConfigs.set(1, {
@@ -85,8 +96,47 @@ export class SynthEngine {
 
       console.log(`🎛️ Initialized ${voiceState.oscillatorConfigs.size} oscillator configs`);
       
-      // Initialize state modules (will be implemented when we need them)
-      // TODO: Set up buses, effects chain, filters, etc.
+      // Create master filter (default: lowpass at 20kHz, essentially bypassed)
+      const masterFilter = context.createBiquadFilter();
+      masterFilter.type = 'lowpass';
+      masterFilter.frequency.value = 20000; // Wide open by default
+      masterFilter.Q.value = 1.0;
+      audioState.setMasterFilter(masterFilter);
+      audioState.filterSettings.type = 'lowpass';
+      audioState.filterSettings.cutoff = 20000;
+      audioState.filterSettings.resonance = 1.0;
+      audioState.filterSettings.enabled = false;
+      
+      console.log('🎚️ Created master filter (bypassed by default)');
+      
+      // Now create voice manager with initialized audio engine AND analyzers
+      // VoiceManager will connect: masterGain -> destination
+      // We'll reconnect it to go through filter: masterGain -> filter -> destination
+      this.voiceManager = new VoiceManager(this.audioEngine, voiceState);
+      
+      // Create spectrum analyser (for filter visualization)
+      const spectrumAnalyser = context.createAnalyser();
+      spectrumAnalyser.fftSize = 8192; // High resolution for frequency visualization
+      spectrumAnalyser.smoothingTimeConstant = 0.75;
+      visualizationState.setAnalyser(spectrumAnalyser);
+      
+      // Reconnect masterGain through filter and analyser
+      const masterGainNode = this.voiceManager.getMasterGainNode();
+      masterGainNode.disconnect();
+      masterGainNode.connect(masterFilter);
+      masterFilter.connect(spectrumAnalyser);
+      spectrumAnalyser.connect(context.destination);
+      
+      console.log('🔗 Audio chain: oscBuses -> analyzers -> masterGain -> filter -> spectrumAnalyser -> destination');
+      console.log('📊 Created spectrum analyser for filter visualization');
+      
+      // Create parameter manager with dependencies
+      this.parameterManager = new ParameterManager(this.voiceManager, voiceState, audioState);
+      
+      // Create preset manager
+      this.presetManager = new PresetManager(voiceState);
+      
+      // TODO: Set up effects chain
       
       this.isInitialized = true;
       console.log('✅ SynthEngine initialized successfully');

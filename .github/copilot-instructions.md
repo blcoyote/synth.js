@@ -279,11 +279,37 @@ slider.addEventListener('input', () => {
 - Target: < 5ms latency for user interactions
 
 ### 9. Testing Requirements
-- **Unit tests for each component**
-- Integration tests for signal routing
-- Audio quality tests (THD, frequency response)
-- Performance benchmarks
-- Edge case handling (divide by zero, NaN values)
+
+#### Test Focus Priority
+**CRITICAL: Test our own code, not external systems**
+- ✅ **DO**: Test component behavior, state management, UI interactions, business logic
+- ✅ **DO**: Verify that our code correctly calls external APIs with right parameters
+- ✅ **DO**: Mock external dependencies (Web Audio API, canvas, DOM APIs)
+- ❌ **DON'T**: Test Web Audio API internals (BiquadFilterNode.frequency.value, etc.)
+- ❌ **DON'T**: Test browser API behavior (AudioContext, canvas rendering, etc.)
+- ❌ **DON'T**: Verify third-party library functionality
+
+**Example - Good vs Bad Tests:**
+```typescript
+// ✅ GOOD: Tests our FilterPanel component behavior
+it('should update state when cutoff slider changes', () => {
+  fireEvent.change(cutoffSlider, { target: { value: '50' } });
+  expect(audioState.filterSettings.cutoff).toBeGreaterThan(20);
+});
+
+// ❌ BAD: Tests Web Audio API (not our code)
+it('should set BiquadFilterNode frequency', () => {
+  const filter = audioState.masterFilter as BiquadFilterNode;
+  expect(filter.frequency.value).toBe(500); // Testing browser API
+});
+```
+
+#### Test Requirements
+- **Unit tests for each component** (focus on OUR logic, not APIs)
+- Integration tests for signal routing (verify connections, not audio processing)
+- Mock external dependencies (Web Audio API, canvas, visualizers)
+- Edge case handling (divide by zero, NaN values in OUR code)
+- Performance benchmarks (for OUR algorithms)
 
 ### 10. Documentation Standards
 - **Every component needs:**

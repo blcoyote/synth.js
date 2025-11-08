@@ -6,6 +6,8 @@
 import { useState } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { Slider } from './common/Slider';
+import { WaveformDisplay } from './common/WaveformDisplay';
+import { visualizationState } from '../../state';
 
 interface OscillatorPanelProps {
   oscNum: 1 | 2 | 3;
@@ -77,6 +79,18 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
 
       {enabled && (
         <>
+          {/* Waveform Display */}
+          <div className="waveform-display-container">
+            <WaveformDisplay 
+              analyserNode={
+                oscNum === 1 ? visualizationState.getAnalyser1OrNull() :
+                oscNum === 2 ? visualizationState.getAnalyser2OrNull() :
+                visualizationState.getAnalyser3OrNull()
+              }
+              height={120}
+            />
+          </div>
+
           <div className="waveform-selector">
             <label>Waveform</label>
             <div className="waveform-buttons">

@@ -10,6 +10,7 @@ import { OscillatorPanel } from './components/OscillatorPanel';
 import { EnvelopePanel } from './components/EnvelopePanel';
 import { SimpleKeyboard } from './components/SimpleKeyboard';
 import { PresetPanel } from './components/PresetPanel';
+import { FilterPanel } from './components/FilterPanel';
 
 // Create synth engine instance (singleton, created once)
 const synthEngine = new SynthEngine();
@@ -104,6 +105,12 @@ function SynthControls() {
             <EnvelopePanel envNum={2} />
             <EnvelopePanel envNum={3} />
           </div>
+        </section>
+
+        {/* Filter */}
+        <section className="filter-section">
+          <h2>Filter</h2>
+          <FilterPanel />
         </section>
 
         {/* Status */}

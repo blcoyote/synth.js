@@ -23,7 +23,11 @@ vi.mock('../../../../src/state', () => {
     voiceState: { oscillatorConfigs: configs },
     audioState: {},
     modulationState: {},
-    visualizationState: {},
+    visualizationState: {
+      getAnalyser1OrNull: vi.fn(() => null),
+      getAnalyser2OrNull: vi.fn(() => null),
+      getAnalyser3OrNull: vi.fn(() => null),
+    },
   };
 });
 
