@@ -6,9 +6,13 @@
  * - Handle note on/off events
  * - Apply real-time parameter updates to active voices
  * - Voice pooling for performance
+ * 
+ * @remarks
+ * Dependencies are injected for testability. All state access goes through
+ * the provided VoiceStateManager interface.
  */
 
-import { voiceState, Voice } from '../../state';
+import { VoiceStateManager, Voice } from '../../state';
 import { AudioEngine } from '../../core/AudioEngine';
 import { 
   SineOscillator, 
@@ -29,34 +33,32 @@ const NOTE_FREQUENCIES = [
   2093.00, // C7
 ];
 
+const DEFAULT_MASTER_VOLUME = 0.3; // 30% to prevent clipping with multiple oscillators
+
 export class VoiceManager {
   private audioEngine: AudioEngine;
-  private masterGain: GainNode | null = null;
-
-  constructor() {
-    this.audioEngine = AudioEngine.getInstance();
-    console.log('🎵 VoiceManager created');
-  }
+  private voiceState: VoiceStateManager;
+  private masterGain: GainNode;
 
   /**
-   * Initialize the voice manager (called after AudioEngine.initialize())
+   * Creates a new VoiceManager
+   * @param audioEngine - Audio engine instance (must be initialized)
+   * @param voiceState - Voice state manager for storing active voices
    */
-  initialize() {
-    if (this.masterGain) return; // Already initialized
+  constructor(audioEngine: AudioEngine, voiceState: VoiceStateManager) {
+    this.audioEngine = audioEngine;
+    this.voiceState = voiceState;
     
     // Create master gain node for all voices
     const context = this.audioEngine.getContext();
     this.masterGain = context.createGain();
-    this.masterGain.gain.value = 0.3; // Master volume
+    this.masterGain.gain.value = DEFAULT_MASTER_VOLUME;
     this.masterGain.connect(context.destination);
     
-    console.log('🎵 VoiceManager initialized');
+    console.log('🎵 VoiceManager created and initialized');
   }
 
   private getMasterGain(): GainNode {
-    if (!this.masterGain) {
-      throw new Error('VoiceManager not initialized. Call initialize() first.');
-    }
     return this.masterGain;
   }
 
@@ -67,7 +69,7 @@ export class VoiceManager {
    */
   playNote(noteIndex: number, velocity: number = 1.0): void {
     // Stop any existing note at this index
-    if (voiceState.activeVoices.has(noteIndex)) {
+    if (this.voiceState.activeVoices.has(noteIndex)) {
       this.releaseNote(noteIndex);
     }
 
@@ -88,7 +90,7 @@ export class VoiceManager {
     const context = this.audioEngine.getContext();
 
     // Create oscillators for each enabled config
-    voiceState.oscillatorConfigs.forEach((config, oscNum) => {
+    this.voiceState.oscillatorConfigs.forEach((config, oscNum) => {
       if (config.enabled) {
         const freq = baseFrequency * Math.pow(2, config.octave);
 
@@ -118,7 +120,7 @@ export class VoiceManager {
         panNode.pan.value = config.pan;
 
         // Create envelope for this oscillator
-        const envelope = new ADSREnvelope(voiceState.envelopeSettings[oscNum as 1 | 2 | 3]);
+        const envelope = new ADSREnvelope(this.voiceState.envelopeSettings[oscNum as 1 | 2 | 3]);
 
         // Connect: oscillator -> pan -> envelope -> master gain -> destination
         oscillator.connect(panNode);
@@ -137,7 +139,7 @@ export class VoiceManager {
     });
     
     // Store the voice
-    voiceState.activeVoices.set(noteIndex, voice);
+    this.voiceState.activeVoices.set(noteIndex, voice);
 
     console.log(`🎹 Playing note ${noteIndex} (${baseFrequency.toFixed(2)} Hz) with ${voice.oscillators.length} oscillator(s)`);
   }
@@ -147,7 +149,7 @@ export class VoiceManager {
    * @param noteIndex - Index of the note to release
    */
   releaseNote(noteIndex: number): void {
-    const voice = voiceState.activeVoices.get(noteIndex);
+    const voice = this.voiceState.activeVoices.get(noteIndex);
     if (!voice) return;
 
     // Trigger envelope release for all oscillators
@@ -161,7 +163,7 @@ export class VoiceManager {
     // Schedule cleanup after release time
     const maxRelease = Math.max(
       ...voice.oscillators.map((_, idx) => 
-        voiceState.envelopeSettings[(idx + 1) as 1 | 2 | 3].release
+        this.voiceState.envelopeSettings[(idx + 1) as 1 | 2 | 3].release
       )
     );
 
@@ -176,7 +178,7 @@ export class VoiceManager {
    * Cleanup a voice and remove it
    */
   private cleanupVoice(noteIndex: number): void {
-    const voice = voiceState.activeVoices.get(noteIndex);
+    const voice = this.voiceState.activeVoices.get(noteIndex);
     if (!voice) return;
 
     // Stop and disconnect all oscillators
@@ -188,7 +190,7 @@ export class VoiceManager {
     });
 
     // Remove from active voices
-    voiceState.activeVoices.delete(noteIndex);
+    this.voiceState.activeVoices.delete(noteIndex);
     
     console.log(`🧹 Cleaned up note ${noteIndex}`);
   }
@@ -199,11 +201,11 @@ export class VoiceManager {
   stopAllNotes(): void {
     console.log('⏹️ Stopping all notes');
     
-    voiceState.activeVoices.forEach((_, noteIndex) => {
+    this.voiceState.activeVoices.forEach((_, noteIndex) => {
       this.cleanupVoice(noteIndex);
     });
     
-    voiceState.clearActiveVoices();
+    this.voiceState.clearActiveVoices();
   }
 
   /**
@@ -215,7 +217,7 @@ export class VoiceManager {
     parameterName: string,
     value: number
   ): void {
-    voiceState.activeVoices.forEach((voice) => {
+    this.voiceState.activeVoices.forEach((voice) => {
       voice.oscillators.forEach((oscData) => {
         if (oscData.oscNum === oscNum) {
           switch (parameterName) {
@@ -238,13 +240,13 @@ export class VoiceManager {
       });
     });
     
-    console.log(`🔧 Updated ${parameterName} to ${value} for osc ${oscNum} on ${voiceState.activeVoices.size} active voice(s)`);
+    console.log(`🔧 Updated ${parameterName} to ${value} for osc ${oscNum} on ${this.voiceState.activeVoices.size} active voice(s)`);
   }
 
   /**
    * Get the number of currently active voices
    */
   getActiveVoiceCount(): number {
-    return voiceState.activeVoices.size;
+    return this.voiceState.activeVoices.size;
   }
 }

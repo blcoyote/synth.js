@@ -6,7 +6,7 @@
  */
 
 // Audio routing and effects
-export { audioState } from './audioState';
+export { audioState, AudioStateManager } from './audioState';
 
 // Visualization and analysers
 export { visualizationState } from './visualizationState';
@@ -15,7 +15,7 @@ export { visualizationState } from './visualizationState';
 export { modulationState } from './modulationState';
 
 // Voice and oscillator management
-export { voiceState } from './voiceState';
+export { voiceState, VoiceStateManager } from './voiceState';
 export type { Voice, OscillatorConfig } from './voiceState';
 
 // Initialization flag

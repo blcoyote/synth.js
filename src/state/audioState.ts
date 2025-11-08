@@ -10,7 +10,7 @@ import type { Lowpass12Filter, Lowpass24Filter } from '../components/filters';
 
 const DEFAULT_FILTER_CUTOFF = 2000;
 
-class AudioStateManager {
+export class AudioStateManager {
   // Audio routing
   private _masterBus: ReturnType<typeof BusManager.prototype.getMasterBus> | null = null;
   private _effectsChain: EffectsChain | null = null;

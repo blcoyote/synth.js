@@ -6,13 +6,20 @@
  * - Update all active voices in real-time
  * - Ensure parameters work on sustained notes
  * - Single source of truth for parameter changes
+ * 
+ * @remarks
+ * Dependencies are injected for testability.
  */
 
-import { voiceState, audioState } from '../../state';
+import type { VoiceStateManager, AudioStateManager } from '../../state';
 import { VoiceManager } from './VoiceManager';
 
 export class ParameterManager {
-  constructor(private voiceManager: VoiceManager) {
+  constructor(
+    private voiceManager: VoiceManager,
+    private voiceState: VoiceStateManager,
+    private audioState: AudioStateManager
+  ) {
     console.log('🎛️ ParameterManager created');
   }
 
@@ -26,7 +33,7 @@ export class ParameterManager {
     value: number
   ): void {
     // 1. Update config (for future notes)
-    const config = voiceState.oscillatorConfigs.get(oscNum);
+    const config = this.voiceState.oscillatorConfigs.get(oscNum);
     if (!config) {
       console.warn(`Oscillator ${oscNum} config not found`);
       return;
@@ -69,7 +76,7 @@ export class ParameterManager {
     value: number
   ): void {
     // Update envelope settings
-    voiceState.envelopeSettings[envNum][parameterName] = value;
+    this.voiceState.envelopeSettings[envNum][parameterName] = value;
     
     // TODO: Update active voice envelopes
     console.log(`✅ Updated env${envNum}.${parameterName} = ${value}`);
@@ -81,9 +88,9 @@ export class ParameterManager {
   updateFilterParameter(parameterName: string, value: number): void {
     // Update filter settings
     if (parameterName === 'cutoff') {
-      audioState.filterSettings.cutoff = value;
+      this.audioState.filterSettings.cutoff = value;
     } else if (parameterName === 'resonance') {
-      audioState.filterSettings.resonance = value;
+      this.audioState.filterSettings.resonance = value;
     }
     
     // TODO: Update actual filter nodes

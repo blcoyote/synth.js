@@ -3,27 +3,31 @@
  * Initializes and manages the core audio system
  * 
  * Responsibilities:
- * - Initialize AudioEngine singleton
+ * - Initialize AudioEngine
  * - Set up state modules
  * - Coordinate VoiceManager and ParameterManager
  * - Manage audio context lifecycle
+ * 
+ * @remarks
+ * All dependencies are properly injected for testability.
+ * AudioEngine must be initialized before creating VoiceManager.
  */
 
 import { AudioEngine } from '../../core/AudioEngine';
-import { voiceState } from '../../state';
+import { voiceState, audioState } from '../../state';
 import { VoiceManager } from './VoiceManager';
 import { ParameterManager } from './ParameterManager';
 
 export class SynthEngine {
   private audioEngine: AudioEngine;
-  private voiceManager: VoiceManager;
-  private parameterManager: ParameterManager;
+  private voiceManager: VoiceManager | null = null;
+  private parameterManager: ParameterManager | null = null;
   private isInitialized: boolean = false;
 
   constructor() {
     this.audioEngine = AudioEngine.getInstance();
-    this.voiceManager = new VoiceManager();
-    this.parameterManager = new ParameterManager(this.voiceManager);
+    // VoiceManager and ParameterManager are created in initialize()
+    // after AudioEngine is ready
   }
 
   /**
@@ -40,8 +44,11 @@ export class SynthEngine {
       // Initialize audio engine
       await this.audioEngine.initialize();
       
-      // Initialize voice manager (creates master gain node)
-      this.voiceManager.initialize();
+      // Now create voice manager with initialized audio engine
+      this.voiceManager = new VoiceManager(this.audioEngine, voiceState);
+      
+      // Create parameter manager with dependencies
+      this.parameterManager = new ParameterManager(this.voiceManager, voiceState, audioState);
       
       // Initialize oscillator configurations (3 oscillators)
       voiceState.oscillatorConfigs.set(1, {
@@ -86,15 +93,23 @@ export class SynthEngine {
 
   /**
    * Get the VoiceManager instance
+   * @throws Error if called before initialization
    */
   getVoiceManager(): VoiceManager {
+    if (!this.voiceManager) {
+      throw new Error('VoiceManager not initialized. Call initialize() first.');
+    }
     return this.voiceManager;
   }
 
   /**
    * Get the ParameterManager instance
+   * @throws Error if called before initialization
    */
   getParameterManager(): ParameterManager {
+    if (!this.parameterManager) {
+      throw new Error('ParameterManager not initialized. Call initialize() first.');
+    }
     return this.parameterManager;
   }
 
