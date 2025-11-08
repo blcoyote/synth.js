@@ -21,6 +21,7 @@ import { PresetManager } from './PresetManager';
 import { EffectsManager } from './EffectsManager';
 import { LFOManager } from './LFOManager';
 import { ArpeggiatorManager } from './ArpeggiatorManager';
+import { SequencerManager } from './SequencerManager';
 
 export class SynthEngine {
   private audioEngine: AudioEngine;
@@ -30,6 +31,7 @@ export class SynthEngine {
   private effectsManager: EffectsManager | null = null;
   private lfoManager: LFOManager | null = null;
   private arpeggiatorManager: ArpeggiatorManager | null = null;
+  private sequencerManager: SequencerManager | null = null;
   private isInitialized: boolean = false;
 
   constructor() {
@@ -171,6 +173,20 @@ export class SynthEngine {
       
       console.log('🎹 Created Arpeggiator manager');
       
+      // Create Sequencer manager
+      this.sequencerManager = new SequencerManager();
+      
+      // Connect sequencer to voice manager
+      this.sequencerManager.onNote((pitch: number, velocity: number) => {
+        this.voiceManager?.playNote(pitch, velocity);
+      });
+      
+      this.sequencerManager.onNoteOff((pitch: number) => {
+        this.voiceManager?.releaseNote(pitch);
+      });
+      
+      console.log('🎵 Created Sequencer manager');
+      
       this.isInitialized = true;
       console.log('✅ SynthEngine initialized successfully');
     } catch (error) {
@@ -243,6 +259,17 @@ export class SynthEngine {
       throw new Error('ArpeggiatorManager not initialized. Call initialize() first.');
     }
     return this.arpeggiatorManager;
+  }
+
+  /**
+   * Get the SequencerManager instance
+   * @throws Error if called before initialization
+   */
+  getSequencerManager(): SequencerManager {
+    if (!this.sequencerManager) {
+      throw new Error('SequencerManager not initialized. Call initialize() first.');
+    }
+    return this.sequencerManager;
   }
 
   /**
