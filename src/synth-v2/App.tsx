@@ -29,6 +29,9 @@ function SynthControls() {
   const [osc1Enabled, setOsc1Enabled] = useState(true);
   const [osc2Enabled, setOsc2Enabled] = useState(false);
   const [osc3Enabled, setOsc3Enabled] = useState(false);
+  
+  // Arpeggiator / Sequencer mode
+  const [arpSeqMode, setArpSeqMode] = useState<'arpeggiator' | 'sequencer'>('arpeggiator');
 
   const handlePresetLoad = () => {
     // Force re-render of all components by changing the key
@@ -227,6 +230,33 @@ function SynthControls() {
           </div>
 
         </div>
+
+        {/* Arpeggiator / Sequencer Section */}
+        <section className="arp-seq-section">
+          <CollapsiblePanel title="Arpeggiator / Sequencer" defaultOpen={false}>
+            <div className="arp-seq-container">
+              <div className="mode-toggle">
+                <button 
+                  className={`mode-btn ${arpSeqMode === 'arpeggiator' ? 'active' : ''}`}
+                  onClick={() => setArpSeqMode('arpeggiator')}
+                >
+                  Arpeggiator
+                </button>
+                <button 
+                  className={`mode-btn ${arpSeqMode === 'sequencer' ? 'active' : ''}`}
+                  onClick={() => setArpSeqMode('sequencer')}
+                >
+                  Sequencer
+                </button>
+              </div>
+              <div className="arp-seq-content">
+                <p style={{ color: '#9ca3af', textAlign: 'center', padding: '2rem' }}>
+                  {arpSeqMode === 'arpeggiator' ? 'Arpeggiator' : 'Sequencer'} controls will be added here
+                </p>
+              </div>
+            </div>
+          </CollapsiblePanel>
+        </section>
 
         {/* Keyboard Footer */}
         <section className="keyboard-section">
