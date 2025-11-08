@@ -27,17 +27,10 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
   const config = voiceState.oscillatorConfigs.get(oscNum);
 
   // If config doesn't exist yet (before initialization), use defaults
-  const [enabled, setEnabled] = useState(config?.enabled ?? (oscNum === 1));
   const [waveform, setWaveform] = useState<'sine' | 'sawtooth' | 'square' | 'triangle'>(
     config?.waveform ?? 'sine'
   );
   const [fmEnabled, setFmEnabled] = useState(config?.fmEnabled ?? false);
-
-  const handleToggle = () => {
-    if (!config || !paramManager) return;
-    config.enabled = !config.enabled;
-    setEnabled(config.enabled);
-  };
 
   const handleWaveformChange = (newWaveform: 'sine' | 'sawtooth' | 'square' | 'triangle') => {
     if (!config) return;
@@ -78,21 +71,9 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
   };
 
   return (
-    <div className={`oscillator-panel ${!enabled ? 'disabled' : ''}`}>
-      <div className="osc-header">
-        <h3>Oscillator {oscNum}</h3>
-        <button 
-          className={`toggle-btn ${enabled ? 'active' : ''}`}
-          onClick={handleToggle}
-        >
-          {enabled ? 'ON' : 'OFF'}
-        </button>
-      </div>
-
-      {enabled && (
-        <>
-          {/* Waveform Display */}
-          <div className="waveform-display-container">
+    <div className="oscillator-panel">
+      {/* Waveform Display */}
+      <div className="waveform-display-container">
             <WaveformDisplay 
               analyserNode={
                 oscNum === 1 ? visualizationState.getAnalyser1OrNull() :
@@ -183,8 +164,6 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
               )}
             </div>
           )}
-        </>
-      )}
     </div>
   );
 }

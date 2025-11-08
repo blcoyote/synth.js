@@ -14,6 +14,7 @@ import { FilterPanel } from './components/FilterPanel';
 import { EffectsPanel } from './components/EffectsPanel';
 import { LFOPanel } from './components/LFOPanel';
 import { CollapsiblePanel } from './components/common/CollapsiblePanel';
+import { voiceState, audioState } from '../state';
 
 // Create synth engine instance (singleton, created once)
 const synthEngine = new SynthEngine();
@@ -22,6 +23,12 @@ function SynthControls() {
   const { engine } = useSynthEngine();
   const [refreshKey, setRefreshKey] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [activeVoices, setActiveVoices] = useState(0);
+  
+  // Track oscillator enabled states (for envelope sync)
+  const [osc1Enabled, setOsc1Enabled] = useState(true);
+  const [osc2Enabled, setOsc2Enabled] = useState(false);
+  const [osc3Enabled, setOsc3Enabled] = useState(false);
 
   const handlePresetLoad = () => {
     // Force re-render of all components by changing the key
@@ -54,29 +61,35 @@ function SynthControls() {
     };
   }, [engine]);
 
-  const handleStopAll = () => {
-    if (isInitialized) {
-      engine.getVoiceManager().stopAllNotes();
-    }
-  };
+  // Update active voice count periodically
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    const updateVoiceCount = () => {
+      try {
+        setActiveVoices(engine.getVoiceManager().getActiveVoiceCount());
+      } catch {
+        // Ignore errors
+      }
+    };
+
+    const interval = setInterval(updateVoiceCount, 100);
+    return () => clearInterval(interval);
+  }, [engine, isInitialized]);
 
   return (
     <div className="synth-app">
-      <header className="synth-header">
-        <h1>🎹 Synth V2 - Phase 1</h1>
-        <div className="header-controls">
-          <button className="stop-btn" onClick={handleStopAll}>
-            ⏹️ Stop All
-          </button>
-          <div className="voice-count">
-            Active Voices: {isInitialized ? engine.getVoiceManager().getActiveVoiceCount() : 0}
-          </div>
-        </div>
-      </header>
-
       <div className="main-content" key={refreshKey}>
-        {/* Top Section: Presets */}
+        {/* Top Section: Status & Presets */}
         <div className="top-section">
+          <div className="status-badge">
+            <span className={`status-indicator ${isInitialized ? 'active' : 'inactive'}`}>
+              {isInitialized ? '●' : '○'}
+            </span>
+            <span className="status-text">
+              {isInitialized ? `${activeVoices} voices` : 'Click to start'}
+            </span>
+          </div>
           <section className="presets-section">
             <CollapsiblePanel title="Presets" defaultOpen={false}>
               <PresetPanel onPresetLoad={handlePresetLoad} />
@@ -93,13 +106,40 @@ function SynthControls() {
               <h2>🎵 Oscillators</h2>
             </div>
             <div className="column-content">
-              <CollapsiblePanel title="Oscillator 1" defaultOpen={true}>
+              <CollapsiblePanel 
+                title="Oscillator 1" 
+                defaultOpen={true}
+                showLed={true}
+                onToggle={(isOpen) => {
+                  const config = voiceState.oscillatorConfigs.get(1);
+                  if (config) config.enabled = isOpen;
+                  setOsc1Enabled(isOpen);
+                }}
+              >
                 <OscillatorPanel oscNum={1} />
               </CollapsiblePanel>
-              <CollapsiblePanel title="Oscillator 2" defaultOpen={false}>
+              <CollapsiblePanel 
+                title="Oscillator 2" 
+                defaultOpen={false}
+                showLed={true}
+                onToggle={(isOpen) => {
+                  const config = voiceState.oscillatorConfigs.get(2);
+                  if (config) config.enabled = isOpen;
+                  setOsc2Enabled(isOpen);
+                }}
+              >
                 <OscillatorPanel oscNum={2} />
               </CollapsiblePanel>
-              <CollapsiblePanel title="Oscillator 3" defaultOpen={false}>
+              <CollapsiblePanel 
+                title="Oscillator 3" 
+                defaultOpen={false}
+                showLed={true}
+                onToggle={(isOpen) => {
+                  const config = voiceState.oscillatorConfigs.get(3);
+                  if (config) config.enabled = isOpen;
+                  setOsc3Enabled(isOpen);
+                }}
+              >
                 <OscillatorPanel oscNum={3} />
               </CollapsiblePanel>
             </div>
@@ -111,16 +151,44 @@ function SynthControls() {
               <h2>📈 Envelopes & Modulation</h2>
             </div>
             <div className="column-content">
-              <CollapsiblePanel title="Envelope 1" defaultOpen={true}>
+              <CollapsiblePanel 
+                title="Envelope 1" 
+                defaultOpen={osc1Enabled}
+                showLed={true}
+                key={`env1-${osc1Enabled}`}
+              >
                 <EnvelopePanel envNum={1} />
               </CollapsiblePanel>
-              <CollapsiblePanel title="Envelope 2" defaultOpen={false}>
+              <CollapsiblePanel 
+                title="Envelope 2" 
+                defaultOpen={osc2Enabled}
+                showLed={true}
+                key={`env2-${osc2Enabled}`}
+              >
                 <EnvelopePanel envNum={2} />
               </CollapsiblePanel>
-              <CollapsiblePanel title="Envelope 3" defaultOpen={false}>
+              <CollapsiblePanel 
+                title="Envelope 3" 
+                defaultOpen={osc3Enabled}
+                showLed={true}
+                key={`env3-${osc3Enabled}`}
+              >
                 <EnvelopePanel envNum={3} />
               </CollapsiblePanel>
-              <CollapsiblePanel title="LFO" defaultOpen={true}>
+              <CollapsiblePanel 
+                title="LFO" 
+                defaultOpen={true}
+                showLed={true}
+                onToggle={(isOpen) => {
+                  // Enable/disable LFO based on panel state
+                  try {
+                    const lfoManager = engine.getLFOManager();
+                    lfoManager.setEnabled(isOpen);
+                  } catch {
+                    // Manager not ready yet
+                  }
+                }}
+              >
                 <LFOPanel />
               </CollapsiblePanel>
             </div>
@@ -132,7 +200,27 @@ function SynthControls() {
               <h2>🎛️ Filter & Effects</h2>
             </div>
             <div className="column-content">
-              <CollapsiblePanel title="Master Filter" defaultOpen={true}>
+              <CollapsiblePanel 
+                title="Master Filter" 
+                defaultOpen={true}
+                showLed={true}
+                onToggle={(isOpen) => {
+                  // Enable/disable filter based on panel state
+                  audioState.filterSettings.enabled = isOpen;
+                  
+                  if (isOpen) {
+                    // Enable filter with current cutoff
+                    if (audioState.currentCustomFilter) {
+                      audioState.currentCustomFilter.setParameter('cutoff', audioState.filterSettings.cutoff);
+                    }
+                  } else {
+                    // Bypass filter (set cutoff to max)
+                    if (audioState.currentCustomFilter) {
+                      audioState.currentCustomFilter.setParameter('cutoff', 20000);
+                    }
+                  }
+                }}
+              >
                 <FilterPanel />
               </CollapsiblePanel>
               <CollapsiblePanel title="Effects Chain" defaultOpen={true}>

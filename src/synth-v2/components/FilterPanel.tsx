@@ -3,7 +3,7 @@
  * Includes filter type selection, cutoff (logarithmic), resonance, and enable/bypass toggle
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { audioState, visualizationState } from '../../state';
 import { Lowpass12Filter, Lowpass24Filter } from '../../components/filters';
@@ -30,35 +30,22 @@ export function FilterPanel() {
   const [cutoff, setCutoff] = useState(audioState.filterSettings.cutoff);
   const [resonance, setResonance] = useState(audioState.filterSettings.resonance);
 
+  // Sync enabled state with audioState (updated by CollapsiblePanel)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (audioState.filterSettings.enabled !== enabled) {
+        setEnabled(audioState.filterSettings.enabled);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [enabled]);
+
   // Format frequency for display
   const formatFrequency = (freq: number): string => {
     if (freq >= 1000) {
       return `${(freq / 1000).toFixed(2)} kHz`;
     }
     return `${Math.round(freq)} Hz`;
-  };
-
-  // Handle filter enable/disable
-  const handleToggle = () => {
-    const newEnabled = !enabled;
-    audioState.filterSettings.enabled = newEnabled;
-    setEnabled(newEnabled);
-
-    if (newEnabled) {
-      // Enable filter: set cutoff to current value
-      if (audioState.currentCustomFilter) {
-        audioState.currentCustomFilter.setParameter('cutoff', cutoff);
-      } else if (audioState.masterFilter) {
-        (audioState.masterFilter as BiquadFilterNode).frequency.value = cutoff;
-      }
-    } else {
-      // Bypass filter: set cutoff to max (wide open)
-      if (audioState.currentCustomFilter) {
-        audioState.currentCustomFilter.setParameter('cutoff', MAX_CUTOFF);
-      } else if (audioState.masterFilter) {
-        (audioState.masterFilter as BiquadFilterNode).frequency.value = MAX_CUTOFF;
-      }
-    }
   };
 
   // Handle filter type change
@@ -104,7 +91,7 @@ export function FilterPanel() {
       audioState.setCurrentCustomFilter(null);
       const filter = context.createBiquadFilter();
       filter.type = newType as BiquadFilterType;
-      filter.frequency.value = enabled ? cutoff : MAX_CUTOFF;
+      filter.frequency.value = audioState.filterSettings.enabled ? cutoff : MAX_CUTOFF;
       filter.Q.value = resonance;
       audioState.setMasterFilter(filter);
       masterGainNode.connect(filter);
@@ -124,7 +111,7 @@ export function FilterPanel() {
     audioState.filterSettings.cutoff = newCutoff;
     setCutoff(newCutoff);
 
-    if (enabled) {
+    if (audioState.filterSettings.enabled) {
       if (audioState.currentCustomFilter) {
         audioState.currentCustomFilter.setParameter('cutoff', newCutoff);
       } else if (audioState.masterFilter) {
@@ -167,17 +154,7 @@ export function FilterPanel() {
   };
 
   return (
-    <div className={`filter-panel ${!enabled ? 'disabled' : ''}`}>
-      <div className="filter-header">
-        <h3>Master Filter</h3>
-        <button 
-          className={`toggle-btn ${enabled ? 'active' : ''}`}
-          onClick={handleToggle}
-        >
-          {enabled ? 'ON' : 'OFF'}
-        </button>
-      </div>
-
+    <div className="filter-panel">
       {/* Filter Visualization */}
       <FilterVisualizer
         analyserNode={visualizationState.getAnalyserOrNull()}

@@ -30,7 +30,6 @@ export function LFOPanel() {
     lfoManager = null;
   }
   
-  const [enabled, setEnabled] = useState(false);
   const [mode, setMode] = useState<LFOMode>('free');
   const [rate, setRate] = useState(5.0); // Hz
   const [depth, setDepth] = useState(50); // 0-100%
@@ -42,25 +41,13 @@ export function LFOPanel() {
     filter: false,
   });
 
-  // Handle enable/disable
-  const handleToggle = () => {
-    if (!lfoManager) return;
-    const newEnabled = !enabled;
-    setEnabled(newEnabled);
-    lfoManager.setEnabled(newEnabled);
-  };
-
   // Handle mode change (free vs trigger)
   const handleModeChange = (newMode: LFOMode) => {
     if (!lfoManager) return;
     setMode(newMode);
     // In trigger mode, LFO starts on note press (handled in VoiceManager)
     // In free mode, LFO runs continuously
-    if (newMode === 'free' && enabled) {
-      lfoManager.setEnabled(true);
-    } else if (newMode === 'trigger') {
-      lfoManager.setEnabled(false); // Will be started on note trigger
-    }
+    // Note: Enable state is now controlled by CollapsiblePanel
   };
 
   // Handle rate change
@@ -121,16 +108,6 @@ export function LFOPanel() {
 
   return (
     <div className="lfo-panel">
-      <div className="lfo-header">
-        <h3>LFO</h3>
-        <button 
-          className={`lfo-toggle ${enabled ? 'active' : ''}`}
-          onClick={handleToggle}
-        >
-          {enabled ? '● ON' : '○ OFF'}
-        </button>
-      </div>
-
       <div className="lfo-controls">
         {/* Mode Selector */}
         <div className="lfo-mode-selector">

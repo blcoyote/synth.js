@@ -67,16 +67,11 @@
   gap: 8px;
 }
 
+/* LFO mode buttons - inherit from base with blue theme */
 .lfo-mode-btn {
   flex: 1;
-  padding: 8px 16px;
   background: rgba(74, 158, 255, 0.1);
-  border: 1px solid rgba(74, 158, 255, 0.3);
-  border-radius: 4px;
-  color: #ccc;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 13px;
+  border-color: rgba(74, 158, 255, 0.3);
 }
 
 .lfo-mode-btn:hover {
@@ -85,10 +80,9 @@
 }
 
 .lfo-mode-btn.active {
-  background: #4a9eff;
+  background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%);
   border-color: #4a9eff;
-  color: #1a1a1a;
-  font-weight: 600;
+  color: white;
 }
 
 /* Waveform Selector */
@@ -110,25 +104,22 @@
   flex-wrap: wrap;
 }
 
+/* LFO waveform buttons - inherit from base with blue theme */
 .lfo-waveform-btn {
-  background: #2a2a2a;
+  background: rgba(74, 158, 255, 0.1);
   color: #4a9eff;
-  border: 1px solid #4a9eff;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
+  border-color: rgba(74, 158, 255, 0.3);
   text-transform: capitalize;
-  transition: all 0.2s;
 }
 
 .lfo-waveform-btn:hover {
-  background: #3a3a3a;
+  background: rgba(74, 158, 255, 0.2);
+  border-color: rgba(74, 158, 255, 0.5);
 }
 
 .lfo-waveform-btn.active {
-  background: #4a9eff;
-  color: #000;
+  background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%);
+  color: white;
   border-color: #4a9eff;
 }
 
