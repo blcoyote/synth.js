@@ -154,13 +154,13 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
 
       {/* Action Buttons */}
       <div className="preset-actions">
-        <button onClick={() => setSaveDialogOpen(true)} className="preset-btn save">
-          Save Current
+        <button onClick={() => setSaveDialogOpen(true)} className="preset-btn success">
+          Save Preset
         </button>
-        <button onClick={handleExport} className="preset-btn">
+        <button onClick={handleExport} className="preset-btn primary">
           Export
         </button>
-        <button onClick={handleImport} className="preset-btn">
+        <button onClick={handleImport} className="preset-btn primary">
           Import
         </button>
       </div>
@@ -199,7 +199,7 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
               autoFocus
             />
             <div className="dialog-actions">
-              <button onClick={handleSavePreset} className="preset-btn save">
+              <button onClick={handleSavePreset} className="preset-btn success">
                 Save
               </button>
               <button onClick={() => setSaveDialogOpen(false)} className="preset-btn">

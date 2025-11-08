@@ -142,63 +142,63 @@ export function EffectsPanel() {
         {/* Add Effect Buttons */}
         <div className="effects-add-buttons">
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('delay')}
             disabled={effects.length >= 8}
           >
             + Delay
           </button>
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('reverb')}
             disabled={effects.length >= 8}
           >
             + Reverb
           </button>
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('distortion')}
             disabled={effects.length >= 8}
           >
             + Distortion
           </button>
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('chorus')}
             disabled={effects.length >= 8}
           >
             + Chorus
           </button>
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('shimmer')}
             disabled={effects.length >= 8}
           >
             + Shimmer
           </button>
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('flanger')}
             disabled={effects.length >= 8}
           >
             + Flanger
           </button>
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('phaser')}
             disabled={effects.length >= 8}
           >
             + Phaser
           </button>
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('compressor')}
             disabled={effects.length >= 8}
           >
             + Compressor
           </button>
           <button 
-            className="effects-add-btn" 
+            className="effects-add-btn primary" 
             onClick={() => handleAddEffect('ringmod')}
             disabled={effects.length >= 8}
           >
@@ -245,13 +245,13 @@ export function EffectsPanel() {
                     <h4 className="effect-card-title">{effectName}</h4>
                     <div className="effect-card-controls">
                       <button
-                        className={`effect-btn bypass ${slot.bypassed ? 'active' : ''}`}
+                        className={`effect-btn info ${slot.bypassed ? 'active' : ''}`}
                         onClick={() => handleBypassEffect(slot.id, !slot.bypassed)}
                       >
                         {slot.bypassed ? 'Bypassed' : 'Active'}
                       </button>
                       <button
-                        className="effect-btn remove"
+                        className="effect-btn danger"
                         onClick={() => handleRemoveEffect(slot.id)}
                       >
                         Remove

@@ -119,6 +119,9 @@
     /* ===== UNIFIED BUTTON SYSTEM ===== */
     
     /* Base button styles - all buttons inherit from this */
+    /* ==================== UNIFIED BUTTON SYSTEM ==================== */
+    
+    /* Base button - default gray style */
     button {
       padding: 0.5rem 1rem;
       background: rgba(107, 114, 128, 0.3);
@@ -132,7 +135,7 @@
       font-family: inherit;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       background: rgba(107, 114, 128, 0.4);
       border-color: rgba(107, 114, 128, 0.7);
       transform: translateY(-1px);
@@ -148,57 +151,7 @@
       transform: none;
     }
 
-    button:disabled:hover {
-      background: rgba(107, 114, 128, 0.3);
-      border-color: rgba(107, 114, 128, 0.5);
-      transform: none;
-    }
-
-    /* Button variants */
-    button.primary {
-      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-      color: white;
-      border-color: #8b5cf6;
-    }
-
-    button.primary:hover {
-      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-      border-color: #7c3aed;
-    }
-
-    button.success {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
-      border-color: #10b981;
-    }
-
-    button.success:hover {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      border-color: #059669;
-    }
-
-    button.danger {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      color: white;
-      border-color: #ef4444;
-    }
-
-    button.danger:hover {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-      border-color: #dc2626;
-    }
-
-    button.active {
-      background: #10b981;
-      color: white;
-      border-color: #10b981;
-    }
-
-    button.active:hover {
-      background: #059669;
-      border-color: #059669;
-    }
-
+    /* Size variants */
     button.small {
       padding: 0.35rem 0.75rem;
       font-size: 0.85rem;
@@ -207,6 +160,92 @@
     button.tiny {
       padding: 0.25rem 0.5rem;
       font-size: 0.8rem;
+    }
+
+    /* Color Theme Variants - Use these for semantic meaning */
+    
+    /* Primary - Purple - Main actions, pattern selection */
+    button.primary,
+    .btn-primary {
+      background: rgba(139, 92, 246, 0.2);
+      border: 2px solid rgba(139, 92, 246, 0.3);
+      color: #a78bfa;
+    }
+
+    button.primary:hover:not(:disabled),
+    .btn-primary:hover:not(:disabled) {
+      background: rgba(139, 92, 246, 0.3);
+      border-color: rgba(139, 92, 246, 0.5);
+    }
+
+    button.primary.active,
+    .btn-primary.active {
+      background: #8b5cf6;
+      border-color: #8b5cf6;
+      color: white;
+    }
+
+    /* Success - Green - Transport controls, success actions */
+    button.success,
+    .btn-success {
+      background: rgba(16, 185, 129, 0.2);
+      border: 2px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+
+    button.success:hover:not(:disabled),
+    .btn-success:hover:not(:disabled) {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    button.success.active,
+    .btn-success.active {
+      background: #10b981;
+      border-color: #10b981;
+      color: white;
+    }
+
+    /* Info - Blue - Secondary actions, divisions, tools */
+    button.info,
+    .btn-info {
+      background: rgba(59, 130, 246, 0.2);
+      border: 2px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+    }
+
+    button.info:hover:not(:disabled),
+    .btn-info:hover:not(:disabled) {
+      background: rgba(59, 130, 246, 0.3);
+      border-color: rgba(59, 130, 246, 0.5);
+    }
+
+    button.info.active,
+    .btn-info.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: white;
+    }
+
+    /* Danger - Red - Stop, delete, destructive actions */
+    button.danger,
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      border: 2px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    button.danger:hover:not(:disabled),
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    button.danger.active,
+    .btn-danger.active {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: white;
     }
 
     .loading {
@@ -242,20 +281,10 @@
       align-items: center;
     }
 
+    /* Stop button - uses danger variant */
     .stop-btn {
       padding: 0.75rem 1.5rem;
-      background: #ef4444;
-      color: white;
-      border: none;
-      border-radius: 6px;
       font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .stop-btn:hover {
-      background: #dc2626;
-      transform: scale(1.05);
     }
 
     .voice-count {
@@ -549,27 +578,10 @@
       border-radius: 8px;
     }
 
+    /* Mode toggle buttons - uses primary variant */
     .mode-btn {
       padding: 0.75rem 2rem;
-      background: rgba(139, 92, 246, 0.2);
-      border: 2px solid rgba(139, 92, 246, 0.3);
-      border-radius: 6px;
-      color: #a78bfa;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
       font-size: 0.95rem;
-    }
-
-    .mode-btn:hover {
-      background: rgba(139, 92, 246, 0.3);
-      border-color: rgba(139, 92, 246, 0.5);
-    }
-
-    .mode-btn.active {
-      background: #8b5cf6;
-      border-color: #8b5cf6;
-      color: white;
     }
 
     .arp-seq-content {
@@ -592,32 +604,10 @@
       justify-content: center;
     }
 
+    /* Transport controls - uses success variant */
     .transport-btn {
       padding: 0.75rem 2rem;
-      background: rgba(16, 185, 129, 0.2);
-      border: 2px solid rgba(16, 185, 129, 0.3);
-      border-radius: 6px;
-      color: #10b981;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
       font-size: 0.95rem;
-    }
-
-    .transport-btn:hover:not(:disabled) {
-      background: rgba(16, 185, 129, 0.3);
-      border-color: rgba(16, 185, 129, 0.5);
-    }
-
-    .transport-btn.active {
-      background: #10b981;
-      border-color: #10b981;
-      color: white;
-    }
-
-    .transport-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
     }
 
     .pattern-grid {
@@ -626,32 +616,10 @@
       gap: 0.5rem;
     }
 
+    /* Pattern selection - uses primary variant */
     .pattern-btn {
       padding: 0.6rem 1rem;
-      background: rgba(139, 92, 246, 0.2);
-      border: 2px solid rgba(139, 92, 246, 0.3);
-      border-radius: 6px;
-      color: #a78bfa;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
       font-size: 0.85rem;
-    }
-
-    .pattern-btn:hover:not(:disabled) {
-      background: rgba(139, 92, 246, 0.3);
-      border-color: rgba(139, 92, 246, 0.5);
-    }
-
-    .pattern-btn.active {
-      background: #8b5cf6;
-      border-color: #8b5cf6;
-      color: white;
-    }
-
-    .pattern-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
     }
 
     .division-buttons {
@@ -660,33 +628,11 @@
       flex-wrap: wrap;
     }
 
+    /* Division selection - uses info variant */
     .division-btn {
       padding: 0.5rem 1rem;
-      background: rgba(59, 130, 246, 0.2);
-      border: 2px solid rgba(59, 130, 246, 0.3);
-      border-radius: 6px;
-      color: #60a5fa;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
       font-size: 0.85rem;
       min-width: 50px;
-    }
-
-    .division-btn:hover:not(:disabled) {
-      background: rgba(59, 130, 246, 0.3);
-      border-color: rgba(59, 130, 246, 0.5);
-    }
-
-    .division-btn.active {
-      background: #3b82f6;
-      border-color: #3b82f6;
-      color: white;
-    }
-
-    .division-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
     }
 
     .controls-row {
@@ -761,33 +707,11 @@
       flex-wrap: wrap;
     }
 
+    /* Step count selection - uses primary variant */
     .step-count-btn {
       flex: 1;
       min-width: 50px;
       padding: 0.5rem 1rem;
-      background: rgba(139, 92, 246, 0.1);
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      border-radius: 6px;
-      color: #e0e0e0;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .step-count-btn:hover:not(:disabled) {
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.5);
-    }
-
-    .step-count-btn.active {
-      background: rgba(139, 92, 246, 0.3);
-      border-color: #8b5cf6;
-      color: #c4b5fd;
-    }
-
-    .step-count-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
     }
 
     /* Step Grid Container */
@@ -885,32 +809,10 @@
       gap: 0.5rem;
     }
 
+    /* Small mode buttons - uses primary variant */
     .mode-btn-small {
       padding: 0.5rem;
-      background: rgba(139, 92, 246, 0.1);
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      border-radius: 6px;
-      color: #e0e0e0;
-      font-weight: 600;
       font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .mode-btn-small:hover:not(:disabled) {
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.5);
-    }
-
-    .mode-btn-small.active {
-      background: rgba(139, 92, 246, 0.3);
-      border-color: #8b5cf6;
-      color: #c4b5fd;
-    }
-
-    .mode-btn-small:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
     }
 
     /* Step Editor */
@@ -941,28 +843,11 @@
       justify-content: center;
     }
 
+    /* Tool buttons - uses info variant */
     .tool-btn {
       flex: 1;
       max-width: 200px;
       padding: 0.6rem 1.5rem;
-      background: rgba(59, 130, 246, 0.15);
-      border: 1px solid rgba(59, 130, 246, 0.4);
-      border-radius: 6px;
-      color: #93c5fd;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .tool-btn:hover:not(:disabled) {
-      background: rgba(59, 130, 246, 0.25);
-      border-color: rgba(59, 130, 246, 0.6);
-      color: #dbeafe;
-    }
-
-    .tool-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
     }
 
     /* Responsive adjustments for smaller grids */
@@ -1208,28 +1093,9 @@
       margin-bottom: 1rem;
     }
 
-    /* Preset buttons - inherit from base with specific overrides */
+    /* Preset buttons - uses primary/success variants */
     .preset-btn {
       flex: 1;
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.5);
-      color: #c4b5fd;
-    }
-
-    .preset-btn:hover {
-      background: rgba(139, 92, 246, 0.3);
-      border-color: rgba(139, 92, 246, 0.7);
-    }
-
-    .preset-btn.save {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: rgba(16, 185, 129, 0.5);
-      color: #6ee7b7;
-    }
-
-    .preset-btn.save:hover {
-      background: rgba(16, 185, 129, 0.3);
-      border-color: rgba(16, 185, 129, 0.7);
     }
 
     .user-presets-list {
@@ -1380,22 +1246,9 @@
       gap: 0.5rem;
     }
 
-    /* Waveform button - inherits from base, with purple theme */
+    /* Waveform buttons - uses primary variant */
     .wave-btn {
       text-transform: capitalize;
-      background: rgba(0, 0, 0, 0.3);
-      border-color: rgba(139, 92, 246, 0.3);
-    }
-
-    .wave-btn.active {
-      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-      color: white;
-      border-color: #8b5cf6;
-    }
-
-    .wave-btn:hover:not(.active) {
-      background: rgba(139, 92, 246, 0.2);
-      border-color: rgba(139, 92, 246, 0.5);
     }
 
     /* Status Section */

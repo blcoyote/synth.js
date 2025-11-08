@@ -103,14 +103,14 @@ export function ArpeggiatorPanel() {
       {/* Transport Controls */}
       <div className="arp-transport">
         <button
-          className={`transport-btn ${isPlaying ? 'active' : ''}`}
+          className={`transport-btn success ${isPlaying ? 'active' : ''}`}
           onClick={handlePlayPause}
           disabled={!arpManager}
         >
           {isPlaying ? '⏸ Pause' : '▶ Play'}
         </button>
         <button
-          className="transport-btn"
+          className="transport-btn success"
           onClick={handleStop}
           disabled={!arpManager || !isPlaying}
         >
@@ -125,7 +125,7 @@ export function ArpeggiatorPanel() {
           {ARP_PATTERNS.map((p) => (
             <button
               key={p.value}
-              className={`pattern-btn ${pattern === p.value ? 'active' : ''}`}
+              className={`pattern-btn primary ${pattern === p.value ? 'active' : ''}`}
               onClick={() => setPattern(p.value)}
               disabled={!arpManager}
             >
@@ -171,7 +171,7 @@ export function ArpeggiatorPanel() {
             {NOTE_DIVISIONS.map((d) => (
               <button
                 key={d.value}
-                className={`division-btn ${division === d.value ? 'active' : ''}`}
+                className={`division-btn info ${division === d.value ? 'active' : ''}`}
                 onClick={() => setDivision(d.value)}
                 disabled={!arpManager}
               >

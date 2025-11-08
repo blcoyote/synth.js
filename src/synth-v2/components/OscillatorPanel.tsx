@@ -90,7 +90,7 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
               {(['sine', 'sawtooth', 'square', 'triangle'] as const).map((wave) => (
                 <button
                   key={wave}
-                  className={`wave-btn ${waveform === wave ? 'active' : ''}`}
+                  className={`wave-btn primary ${waveform === wave ? 'active' : ''}`}
                   onClick={() => handleWaveformChange(wave)}
                 >
                   {wave}

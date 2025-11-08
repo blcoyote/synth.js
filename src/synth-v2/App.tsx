@@ -239,13 +239,13 @@ function SynthControls() {
             <div className="arp-seq-container">
               <div className="mode-toggle">
                 <button 
-                  className={`mode-btn ${arpSeqMode === 'arpeggiator' ? 'active' : ''}`}
+                  className={`mode-btn primary ${arpSeqMode === 'arpeggiator' ? 'active' : ''}`}
                   onClick={() => setArpSeqMode('arpeggiator')}
                 >
                   Arpeggiator
                 </button>
                 <button 
-                  className={`mode-btn ${arpSeqMode === 'sequencer' ? 'active' : ''}`}
+                  className={`mode-btn primary ${arpSeqMode === 'sequencer' ? 'active' : ''}`}
                   onClick={() => setArpSeqMode('sequencer')}
                 >
                   Sequencer

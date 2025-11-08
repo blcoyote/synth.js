@@ -185,21 +185,21 @@ export function SequencerPanel() {
       {/* Transport Controls */}
       <div className="seq-transport">
         <button
-          className={`transport-btn ${isPlaying ? 'active' : ''}`}
+          className={`transport-btn success ${isPlaying ? 'active' : ''}`}
           onClick={handlePlayPause}
           disabled={!seqManager}
         >
           {isPlaying ? '⏸ Pause' : '▶ Play'}
         </button>
         <button
-          className="transport-btn"
+          className="transport-btn success"
           onClick={handleStop}
           disabled={!seqManager || !isPlaying}
         >
           ⏹ Stop
         </button>
         <button
-          className="transport-btn"
+          className="transport-btn success"
           onClick={handleReset}
           disabled={!seqManager}
         >
@@ -214,7 +214,7 @@ export function SequencerPanel() {
           {STEP_COUNTS.map((count) => (
             <button
               key={count}
-              className={`step-count-btn ${stepCount === count ? 'active' : ''}`}
+              className={`step-count-btn primary ${stepCount === count ? 'active' : ''}`}
               onClick={() => handleStepCountChange(count)}
               disabled={!seqManager}
             >
@@ -257,7 +257,7 @@ export function SequencerPanel() {
             {SEQUENCER_MODES.map((m) => (
               <button
                 key={m.value}
-                className={`mode-btn-small ${mode === m.value ? 'active' : ''}`}
+                className={`mode-btn-small primary ${mode === m.value ? 'active' : ''}`}
                 onClick={() => setMode(m.value)}
                 disabled={!seqManager}
               >
@@ -350,14 +350,14 @@ export function SequencerPanel() {
       {/* Pattern Tools */}
       <div className="pattern-tools">
         <button
-          className="tool-btn"
+          className="tool-btn info"
           onClick={handleClear}
           disabled={!seqManager}
         >
           Clear
         </button>
         <button
-          className="tool-btn"
+          className="tool-btn info"
           onClick={handleRandomize}
           disabled={!seqManager}
         >

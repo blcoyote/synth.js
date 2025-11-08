@@ -114,13 +114,13 @@ export function LFOPanel() {
           <label>Mode:</label>
           <div className="lfo-mode-buttons">
             <button
-              className={`lfo-mode-btn ${mode === 'free' ? 'active' : ''}`}
+              className={`lfo-mode-btn primary ${mode === 'free' ? 'active' : ''}`}
               onClick={() => handleModeChange('free')}
             >
               Free-Running
             </button>
             <button
-              className={`lfo-mode-btn ${mode === 'trigger' ? 'active' : ''}`}
+              className={`lfo-mode-btn primary ${mode === 'trigger' ? 'active' : ''}`}
               onClick={() => handleModeChange('trigger')}
             >
               Trigger
@@ -157,7 +157,7 @@ export function LFOPanel() {
             {(['sine', 'triangle', 'square', 'sawtooth', 'random'] as LFOWaveform[]).map((wf) => (
               <button
                 key={wf}
-                className={`lfo-waveform-btn ${waveform === wf ? 'active' : ''}`}
+                className={`lfo-waveform-btn primary ${waveform === wf ? 'active' : ''}`}
                 onClick={() => handleWaveformChange(wf)}
               >
                 {wf}
