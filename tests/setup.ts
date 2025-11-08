@@ -4,6 +4,7 @@
  */
 
 import { vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 // Mock Web Audio API for testing environment
 class MockAudioContext {
