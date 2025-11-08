@@ -153,25 +153,22 @@ function SynthControls() {
             <div className="column-content">
               <CollapsiblePanel 
                 title="Envelope 1" 
-                defaultOpen={osc1Enabled}
+                isOpen={osc1Enabled}
                 showLed={true}
-                key={`env1-${osc1Enabled}`}
               >
                 <EnvelopePanel envNum={1} />
               </CollapsiblePanel>
               <CollapsiblePanel 
                 title="Envelope 2" 
-                defaultOpen={osc2Enabled}
+                isOpen={osc2Enabled}
                 showLed={true}
-                key={`env2-${osc2Enabled}`}
               >
                 <EnvelopePanel envNum={2} />
               </CollapsiblePanel>
               <CollapsiblePanel 
                 title="Envelope 3" 
-                defaultOpen={osc3Enabled}
+                isOpen={osc3Enabled}
                 showLed={true}
-                key={`env3-${osc3Enabled}`}
               >
                 <EnvelopePanel envNum={3} />
               </CollapsiblePanel>

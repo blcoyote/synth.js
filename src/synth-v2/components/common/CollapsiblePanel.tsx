@@ -8,6 +8,7 @@ interface CollapsiblePanelProps {
   title: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  isOpen?: boolean; // Controlled mode
   className?: string;
   showLed?: boolean;
   onToggle?: (isOpen: boolean) => void;
@@ -17,21 +18,27 @@ export function CollapsiblePanel({
   title, 
   children, 
   defaultOpen = true,
+  isOpen: controlledIsOpen,
   className = '',
   showLed = false,
   onToggle
 }: CollapsiblePanelProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+  // Use controlled prop if provided, otherwise use internal state
+  const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen);
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
 
   const handleToggle = () => {
     const newState = !isOpen;
-    setIsOpen(newState);
+    if (!isControlled) {
+      setInternalIsOpen(newState);
+    }
     onToggle?.(newState);
   };
 
-  // Notify parent of initial state
+  // Notify parent of initial state (only in uncontrolled mode)
   useEffect(() => {
-    if (onToggle) {
+    if (onToggle && !isControlled) {
       onToggle(defaultOpen);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
