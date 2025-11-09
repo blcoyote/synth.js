@@ -18,32 +18,26 @@ interface KeyboardProps {
 export function SimpleKeyboard({ startOctave = 3, octaves = 2, extraKeys = 0 }: KeyboardProps) {
   const { engine } = useSynthEngine();
   
-  // Safely get manager (will be null before initialization)
-  let voiceManager;
-  try {
-    voiceManager = engine.getVoiceManager();
-  } catch {
-    voiceManager = null;
-  }
-  
   // Track which keys are currently pressed
   const [activeKeys, setActiveKeys] = useState<Set<number>>(new Set());
 
   const handleNoteOn = useCallback((noteIndex: number) => {
-    if (!voiceManager) return;
+    if (!engine.isReady()) return;
     setActiveKeys((prev) => new Set(prev).add(noteIndex));
-    voiceManager.playNote(noteIndex, 0.8);
-  }, [voiceManager]);
+    // Routes through arpeggiator if enabled, or directly to voiceManager if not
+    engine.playNote(noteIndex, 0.8);
+  }, [engine]);
 
   const handleNoteOff = useCallback((noteIndex: number) => {
-    if (!voiceManager) return;
+    if (!engine.isReady()) return;
     setActiveKeys((prev) => {
       const next = new Set(prev);
       next.delete(noteIndex);
       return next;
     });
-    voiceManager.releaseNote(noteIndex);
-  }, [voiceManager]);
+    // Routes through arpeggiator if enabled, or directly to voiceManager if not
+    engine.releaseNote(noteIndex);
+  }, [engine]);
 
   // Enable computer keyboard input
   useKeyboardInput(handleNoteOn, handleNoteOff, true);

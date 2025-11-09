@@ -98,7 +98,7 @@ export class VoiceManager {
    */
   setLFOManager(lfoManager: LFOManager): void {
     this.lfoManager = lfoManager;
-    console.log('🌊 LFO manager set for VoiceManager');
+    console.log('LFO manager set for VoiceManager');
   }
 
   /**
@@ -213,9 +213,29 @@ export class VoiceManager {
    * @param velocity - Note velocity (0-1)
    */
   playNote(noteIndex: number, velocity: number = 1.0): void {
-    // Stop any existing note at this index
+    // If note is already playing, clean it up SYNCHRONOUSLY to allow instant retrigger
     if (this.voiceState.activeVoices.has(noteIndex)) {
-      this.releaseNote(noteIndex);
+      const existingVoice = this.voiceState.activeVoices.get(noteIndex);
+      
+      // Cancel any pending cleanup timeout
+      if (existingVoice?.releaseTimeout) {
+        clearTimeout(existingVoice.releaseTimeout);
+      }
+      
+      // Stop oscillators immediately without fade (retriggering case)
+      // This prevents phase cancellation when rapidly retriggering the same note
+      existingVoice?.oscillators.forEach(({ oscillator }) => {
+        try {
+          // Use immediate stop - no fade needed since we're retriggering
+          const context = this.audioEngine.getContext();
+          oscillator.stop(context.currentTime);
+        } catch (e) {
+          // Ignore if already stopped
+        }
+      });
+      
+      // Remove from active voices immediately
+      this.voiceState.activeVoices.delete(noteIndex);
     }
 
     const baseFrequency = NOTE_FREQUENCIES[noteIndex];
@@ -380,6 +400,11 @@ export class VoiceManager {
     const voice = this.voiceState.activeVoices.get(noteIndex);
     if (!voice) return;
 
+    // Cancel any existing cleanup timeout
+    if (voice.releaseTimeout) {
+      clearTimeout(voice.releaseTimeout);
+    }
+
     // Trigger envelope release for all oscillators
     voice.oscillators.forEach(({ envelope }) => {
       envelope.triggerRelease();
@@ -395,7 +420,7 @@ export class VoiceManager {
       )
     );
 
-    setTimeout(() => {
+    voice.releaseTimeout = window.setTimeout(() => {
       this.cleanupVoice(noteIndex);
     }, maxRelease * 1000 + 100); // Add 100ms buffer
 
@@ -408,6 +433,11 @@ export class VoiceManager {
   private cleanupVoice(noteIndex: number): void {
     const voice = this.voiceState.activeVoices.get(noteIndex);
     if (!voice) return;
+
+    // Cancel any pending timeout
+    if (voice.releaseTimeout) {
+      clearTimeout(voice.releaseTimeout);
+    }
 
     // Remove LFO targets for this voice
     this.removeLFOTargetsForVoice(voice, noteIndex);

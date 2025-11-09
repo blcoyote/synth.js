@@ -27,7 +27,8 @@ export function SequencerPanel() {
     seqManager = null;
   }
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [noteHold, setNoteHold] = useState(false);
   const [mode, setMode] = useState<SequencerMode>('forward');
   const [stepCount, setStepCount] = useState(16);
   const [tempo, setTempo] = useState(120);
@@ -37,7 +38,7 @@ export function SequencerPanel() {
   
   // Step edit values
   const [stepGate, setStepGate] = useState(false);
-  const [stepPitch, setStepPitch] = useState(60);
+  const [stepPitch, setStepPitch] = useState(0); // Changed to interval (0-11)
   const [stepVelocity, setStepVelocity] = useState(100);
   const [stepLength, setStepLength] = useState(80); // 0-100%
 
@@ -45,10 +46,12 @@ export function SequencerPanel() {
   useEffect(() => {
     if (!seqManager) return;
     
+    seqManager.setEnabled(enabled);
+    seqManager.setNoteHold(noteHold);
     seqManager.setMode(mode);
     seqManager.setTempo(tempo);
     seqManager.setSwing(swing / 100);
-  }, [seqManager, mode, tempo, swing]);
+  }, [seqManager, enabled, noteHold, mode, tempo, swing]);
 
   // Listen for step changes during playback
   useEffect(() => {
@@ -72,24 +75,13 @@ export function SequencerPanel() {
     }
   }, [seqManager, selectedStep]);
 
-  const handlePlayPause = useCallback(() => {
-    if (!seqManager) return;
+  const handleToggle = useCallback(() => {
+    setEnabled(!enabled);
+  }, [enabled]);
 
-    if (isPlaying) {
-      seqManager.pause();
-      setIsPlaying(false);
-    } else {
-      seqManager.start();
-      setIsPlaying(true);
-    }
-  }, [seqManager, isPlaying]);
-
-  const handleStop = useCallback(() => {
-    if (!seqManager) return;
-    seqManager.stop();
-    setIsPlaying(false);
-    setCurrentStep(0);
-  }, [seqManager]);
+  const handleNoteHoldToggle = useCallback(() => {
+    setNoteHold(!noteHold);
+  }, [noteHold]);
 
   const handleReset = useCallback(() => {
     if (!seqManager) return;
@@ -177,32 +169,48 @@ export function SequencerPanel() {
     setSwing(val);
   }, []);
 
-  // Helper to convert MIDI note to note name
-  const midiToNoteName = useCallback((midi: number): string => {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const octave = Math.floor(midi / 12) - 1;
-    const noteName = noteNames[midi % 12];
-    return `${noteName}${octave}`;
+  // Helper to display interval as semitones from root note
+  const intervalToSemitones = useCallback((interval: number): string => {
+    if (interval === 0) return '±0';
+    return interval > 0 ? `+${interval}` : `${interval}`;
   }, []);
 
   return (
     <div className="seq-panel">
+      {/* Enable/Disable Toggle */}
+      <div className="seq-enable-section">
+        <label className="checkbox-label" style={{ fontSize: '1.1rem', justifyContent: 'center' }}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={handleToggle}
+            disabled={!seqManager}
+            style={{ width: '24px', height: '24px' }}
+          />
+          <span style={{ color: enabled ? '#00ff88' : '#999', fontWeight: 700 }}>
+            {enabled ? '🎵 SEQUENCER ON' : 'SEQUENCER OFF'}
+          </span>
+        </label>
+        {enabled && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <p className="control-hint" style={{ textAlign: 'center', margin: 0 }}>
+              Play a root note on keyboard to start sequencing
+            </p>
+            <label className="checkbox-label" style={{ fontSize: '0.9rem' }}>
+              <input
+                type="checkbox"
+                checked={noteHold}
+                onChange={handleNoteHoldToggle}
+                disabled={!seqManager}
+              />
+              <span>Note Hold (Latch Mode)</span>
+            </label>
+          </div>
+        )}
+      </div>
+
       {/* Transport Controls */}
       <div className="seq-transport">
-        <button
-          className={`transport-btn success ${isPlaying ? 'active' : ''}`}
-          onClick={handlePlayPause}
-          disabled={!seqManager}
-        >
-          {isPlaying ? '⏸ Pause' : '▶ Play'}
-        </button>
-        <button
-          className="transport-btn success"
-          onClick={handleStop}
-          disabled={!seqManager || !isPlaying}
-        >
-          ⏹ Stop
-        </button>
         <button
           className="transport-btn success"
           onClick={handleReset}
@@ -254,27 +262,27 @@ export function SequencerPanel() {
         </div>
       </div>
 
-      {/* Mode and Controls */}
-      <div className="controls-row">
-        <div className="control-group">
-          <label className="control-label">Mode</label>
-          <div className="mode-buttons">
-            {SEQUENCER_MODES.map((m) => (
-              <button
-                key={m.value}
-                className={`mode-btn-small primary ${mode === m.value ? 'active' : ''}`}
-                onClick={() => handleModeChange(m.value)}
-                disabled={!seqManager}
-              >
-                {m.label}
-              </button>
-            ))}
+      {/* Mode and Controls - Grouped together */}
+      <div className="control-group">
+        <div className="controls-row">
+          <div style={{ flex: 1 }}>
+            <label className="control-label">Mode</label>
+            <div className="mode-buttons">
+              {SEQUENCER_MODES.map((m) => (
+                <button
+                  key={m.value}
+                  className={`mode-btn-small primary ${mode === m.value ? 'active' : ''}`}
+                  onClick={() => handleModeChange(m.value)}
+                  disabled={!seqManager}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="controls-row">
-        <div className="control-group">
+        <div className="controls-row">
           <Slider
             label="Tempo"
             initialValue={tempo}
@@ -284,8 +292,6 @@ export function SequencerPanel() {
             unit=" BPM"
             onChange={handleTempoChange}
           />
-        </div>
-        <div className="control-group">
           <Slider
             label="Swing"
             initialValue={swing}
@@ -298,7 +304,7 @@ export function SequencerPanel() {
         </div>
       </div>
 
-      {/* Step Editor */}
+      {/* Step Editor - All controls in one group */}
       <div className="step-editor">
         <div className="step-editor-header">
           <h3>Step {selectedStep + 1}</h3>
@@ -314,41 +320,36 @@ export function SequencerPanel() {
         </div>
 
         <div className="controls-row">
-          <div className="control-group">
-            <Slider
-              label="Note"
-              initialValue={stepPitch}
-              min={36}
-              max={84}
-              step={1}
-              formatValue={(val) => midiToNoteName(val)}
-              onChange={handleStepPitchChange}
-            />
-          </div>
-          <div className="control-group">
-            <Slider
-              label="Velocity"
-              initialValue={stepVelocity}
-              min={1}
-              max={127}
-              step={1}
-              onChange={handleStepVelocityChange}
-            />
-          </div>
+          <Slider
+            label="Interval"
+            initialValue={stepPitch}
+            min={-12}
+            max={12}
+            step={1}
+            unit=" semitones"
+            formatValue={(val) => intervalToSemitones(val)}
+            onChange={handleStepPitchChange}
+          />
+          <Slider
+            label="Velocity"
+            initialValue={stepVelocity}
+            min={1}
+            max={127}
+            step={1}
+            onChange={handleStepVelocityChange}
+          />
         </div>
 
         <div className="controls-row">
-          <div className="control-group">
-            <Slider
-              label="Length"
-              initialValue={stepLength}
-              min={10}
-              max={100}
-              step={1}
-              unit="%"
-              onChange={handleStepLengthChange}
-            />
-          </div>
+          <Slider
+            label="Length"
+            initialValue={stepLength}
+            min={10}
+            max={100}
+            step={1}
+            unit="%"
+            onChange={handleStepLengthChange}
+          />
         </div>
       </div>
 

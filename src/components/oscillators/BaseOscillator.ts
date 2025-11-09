@@ -67,17 +67,29 @@ export abstract class BaseOscillator implements AudioComponent {
       return;
     }
 
-    const stopTime = time ?? this.engine.getCurrentTime();
-    this.oscillator.stop(stopTime);
+    const now = this.engine.getCurrentTime();
+    const stopTime = time ?? now;
+    
+    // Apply quick fade-out to prevent clicks (5ms)
+    const fadeTime = 0.005;
+    if (stopTime <= now + fadeTime) {
+      this.gainNode.gain.cancelScheduledValues(now);
+      this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+      this.gainNode.gain.exponentialRampToValueAtTime(0.0001, now + fadeTime);
+      this.oscillator.stop(now + fadeTime);
+    } else {
+      this.oscillator.stop(stopTime);
+    }
     
     // Clean up after stop
+    const cleanupDelay = Math.max((stopTime - now) * 1000, fadeTime * 1000) + 10;
     setTimeout(() => {
       if (this.oscillator) {
         this.oscillator.disconnect();
         this.oscillator = null;
       }
       this.isPlaying = false;
-    }, (stopTime - this.engine.getCurrentTime()) * 1000 + 100);
+    }, cleanupDelay);
   }
 
   /**

@@ -287,6 +287,40 @@ export class SynthEngine {
   }
 
   /**
+   * Play a note (routes through arpeggiator/sequencer if enabled)
+   */
+  playNote(noteIndex: number, velocity: number = 0.8): void {
+    if (!this.voiceManager) return;
+    
+    // Priority: Sequencer > Arpeggiator > Direct
+    if (this.sequencerManager?.isEnabled()) {
+      this.sequencerManager.handleNoteOn(noteIndex);
+    } else if (this.arpeggiatorManager?.isEnabled()) {
+      this.arpeggiatorManager.handleNoteOn(noteIndex);
+    } else {
+      // Direct playback
+      this.voiceManager.playNote(noteIndex, velocity);
+    }
+  }
+
+  /**
+   * Release a note (routes through arpeggiator/sequencer if enabled)
+   */
+  releaseNote(noteIndex: number): void {
+    if (!this.voiceManager) return;
+    
+    // Priority: Sequencer > Arpeggiator > Direct
+    if (this.sequencerManager?.isEnabled()) {
+      this.sequencerManager.handleNoteOff(noteIndex);
+    } else if (this.arpeggiatorManager?.isEnabled()) {
+      this.arpeggiatorManager.handleNoteOff(noteIndex);
+    } else {
+      // Direct release
+      this.voiceManager.releaseNote(noteIndex);
+    }
+  }
+
+  /**
    * Cleanup and destroy the synth engine
    */
   destroy(): void {

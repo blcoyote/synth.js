@@ -761,6 +761,44 @@
       font-size: 0.9rem;
     }
 
+    .progression-section {
+      background: linear-gradient(180deg, #1a2a3a 0%, #0a1a2a 100%);
+      border: 2px solid #33ccff;
+      margin-top: 1.5rem;
+    }
+
+    .progression-select,
+    .note-select {
+      width: 100%;
+      padding: 0.5rem;
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .progression-select:hover,
+    .note-select:hover {
+      border-color: #33ccff;
+    }
+
+    .progression-select:disabled,
+    .note-select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .progression-select option,
+    .note-select option {
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+
     /* ==================== SEQUENCER PANEL ==================== */
     .seq-panel {
       display: flex;
@@ -878,11 +916,18 @@
       border-color: rgba(59, 130, 246, 0.5);
     }
 
-    /* Mode Buttons (smaller for 4 options) */
+    /* Mode Buttons (single row for 4 options) */
     .mode-buttons {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 0.5rem;
+    }
+
+    /* Responsive: Stack to 2 columns on smaller screens */
+    @media (max-width: 768px) {
+      .mode-buttons {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     /* Small mode buttons - uses primary variant */

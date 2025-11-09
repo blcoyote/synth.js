@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
+import { ArpeggiatorManager } from '../core/ArpeggiatorManager';
 import type { ArpPattern, NoteDivision } from '../core/ArpeggiatorManager';
 import { Slider } from './common/Slider';
 
@@ -39,45 +40,57 @@ export function ArpeggiatorPanel() {
     arpManager = null;
   }
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [enabled, setEnabled] = useState(false);
   const [pattern, setPattern] = useState<ArpPattern>('up');
   const [octaves, setOctaves] = useState(1);
   const [tempo, setTempo] = useState(120);
   const [division, setDivision] = useState<NoteDivision>('1/16');
   const [gateLength, setGateLength] = useState(80); // 0-100%
   const [noteHold, setNoteHold] = useState(false);
+  
+  // Progression state
+  const [useProgression, setUseProgression] = useState(false);
+  const [selectedProgression, setSelectedProgression] = useState('major-i-iv-v');
+  const [rootNote, setRootNote] = useState(60); // C4
+  const [barsPerChord, setBarsPerChord] = useState(1);
+  const [availableProgressions, setAvailableProgressions] = useState<Array<{ key: string; name: string }>>([]);
+
+  // Load available progressions
+  useEffect(() => {
+    const progressionKeys = ArpeggiatorManager.getProgressionNames();
+    const progressions = progressionKeys.map((key: string) => {
+      const prog = ArpeggiatorManager.getProgression(key);
+      return { key, name: prog?.name || key };
+    });
+    setAvailableProgressions(progressions);
+  }, []);
 
   // Consolidated useEffect for all manager updates
   useEffect(() => {
     if (!arpManager) return;
     
+    // Set enabled state
+    arpManager.setEnabled(enabled);
+    
+    // Set parameters
     arpManager.setPattern(pattern);
     arpManager.setOctaves(octaves);
     arpManager.setTempo(tempo);
     arpManager.setDivision(division);
     arpManager.setGateLength(gateLength / 100);
     arpManager.setNoteHold(noteHold);
-  }, [arpManager, pattern, octaves, tempo, division, gateLength, noteHold]);
-
-  const handlePlayPause = useCallback(() => {
-    if (!arpManager) return;
-
-    if (isPlaying) {
-      arpManager.stop();
-      setIsPlaying(false);
+    
+    // Handle progression
+    if (useProgression) {
+      arpManager.setProgression(selectedProgression, rootNote, barsPerChord);
     } else {
-      // Set default chord if no notes
-      arpManager.setNotes([60, 64, 67]); // C major chord
-      arpManager.start();
-      setIsPlaying(true);
+      arpManager.clearProgression();
     }
-  }, [arpManager, isPlaying]);
+  }, [arpManager, enabled, pattern, octaves, tempo, division, gateLength, noteHold, useProgression, selectedProgression, rootNote, barsPerChord]);
 
-  const handleStop = useCallback(() => {
-    if (!arpManager) return;
-    arpManager.stop();
-    setIsPlaying(false);
-  }, [arpManager]);
+  const handleToggle = useCallback(() => {
+    setEnabled(!enabled);
+  }, [enabled]);
 
   const handlePatternChange = useCallback((p: ArpPattern) => {
     setPattern(p);
@@ -105,22 +118,25 @@ export function ArpeggiatorPanel() {
 
   return (
     <div className="arp-panel">
-      {/* Transport Controls */}
-      <div className="arp-transport">
-        <button
-          className={`transport-btn success ${isPlaying ? 'active' : ''}`}
-          onClick={handlePlayPause}
-          disabled={!arpManager}
-        >
-          {isPlaying ? '⏸ Pause' : '▶ Play'}
-        </button>
-        <button
-          className="transport-btn success"
-          onClick={handleStop}
-          disabled={!arpManager || !isPlaying}
-        >
-          ⏹ Stop
-        </button>
+      {/* Enable/Disable Toggle */}
+      <div className="arp-enable-section">
+        <label className="checkbox-label" style={{ fontSize: '1.1rem', justifyContent: 'center' }}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={handleToggle}
+            disabled={!arpManager}
+            style={{ width: '24px', height: '24px' }}
+          />
+          <span style={{ color: enabled ? '#00ff88' : '#999', fontWeight: 700 }}>
+            {enabled ? '🎹 ARPEGGIATOR ON' : 'ARPEGGIATOR OFF'}
+          </span>
+        </label>
+        {enabled && (
+          <p className="control-hint" style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+            Play notes on the keyboard to arpeggiate them
+          </p>
+        )}
       </div>
 
       {/* Pattern Selection */}
@@ -140,10 +156,9 @@ export function ArpeggiatorPanel() {
         </div>
       </div>
 
-      {/* Controls Grid */}
-      <div className="controls-row">
-        {/* Octaves */}
-        <div className="control-group">
+      {/* Controls Group - All sliders together */}
+      <div className="control-group">
+        <div className="controls-row">
           <Slider
             label="Octaves"
             initialValue={octaves}
@@ -152,10 +167,6 @@ export function ArpeggiatorPanel() {
             step={1}
             onChange={handleOctavesChange}
           />
-        </div>
-
-        {/* Tempo */}
-        <div className="control-group">
           <Slider
             label="Tempo"
             initialValue={tempo}
@@ -166,30 +177,8 @@ export function ArpeggiatorPanel() {
             onChange={handleTempoChange}
           />
         </div>
-      </div>
 
-      <div className="controls-row">
-        {/* Note Division */}
-        <div className="control-group">
-          <label className="control-label">Division</label>
-          <div className="division-buttons">
-            {NOTE_DIVISIONS.map((d) => (
-              <button
-                key={d.value}
-                className={`division-btn info ${division === d.value ? 'active' : ''}`}
-                onClick={() => handleDivisionChange(d.value)}
-                disabled={!arpManager}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="controls-row">
-        {/* Gate Length */}
-        <div className="control-group">
+        <div className="controls-row">
           <Slider
             label="Gate"
             initialValue={gateLength}
@@ -199,10 +188,24 @@ export function ArpeggiatorPanel() {
             unit="%"
             onChange={handleGateLengthChange}
           />
+          <div style={{ flex: 1 }}>
+            <label className="control-label">Division</label>
+            <div className="division-buttons">
+              {NOTE_DIVISIONS.map((d) => (
+                <button
+                  key={d.value}
+                  className={`division-btn info ${division === d.value ? 'active' : ''}`}
+                  onClick={() => handleDivisionChange(d.value)}
+                  disabled={!arpManager}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Note Hold */}
-        <div className="control-group">
+        <div className="controls-row">
           <label className="checkbox-label">
             <input
               type="checkbox"
@@ -210,12 +213,77 @@ export function ArpeggiatorPanel() {
               onChange={(e) => handleNoteHoldChange(e.target.checked)}
               disabled={!arpManager}
             />
-            <span>Note Hold</span>
+            <span>Note Hold (legato)</span>
           </label>
-          <p className="control-hint">
-            Hold notes until next note plays (legato)
-          </p>
         </div>
+      </div>
+
+      {/* Chord Progressions */}
+      <div className="control-group progression-section">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={useProgression}
+            onChange={(e) => setUseProgression(e.target.checked)}
+            disabled={!arpManager}
+          />
+          <span style={{ color: '#33ccff', fontWeight: 700 }}>CHORD PROGRESSION</span>
+        </label>
+        
+        {useProgression && (
+          <>
+            <div className="controls-row">
+              {/* Progression Select */}
+              <div className="control-group">
+                <label className="control-label">Progression</label>
+                <select
+                  value={selectedProgression}
+                  onChange={(e) => setSelectedProgression(e.target.value)}
+                  disabled={!arpManager}
+                  className="progression-select"
+                >
+                  {availableProgressions.map((prog) => (
+                    <option key={prog.key} value={prog.key}>
+                      {prog.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Root Note */}
+              <div className="control-group">
+                <label className="control-label">Root Note</label>
+                <select
+                  value={rootNote}
+                  onChange={(e) => setRootNote(Number(e.target.value))}
+                  disabled={!arpManager}
+                  className="note-select"
+                >
+                  <option value={48}>C2</option>
+                  <option value={60}>C3</option>
+                  <option value={72}>C4</option>
+                  <option value={84}>C5</option>
+                </select>
+              </div>
+
+              {/* Bars per Chord */}
+              <div className="control-group">
+                <Slider
+                  label="Bars/Chord"
+                  initialValue={barsPerChord}
+                  min={1}
+                  max={8}
+                  step={1}
+                  onChange={setBarsPerChord}
+                />
+              </div>
+            </div>
+            
+            <p className="control-hint">
+              Arpeggiator will cycle through progression chords automatically
+            </p>
+          </>
+        )}
       </div>
 
       {!arpManager && (

@@ -34,13 +34,18 @@ export class SequencerManager {
   private swing: number = 0;
   
   // State
-  private isPlaying: boolean = false;
+  private enabled: boolean = false;  // On/off toggle
+  private isPlaying: boolean = false; // Internal playback state
   private isPaused: boolean = false;
   private currentStep: number = 0;
   private direction: 1 | -1 = 1; // For pingpong mode
   private intervalId: number | null = null;
   
-  // Step data
+  // Keyboard-driven mode
+  private rootNote: number | null = null;  // Currently held root note
+  private noteHoldEnabled: boolean = false; // Latch mode - continue playing after key release
+  
+  // Step data (stores intervals relative to root note, not absolute pitches)
   private steps: SequencerStep[] = [];
   
   // Callbacks
@@ -63,21 +68,99 @@ export class SequencerManager {
   }
 
   /**
-   * Initialize step data with defaults
+   * Initialize step data with defaults (as intervals: 0, 2, 4, etc.)
    */
   private initializeSteps(): void {
-    this.steps = Array.from({ length: this.stepCount }, () => ({
-      gate: false,
-      pitch: 60, // Middle C
+    this.steps = Array.from({ length: this.stepCount }, (_, i) => ({
+      gate: true, // Enable gates by default so sequence makes sound
+      pitch: i % 12, // Store as interval (0-11) for relative playback
       velocity: 100,
       length: 0.8,
     }));
   }
 
   /**
-   * Start sequencer playback
+   * Enable sequencer
    */
-  public start(): void {
+  public enable(): void {
+    this.enabled = true;
+    console.log('🎵 Sequencer enabled');
+  }
+
+  /**
+   * Disable sequencer
+   */
+  public disable(): void {
+    this.enabled = false;
+    this.stop();
+    this.rootNote = null;
+    console.log('🎵 Sequencer disabled');
+  }
+
+  /**
+   * Check if sequencer is enabled
+   */
+  public isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  /**
+   * Set enabled state
+   */
+  public setEnabled(enabled: boolean): void {
+    if (enabled) {
+      this.enable();
+    } else {
+      this.disable();
+    }
+  }
+
+  /**
+   * Set note hold mode
+   */
+  public setNoteHold(enabled: boolean): void {
+    this.noteHoldEnabled = enabled;
+  }
+
+  /**
+   * Get note hold mode
+   */
+  public getNoteHold(): boolean {
+    return this.noteHoldEnabled;
+  }
+
+  /**
+   * Handle note on from keyboard (when sequencer is enabled)
+   */
+  public handleNoteOn(noteIndex: number): void {
+    if (!this.enabled) return;
+
+    // Set as root note
+    this.rootNote = noteIndex;
+    
+    // Start playback if not already playing
+    if (!this.isPlaying) {
+      this.start();
+    }
+  }
+
+  /**
+   * Handle note off from keyboard (when sequencer is enabled)
+   */
+  public handleNoteOff(noteIndex: number): void {
+    if (!this.enabled) return;
+
+    // Only stop if note hold is disabled and this was the root note
+    if (!this.noteHoldEnabled && this.rootNote === noteIndex) {
+      this.rootNote = null;
+      this.stop();
+    }
+  }
+
+  /**
+   * Start sequencer playback (internal)
+   */
+  private start(): void {
     if (this.isPlaying && !this.isPaused) return;
     
     this.isPlaying = true;
@@ -92,9 +175,9 @@ export class SequencerManager {
   }
 
   /**
-   * Stop sequencer playback
+   * Stop sequencer playback (internal)
    */
-  public stop(): void {
+  private stop(): void {
     if (!this.isPlaying) return;
     
     this.isPlaying = false;
@@ -113,50 +196,18 @@ export class SequencerManager {
   }
 
   /**
-   * Pause sequencer (can be resumed)
+   * Toggle note hold (public method for UI)
    */
-  public pause(): void {
-    if (!this.isPlaying || this.isPaused) return;
-    
-    this.isPaused = true;
-    this.isPlaying = false;
-    
-    if (this.intervalId !== null) {
-      clearTimeout(this.intervalId);
-      this.intervalId = null;
-    }
-    
-    // Stop all active notes
-    this.stopAllNotes();
+  public toggleNoteHold(): void {
+    this.noteHoldEnabled = !this.noteHoldEnabled;
   }
 
   /**
-   * Resume from pause
-   */
-  public resume(): void {
-    if (this.isPlaying || !this.isPaused) return;
-    
-    this.isPlaying = true;
-    this.isPaused = false;
-    this.scheduleNextStep();
-  }
-
-  /**
-   * Reset sequencer to beginning
+   * Reset sequencer to beginning (public)
    */
   public reset(): void {
-    const wasPlaying = this.isPlaying;
-    
-    if (wasPlaying) {
-      this.stop();
-    }
-    
     this.currentStep = 0;
     this.direction = 1;
-    
-    if (wasPlaying) {
-      this.start();
-    }
   }
 
   /**
@@ -201,7 +252,7 @@ export class SequencerManager {
   public randomize(density: number = 0.5): void {
     this.steps.forEach(step => {
       step.gate = Math.random() < density;
-      step.pitch = 48 + Math.floor(Math.random() * 25); // C3 to C5
+      step.pitch = -12 + Math.floor(Math.random() * 25); // -12 to +12 semitones
       step.velocity = 80 + Math.floor(Math.random() * 40); // 80-120
     });
   }
@@ -387,23 +438,25 @@ export class SequencerManager {
     }
 
     // Play note if gate is active
-    if (step.gate && this.onNoteCallback) {
-      // Stop previous note if it's still playing
-      if (this.activeNotes.has(step.pitch) && this.onNoteOffCallback) {
-        this.onNoteOffCallback(step.pitch);
-        this.activeNotes.delete(step.pitch);
+    if (step.gate && this.onNoteCallback && this.rootNote !== null) {
+      // Calculate absolute pitch from root note + interval
+      const absolutePitch = this.rootNote + step.pitch;
+      
+      // Remove from tracking if retriggering
+      if (this.activeNotes.has(absolutePitch)) {
+        this.activeNotes.delete(absolutePitch);
       }
 
-      // Play new note
-      this.onNoteCallback(step.pitch, step.velocity / 127);
-      this.activeNotes.add(step.pitch);
+      // Play new note (VoiceManager will handle cleanup if needed)
+      this.onNoteCallback(absolutePitch, step.velocity / 127);
+      this.activeNotes.add(absolutePitch);
 
       // Schedule note off
       const noteDuration = stepDuration * step.length;
       setTimeout(() => {
-        if (this.onNoteOffCallback && this.activeNotes.has(step.pitch)) {
-          this.onNoteOffCallback(step.pitch);
-          this.activeNotes.delete(step.pitch);
+        if (this.onNoteOffCallback && this.activeNotes.has(absolutePitch)) {
+          this.onNoteOffCallback(absolutePitch);
+          this.activeNotes.delete(absolutePitch);
         }
       }, noteDuration);
     }

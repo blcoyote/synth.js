@@ -66,17 +66,33 @@ export class ADSREnvelope implements AudioComponent {
     // Cancel any scheduled changes
     param.cancelScheduledValues(now);
 
-    // If already active, start from current value
-    const startValue = this.isActive ? param.value : 0;
-    param.setValueAtTime(startValue, now);
+    // Get current value for smooth retriggering
+    const currentValue = param.value;
+    
+    // If retriggering while releasing, use exponential ramp for smoother transition
+    if (!this.isActive && currentValue > 0.01) {
+      // Quick fade to zero before starting new envelope (prevents clicks)
+      param.setValueAtTime(currentValue, now);
+      param.exponentialRampToValueAtTime(0.0001, now + 0.005); // 5ms fade
+      
+      // Start new envelope after fade
+      const startTime = now + 0.005;
+      param.setValueAtTime(0, startTime);
+      param.linearRampToValueAtTime(velocity, startTime + this.attack);
+      param.linearRampToValueAtTime(this.sustain * velocity, startTime + this.attack + this.decay);
+    } else {
+      // Normal triggering or retriggering from zero
+      const startValue = this.isActive ? currentValue : 0;
+      param.setValueAtTime(startValue, now);
 
-    // Attack phase: ramp to peak (velocity scaled)
-    const peakValue = velocity;
-    param.linearRampToValueAtTime(peakValue, now + this.attack);
+      // Attack phase: ramp to peak (velocity scaled)
+      const peakValue = velocity;
+      param.linearRampToValueAtTime(peakValue, now + this.attack);
 
-    // Decay phase: ramp to sustain level
-    const sustainValue = this.sustain * velocity;
-    param.linearRampToValueAtTime(sustainValue, now + this.attack + this.decay);
+      // Decay phase: ramp to sustain level
+      const sustainValue = this.sustain * velocity;
+      param.linearRampToValueAtTime(sustainValue, now + this.attack + this.decay);
+    }
 
     this.isActive = true;
   }
@@ -97,8 +113,14 @@ export class ADSREnvelope implements AudioComponent {
     const currentValue = param.value;
     param.setValueAtTime(currentValue, now);
 
-    // Release phase: ramp to 0
-    param.linearRampToValueAtTime(0, now + this.release);
+    // Release phase: use exponential ramp for smoother, more natural decay
+    // Exponential ramps can't go to 0, so use a very small value
+    if (currentValue > 0.0001) {
+      param.exponentialRampToValueAtTime(0.0001, now + this.release);
+    } else {
+      // If already very quiet, just use linear
+      param.linearRampToValueAtTime(0, now + this.release);
+    }
 
     this.releaseStartTime = now;
     this.isActive = false;
