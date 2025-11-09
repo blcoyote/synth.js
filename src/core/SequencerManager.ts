@@ -55,8 +55,15 @@ export class SequencerManager {
   
   // Track currently playing notes for cleanup
   private activeNotes: Set<number> = new Set();
+  
+  // Audio timing - for precise scheduling
+  private audioContext: AudioContext | null = null;
+  private nextStepTime: number = 0;
+  private scheduleAheadTime: number = 0.1; // Look ahead 100ms
+  private scheduleInterval: number = 25; // Check every 25ms
 
-  constructor(config?: SequencerConfig) {
+  constructor(config?: SequencerConfig, audioContext?: AudioContext) {
+    this.audioContext = audioContext || null;
     if (config) {
       if (config.steps) this.stepCount = config.steps;
       if (config.tempo) this.tempo = config.tempo;
@@ -171,7 +178,14 @@ export class SequencerManager {
       this.direction = 1;
     }
     
-    this.scheduleNextStep();
+    // Initialize timing - use AudioContext time if available, fallback to performance.now()
+    if (this.audioContext) {
+      this.nextStepTime = this.audioContext.currentTime;
+    } else {
+      this.nextStepTime = performance.now() / 1000;
+    }
+    
+    this.scheduleSteps();
   }
 
   /**
@@ -184,7 +198,7 @@ export class SequencerManager {
     this.isPaused = false;
     
     if (this.intervalId !== null) {
-      clearTimeout(this.intervalId);
+      clearInterval(this.intervalId);
       this.intervalId = null;
     }
     
@@ -424,50 +438,77 @@ export class SequencerManager {
   }
 
   /**
-   * Play current step and schedule next
+   * Schedule steps using look-ahead approach for precise timing
    */
-  private scheduleNextStep(): void {
+  private scheduleSteps(): void {
     if (!this.isPlaying) return;
 
-    const step = this.steps[this.currentStep];
-    const stepDuration = this.getStepDuration(this.currentStep);
+    const currentTime = this.audioContext 
+      ? this.audioContext.currentTime 
+      : performance.now() / 1000;
 
-    // Notify step callback (for UI update)
-    if (this.onStepCallback) {
-      this.onStepCallback(this.currentStep);
+    // Schedule all steps that fall within the look-ahead window
+    while (this.nextStepTime < currentTime + this.scheduleAheadTime) {
+      this.scheduleStep(this.currentStep, this.nextStepTime);
+      
+      // Advance to next step
+      const stepDuration = this.getStepDuration(this.currentStep) / 1000; // Convert to seconds
+      this.nextStepTime += stepDuration;
+      this.currentStep = this.getNextStepIndex();
     }
+
+    // Continue scheduling with regular checks
+    this.intervalId = window.setTimeout(() => {
+      this.scheduleSteps();
+    }, this.scheduleInterval);
+  }
+
+  /**
+   * Schedule a single step to play at precise time
+   */
+  private scheduleStep(stepIndex: number, time: number): void {
+    const step = this.steps[stepIndex];
+    const stepDuration = this.getStepDuration(stepIndex) / 1000; // Convert to seconds
+    
+    const currentTime = this.audioContext 
+      ? this.audioContext.currentTime 
+      : performance.now() / 1000;
+    
+    const delay = Math.max(0, (time - currentTime) * 1000); // Convert to ms for setTimeout
+
+    // Schedule UI update at the correct time
+    setTimeout(() => {
+      if (this.onStepCallback) {
+        this.onStepCallback(stepIndex);
+      }
+    }, delay);
 
     // Play note if gate is active
     if (step.gate && this.onNoteCallback && this.rootNote !== null) {
       // Calculate absolute pitch from root note + interval
       const absolutePitch = this.rootNote + step.pitch;
       
-      // Remove from tracking if retriggering
-      if (this.activeNotes.has(absolutePitch)) {
-        this.activeNotes.delete(absolutePitch);
-      }
+      // Schedule note on
+      setTimeout(() => {
+        // Remove from tracking if retriggering
+        if (this.activeNotes.has(absolutePitch)) {
+          this.activeNotes.delete(absolutePitch);
+        }
 
-      // Play new note (VoiceManager will handle cleanup if needed)
-      this.onNoteCallback(absolutePitch, step.velocity / 127);
-      this.activeNotes.add(absolutePitch);
+        // Play new note (VoiceManager will handle cleanup if needed)
+        this.onNoteCallback!(absolutePitch, step.velocity / 127);
+        this.activeNotes.add(absolutePitch);
+      }, delay);
 
       // Schedule note off
-      const noteDuration = stepDuration * step.length;
+      const noteDuration = stepDuration * step.length * 1000; // Convert to ms
       setTimeout(() => {
         if (this.onNoteOffCallback && this.activeNotes.has(absolutePitch)) {
           this.onNoteOffCallback(absolutePitch);
           this.activeNotes.delete(absolutePitch);
         }
-      }, noteDuration);
+      }, delay + noteDuration);
     }
-
-    // Move to next step
-    this.currentStep = this.getNextStepIndex();
-
-    // Schedule next step
-    this.intervalId = window.setTimeout(() => {
-      this.scheduleNextStep();
-    }, stepDuration);
   }
 }
 

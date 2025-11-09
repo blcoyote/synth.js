@@ -10,7 +10,8 @@
  */
 
 import { AudioEngine } from '../../core/AudioEngine';
-import type { LFOWaveform } from './LFO';
+
+export type LFOWaveform = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'random';
 
 export interface LFOTarget {
   param: AudioParam;
@@ -33,6 +34,11 @@ export class MultiTargetLFO {
   private gainNodes: Map<string, GainNode> = new Map(); // One gain per target for independent depth
   private randomInterval: number | null = null;
   private randomValues: Map<string, number> = new Map(); // Store random values per target
+  
+  // Precise timing for random LFO
+  private nextRandomTime: number = 0;
+  private scheduleAheadTime: number = 0.1; // Look ahead 100ms
+  private scheduleInterval: number = 25; // Check every 25ms
 
   constructor(config: MultiTargetLFOConfig = {}) {
     this.engine = AudioEngine.getInstance();
@@ -154,7 +160,7 @@ export class MultiTargetLFO {
     }
 
     if (this.randomInterval !== null) {
-      clearInterval(this.randomInterval);
+      clearTimeout(this.randomInterval); // Changed from clearInterval
       this.randomInterval = null;
     }
 
@@ -189,24 +195,51 @@ export class MultiTargetLFO {
   }
 
   /**
-   * Start random (sample & hold) LFO
+   * Start random (sample & hold) LFO with precise timing
    */
   private startRandomLFO(): void {
-    const updateRate = 1000 / this.frequency; // Convert Hz to ms
+    // Initialize timing using AudioContext clock
+    this.nextRandomTime = this.engine.getCurrentTime();
+    this.scheduleRandomUpdates();
+  }
 
-    this.randomInterval = window.setInterval(() => {
-      const now = this.engine.getCurrentTime();
+  /**
+   * Schedule random updates using look-ahead approach
+   */
+  private scheduleRandomUpdates(): void {
+    if (!this.enabled || this.waveform !== 'random') return;
+
+    const currentTime = this.engine.getCurrentTime();
+    const updateInterval = 1.0 / this.frequency; // Convert Hz to seconds
+
+    // Schedule all updates that fall within the look-ahead window
+    while (this.nextRandomTime < currentTime + this.scheduleAheadTime) {
+      this.scheduleRandomUpdate(this.nextRandomTime);
+      this.nextRandomTime += updateInterval;
+    }
+
+    // Continue scheduling with regular checks
+    this.randomInterval = window.setTimeout(() => {
+      this.scheduleRandomUpdates();
+    }, this.scheduleInterval);
+  }
+
+  /**
+   * Schedule a single random update at precise time
+   */
+  private scheduleRandomUpdate(time: number): void {
+    const updateInterval = 1.0 / this.frequency; // Transition time
+    
+    // Generate independent random values for each target
+    this.targets.forEach((target, name) => {
+      const randomValue = (Math.random() * 2 - 1) * target.depth; // -depth to +depth
+      const newValue = target.baseline + randomValue;
       
-      // Generate independent random values for each target
-      this.targets.forEach((target, name) => {
-        const randomValue = (Math.random() * 2 - 1) * target.depth; // -depth to +depth
-        const newValue = target.baseline + randomValue;
-        
-        // Smooth transition to new random value
-        target.param.linearRampToValueAtTime(newValue, now + updateRate / 2000);
-        this.randomValues.set(name, newValue);
-      });
-    }, updateRate);
+      // Schedule smooth transition to new random value at exact time
+      target.param.setValueAtTime(target.param.value, time);
+      target.param.linearRampToValueAtTime(newValue, time + updateInterval / 2);
+      this.randomValues.set(name, newValue);
+    });
   }
 
   /**

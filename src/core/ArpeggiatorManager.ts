@@ -79,6 +79,12 @@ export class ArpeggiatorManager {
   
   // Progression support
   private currentProgression: ChordProgression | null = null;
+  
+  // Audio timing - for precise scheduling
+  private audioContext: AudioContext | null = null;
+  private nextNoteTime: number = 0;
+  private scheduleAheadTime: number = 0.1; // Look ahead 100ms
+  private scheduleInterval: number = 25; // Check every 25ms
   private currentChordIndex: number = 0;
   private barsPerChord: number = 1;
   private currentBar: number = 0;
@@ -146,13 +152,15 @@ export class ArpeggiatorManager {
     }],
   ]);
 
-  constructor(config?: ArpeggiatorConfig) {
+  constructor(config?: ArpeggiatorConfig, audioContext?: AudioContext) {
+    this.audioContext = audioContext || null;
+    
     if (config) {
       if (config.pattern) this.pattern = config.pattern;
       if (config.octaves) this.octaves = config.octaves;
       if (config.tempo) this.tempo = config.tempo;
       if (config.division) this.division = config.division;
-      if (config.gateLength) this.gateLength = config.gateLength;
+      if (config.gateLength !== undefined) this.gateLength = config.gateLength;
       if (config.noteHold !== undefined) this.noteHold = config.noteHold;
     }
   }
@@ -249,7 +257,15 @@ export class ArpeggiatorManager {
     this.isPlaying = true;
     this.currentNoteIndex = 0;
     this.generateArpeggioSequence();
-    this.scheduleNextNote();
+    
+    // Initialize timing - use AudioContext time if available
+    if (this.audioContext) {
+      this.nextNoteTime = this.audioContext.currentTime;
+    } else {
+      this.nextNoteTime = performance.now() / 1000;
+    }
+    
+    this.scheduleNotes();
   }
 
   /**
@@ -261,7 +277,7 @@ export class ArpeggiatorManager {
     this.isPlaying = false;
     
     if (this.intervalId !== null) {
-      clearTimeout(this.intervalId);
+      clearInterval(this.intervalId);
       this.intervalId = null;
     }
     
@@ -499,15 +515,46 @@ export class ArpeggiatorManager {
   }
 
   /**
-   * Schedule next note
+   * Schedule notes using look-ahead approach for precise timing
    */
-  private scheduleNextNote(): void {
+  private scheduleNotes(): void {
     if (!this.isPlaying) return;
+
+    const currentTime = this.audioContext 
+      ? this.audioContext.currentTime 
+      : performance.now() / 1000;
+
+    // Schedule all notes that fall within the look-ahead window
+    while (this.nextNoteTime < currentTime + this.scheduleAheadTime) {
+      this.scheduleNote(this.nextNoteTime);
+      
+      // Advance timing
+      const duration = this.getNoteDuration() / 1000; // Convert to seconds
+      this.nextNoteTime += duration;
+    }
+
+    // Continue scheduling with regular checks
+    this.intervalId = window.setTimeout(() => {
+      this.scheduleNotes();
+    }, this.scheduleInterval);
+  }
+
+  /**
+   * Schedule a single note to play at precise time
+   */
+  private scheduleNote(time: number): void {
+    if (this.arpeggioSequence.length === 0) return;
 
     const noteIndex = this.getNextNoteIndex();
     const pitch = this.arpeggioSequence[noteIndex];
     const duration = this.getNoteDuration();
     const gateDuration = duration * this.gateLength;
+
+    const currentTime = this.audioContext 
+      ? this.audioContext.currentTime 
+      : performance.now() / 1000;
+    
+    const delay = Math.max(0, (time - currentTime) * 1000); // Convert to ms for setTimeout
 
     // Check if we need to change chord (progression mode)
     if (this.currentProgression && this.arpeggioSequence.length > 0) {
@@ -521,34 +568,32 @@ export class ArpeggiatorManager {
       }
     }
 
-    // Stop previous note if in hold mode
-    if (this.noteHold && this.currentlyPlayingNote !== null && this.onNoteOffCallback) {
-      this.onNoteOffCallback(this.currentlyPlayingNote);
-    }
+    // Schedule note on
+    setTimeout(() => {
+      // Stop previous note if in hold mode
+      if (this.noteHold && this.currentlyPlayingNote !== null && this.onNoteOffCallback) {
+        this.onNoteOffCallback(this.currentlyPlayingNote);
+      }
 
-    // Play note
-    if (this.onNoteCallback) {
-      this.onNoteCallback({
-        pitch,
-        velocity: 100,
-        gate: this.gateLength
-      });
-    }
+      // Play note
+      if (this.onNoteCallback) {
+        this.onNoteCallback({
+          pitch,
+          velocity: 100,
+          gate: this.gateLength
+        });
+      }
 
-    // Track for hold mode
-    this.currentlyPlayingNote = pitch;
+      // Track for hold mode
+      this.currentlyPlayingNote = pitch;
+    }, delay);
 
     // Schedule note off (if not in hold mode)
     if (!this.noteHold && this.onNoteOffCallback) {
       setTimeout(() => {
         this.onNoteOffCallback!(pitch);
-      }, gateDuration);
+      }, delay + gateDuration);
     }
-
-    // Schedule next note
-    this.intervalId = window.setTimeout(() => {
-      this.scheduleNextNote();
-    }, duration);
   }
   
   /**

@@ -159,8 +159,8 @@ export class SynthEngine {
       this.voiceManager.setLFOManager(this.lfoManager);
       console.log('🔗 Connected LFO manager to voice manager');
       
-      // Create Arpeggiator manager
-      this.arpeggiatorManager = new ArpeggiatorManager();
+      // Create Arpeggiator manager with AudioContext for precise timing
+      this.arpeggiatorManager = new ArpeggiatorManager(undefined, context);
       
       // Connect arpeggiator to voice manager
       this.arpeggiatorManager.onNote((note) => {
@@ -171,10 +171,10 @@ export class SynthEngine {
         this.voiceManager?.releaseNote(pitch);
       });
       
-      console.log('🎹 Created Arpeggiator manager');
+      console.log('🎹 Created Arpeggiator manager with precise audio timing');
       
-      // Create Sequencer manager
-      this.sequencerManager = new SequencerManager();
+      // Create Sequencer manager with AudioContext for precise timing
+      this.sequencerManager = new SequencerManager(undefined, context);
       
       // Connect sequencer to voice manager
       this.sequencerManager.onNote((pitch: number, velocity: number) => {
@@ -185,7 +185,7 @@ export class SynthEngine {
         this.voiceManager?.releaseNote(pitch);
       });
       
-      console.log('🎵 Created Sequencer manager');
+      console.log('🎵 Created Sequencer manager with precise audio timing');
       
       this.isInitialized = true;
       console.log('✅ SynthEngine initialized successfully');

@@ -12,7 +12,7 @@
  */
 
 import { MultiTargetLFO } from "../components/modulation/MultiTargetLFO";
-import type { LFOWaveform } from "../components/modulation/LFO";
+import type { LFOWaveform } from "../components/modulation/MultiTargetLFO";
 
 export interface LFOTargetConfig {
   enabled: boolean;
