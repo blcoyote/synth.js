@@ -66,6 +66,10 @@ export class SequencerManager {
   private nextStepTime: number = 0;
   private scheduleAheadTime: number = 0.1; // Look ahead 100ms
   private scheduleInterval: number = 25; // Check every 25ms
+  private schedulerTimerId: number | null = null; // Use RAF instead of setTimeout
+  private scheduledNotes: Map<number, { timeoutId: number; pitch: number }> = new Map(); // Track scheduled note-offs
+  private tempoChanged: boolean = false; // Flag for tempo changes
+  private swingChanged: boolean = false; // Flag for swing changes
 
   constructor(config?: SequencerConfig, audioContext?: AudioContext) {
     this.audioContext = audioContext || null;
@@ -397,6 +401,64 @@ export class SequencerManager {
       step.pitch = -12 + Math.floor(Math.random() * 25); // -12 to +12 semitones
       step.velocity = 80 + Math.floor(Math.random() * 40); // 80-120
     });
+  }
+
+  /**
+   * Fill sequence with bassline pattern (root, fifth, octave)
+   */
+  public fillBassline(): void {
+    const intervals = [0, 7, 12, 7]; // root, fifth, octave, fifth
+    for (let i = 0; i < this.stepCount; i++) {
+      this.steps[i].gate = true;
+      this.steps[i].pitch = intervals[i % intervals.length];
+      this.steps[i].velocity = 110;
+      this.steps[i].length = 0.8;
+    }
+  }
+
+  /**
+   * Fill sequence with melodic pattern (scale intervals)
+   */
+  public fillMelodic(scale: number[] = [0, 2, 4, 5, 7, 9, 11]): void {
+    for (let i = 0; i < this.stepCount; i++) {
+      this.steps[i].gate = true;
+      this.steps[i].pitch = scale[i % scale.length];
+      this.steps[i].velocity = 100 + (i % 2 ? 10 : 0); // Slight accent on odd steps
+      this.steps[i].length = 0.8;
+    }
+  }
+
+  /**
+   * Fill sequence with generative pattern (pleasing intervals within scale)
+   */
+  public fillGenerative(scale: number[] = [0, 2, 4, 5, 7, 9, 11]): void {
+    for (let i = 0; i < this.stepCount; i++) {
+      // 80% chance of gate being active
+      this.steps[i].gate = Math.random() > 0.2;
+      
+      if (i === 0) {
+        // Start on root
+        this.steps[i].pitch = scale[0];
+      } else {
+        // Favor stepwise motion, avoid large leaps
+        const prevPitch = this.steps[i - 1].pitch;
+        const scaleIndex = scale.findIndex(note => note >= prevPitch % 12);
+        const centerIndex = scaleIndex >= 0 ? scaleIndex : 0;
+        
+        // Choose from nearby scale notes (±2 steps in scale)
+        const minIndex = Math.max(0, centerIndex - 2);
+        const maxIndex = Math.min(scale.length - 1, centerIndex + 2);
+        const noteIndex = minIndex + Math.floor(Math.random() * (maxIndex - minIndex + 1));
+        
+        this.steps[i].pitch = scale[noteIndex];
+      }
+      
+      // Varied velocity for dynamics
+      this.steps[i].velocity = 90 + Math.floor(Math.random() * 30); // 90-120
+      
+      // Varied note length for interest
+      this.steps[i].length = 0.6 + Math.random() * 0.3; // 0.6-0.9
+    }
   }
 
   /**

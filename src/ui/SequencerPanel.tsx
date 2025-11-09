@@ -184,6 +184,47 @@ export function SequencerPanel() {
     }
   }, [seqManager, selectedStep]);
 
+  const handleBassline = useCallback(() => {
+    if (!seqManager) return;
+    seqManager.fillBassline();
+    
+    // Reload selected step
+    const step = seqManager.getStep(selectedStep);
+    if (step) {
+      setStepGate(step.gate);
+      setStepPitch(step.pitch);
+      setStepVelocity(step.velocity);
+    }
+  }, [seqManager, selectedStep]);
+
+  const handleMelodic = useCallback(() => {
+    if (!seqManager) return;
+    // Use major scale by default
+    seqManager.fillMelodic([0, 2, 4, 5, 7, 9, 11]);
+    
+    // Reload selected step
+    const step = seqManager.getStep(selectedStep);
+    if (step) {
+      setStepGate(step.gate);
+      setStepPitch(step.pitch);
+      setStepVelocity(step.velocity);
+    }
+  }, [seqManager, selectedStep]);
+
+  const handleGenerative = useCallback(() => {
+    if (!seqManager) return;
+    // Use major scale by default
+    seqManager.fillGenerative([0, 2, 4, 5, 7, 9, 11]);
+    
+    // Reload selected step
+    const step = seqManager.getStep(selectedStep);
+    if (step) {
+      setStepGate(step.gate);
+      setStepPitch(step.pitch);
+      setStepVelocity(step.velocity);
+    }
+  }, [seqManager, selectedStep]);
+
   const handleModeChange = useCallback((m: SequencerMode) => {
     setMode(m);
   }, []);
@@ -415,6 +456,27 @@ export function SequencerPanel() {
           disabled={!seqManager}
         >
           Randomize
+        </button>
+        <button
+          className="tool-btn info"
+          onClick={handleBassline}
+          disabled={!seqManager}
+        >
+          Bassline
+        </button>
+        <button
+          className="tool-btn info"
+          onClick={handleMelodic}
+          disabled={!seqManager}
+        >
+          Melodic
+        </button>
+        <button
+          className="tool-btn info"
+          onClick={handleGenerative}
+          disabled={!seqManager}
+        >
+          Generative
         </button>
       </div>
 
