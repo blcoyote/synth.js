@@ -3,7 +3,7 @@
  * Includes filter type selection, cutoff (logarithmic), resonance, and enable/bypass toggle
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { audioState, visualizationState } from '../../state';
 import { Lowpass12Filter, Lowpass24Filter } from '../../components/filters';
@@ -29,6 +29,13 @@ export function FilterPanel() {
   const [filterType, setFilterType] = useState(audioState.filterSettings.type);
   const [cutoff, setCutoff] = useState(audioState.filterSettings.cutoff);
   const [resonance, setResonance] = useState(audioState.filterSettings.resonance);
+
+  // Memoize logarithmic scale constants (expensive Math.log calculations)
+  const logScale = useMemo(() => ({
+    logMin: Math.log(MIN_CUTOFF),
+    logMax: Math.log(MAX_CUTOFF),
+    range: Math.log(MAX_CUTOFF) - Math.log(MIN_CUTOFF),
+  }), []); // Constants never change
 
   // Sync enabled state with audioState (updated by CollapsiblePanel)
   useEffect(() => {
@@ -102,10 +109,8 @@ export function FilterPanel() {
 
   // Handle cutoff change (logarithmic scale)
   const handleCutoffChange = useCallback((value: number) => {
-    // Convert linear slider (0-100) to logarithmic frequency
-    const logMin = Math.log(MIN_CUTOFF);
-    const logMax = Math.log(MAX_CUTOFF);
-    const logValue = logMin + (value / 100) * (logMax - logMin);
+    // Convert linear slider (0-100) to logarithmic frequency using memoized constants
+    const logValue = logScale.logMin + (value / 100) * logScale.range;
     const newCutoff = Math.exp(logValue);
     
     audioState.filterSettings.cutoff = newCutoff;
@@ -118,7 +123,7 @@ export function FilterPanel() {
         (audioState.masterFilter as BiquadFilterNode).frequency.value = newCutoff;
       }
     }
-  }, []);
+  }, [logScale]);
 
   // Handle resonance change
   const handleResonanceChange = useCallback((value: number) => {
@@ -133,13 +138,11 @@ export function FilterPanel() {
     }
   }, []);
 
-  // Calculate initial slider position from frequency
-  const getSliderValueFromFrequency = (freq: number): number => {
-    const logMin = Math.log(MIN_CUTOFF);
-    const logMax = Math.log(MAX_CUTOFF);
-    const logFreq = Math.log(freq);
-    return ((logFreq - logMin) / (logMax - logMin)) * 100;
-  };
+  // Memoize initial slider position calculation (uses expensive Math.log)
+  const sliderValue = useMemo(() => {
+    const logFreq = Math.log(cutoff);
+    return ((logFreq - logScale.logMin) / logScale.range) * 100;
+  }, [cutoff, logScale]);
 
   // Get the appropriate filter node for visualization
   const getFilterNodeForViz = (): BiquadFilterNode | null => {
@@ -192,7 +195,7 @@ export function FilterPanel() {
           label="Cutoff"
           min={0}
           max={100}
-          initialValue={getSliderValueFromFrequency(cutoff)}
+          initialValue={sliderValue}
           onChange={handleCutoffChange}
           formatValue={() => formatFrequency(cutoff)}
         />

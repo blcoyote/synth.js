@@ -1,4 +1,4 @@
-import { useEffect, useRef, memo } from 'react';
+import { useEffect, useRef, memo, useMemo } from 'react';
 
 interface EnvelopeVisualizerProps {
   attack: number;
@@ -24,6 +24,25 @@ export const EnvelopeVisualizer = memo(function EnvelopeVisualizer({
 }: EnvelopeVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Memoize expensive envelope calculations
+  const envelopeGeometry = useMemo(() => {
+    const totalTime = attack + decay + 0.5 + release; // 0.5s for sustain display
+    const padding = 10;
+    const usableWidth = width - padding * 2;
+    const usableHeight = height - padding * 2;
+
+    return {
+      totalTime,
+      padding,
+      usableWidth,
+      usableHeight,
+      attackWidth: (attack / totalTime) * usableWidth,
+      decayWidth: (decay / totalTime) * usableWidth,
+      sustainWidth: (0.5 / totalTime) * usableWidth,
+      releaseWidth: (release / totalTime) * usableWidth,
+    };
+  }, [attack, decay, sustain, release, width, height]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -34,16 +53,7 @@ export const EnvelopeVisualizer = memo(function EnvelopeVisualizer({
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Calculate time segments (normalized to canvas width)
-    const totalTime = attack + decay + 0.5 + release; // 0.5s for sustain display
-    const padding = 10;
-    const usableWidth = width - padding * 2;
-    const usableHeight = height - padding * 2;
-
-    const attackWidth = (attack / totalTime) * usableWidth;
-    const decayWidth = (decay / totalTime) * usableWidth;
-    const sustainWidth = (0.5 / totalTime) * usableWidth;
-    const releaseWidth = (release / totalTime) * usableWidth;
+    const { padding, usableWidth, usableHeight, attackWidth, decayWidth, sustainWidth, releaseWidth } = envelopeGeometry;
 
     // Draw background grid
     ctx.strokeStyle = 'rgba(139, 92, 246, 0.1)';
@@ -125,7 +135,7 @@ export const EnvelopeVisualizer = memo(function EnvelopeVisualizer({
     ctx.fillText(`${Math.round(sustain * 100)}%`, padding + attackWidth + decayWidth + 2, 12);
     ctx.fillText(formatTime(release), padding + attackWidth + decayWidth + sustainWidth + 2, 12);
 
-  }, [attack, decay, sustain, release, width, height]);
+  }, [attack, decay, sustain, release, width, height, envelopeGeometry]);
 
   return (
     <div className="envelope-visualizer">
