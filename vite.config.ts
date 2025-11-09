@@ -19,14 +19,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        synth: resolve(__dirname, 'synth.html'),
         'synth-v2': resolve(__dirname, 'synth-v2.html'),
-        oscillators: resolve(__dirname, 'oscillators.html'),
-        filters: resolve(__dirname, 'filters.html'),
-        effects: resolve(__dirname, 'effects.html'),
-        modulation: resolve(__dirname, 'modulation.html'),
-        arpeggiator: resolve(__dirname, 'arpeggiator.html'),
-        sequencer: resolve(__dirname, 'sequencer.html'),
       },
     },
   },

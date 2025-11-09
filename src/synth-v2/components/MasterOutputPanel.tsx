@@ -2,57 +2,26 @@
  * MasterOutputPanel - Master volume control
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { audioState } from '../../state';
+import { useState, useCallback } from 'react';
+import { useSynthEngine } from '../context/SynthContext';
 
 export function MasterOutputPanel() {
+  const { engine } = useSynthEngine();
   const [masterVolume, setMasterVolume] = useState(80);
-
-  // Initialize master volume when bus becomes available
-  useEffect(() => {
-    const initVolume = () => {
-      try {
-        const bus = audioState.masterBus;
-        if (bus) {
-          const volume = masterVolume / 100;
-          bus.setInputGain(volume);
-        }
-      } catch (err) {
-        // Bus not initialized yet, ignore
-      }
-    };
-
-    // Try to initialize immediately
-    initVolume();
-
-    // Also retry periodically until initialized (optimized: 250ms instead of 100ms)
-    const interval = setInterval(() => {
-      try {
-        const bus = audioState.masterBus;
-        if (bus) {
-          clearInterval(interval);
-        }
-      } catch {
-        // Still not ready
-      }
-    }, 250); // Optimized from 100ms
-
-    return () => clearInterval(interval);
-  }, [masterVolume]);
 
   const handleVolumeChange = useCallback((value: number) => {
     setMasterVolume(value);
     const volume = value / 100;
     
     try {
-      const bus = audioState.masterBus;
-      if (bus) {
-        bus.setInputGain(volume);
-      }
+      const voiceManager = engine.getVoiceManager();
+      const masterGain = voiceManager.getMasterGainNode();
+      masterGain.gain.value = volume;
     } catch (err) {
-      // Bus not initialized yet, ignore
+      // Engine not initialized yet, ignore
+      console.debug('Master volume update skipped (not initialized):', err);
     }
-  }, []);
+  }, [engine]);
 
   return (
     <div className="master-output-panel">
