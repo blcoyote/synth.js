@@ -1,30 +1,48 @@
 # Modular Synthesizer - A Learning Journey
 
-A modular synthesizer built with TypeScript and Web Audio API, focusing on reusable components and dynamic effect routing.
+A fully-featured polyphonic synthesizer built with React, TypeScript, and Web Audio API. Features three oscillators with FM synthesis, comprehensive modulation routing, effects processing, and a complete preset system.
 
 ## Live Demo
 
 **Try it now: [https://blcoyote.github.io/synth.js/](https://blcoyote.github.io/synth.js/)**
 
-The synthesizer is deployed and available online via GitHub Pages. No installation required - just open the link and start making sounds!
+The synthesizer is deployed and available online via GitHub Pages. No installation required - just open the link and start making sounds with your computer keyboard or mouse.
 
 ## Project Philosophy
 
 This project is designed as a learning journey to understand:
 
-- Digital Signal Processing (DSP)
-- Audio synthesis and sound design
-- Modular architecture patterns
-- Real-time audio processing
-- Web Audio API capabilities
+- Digital Signal Processing (DSP) and audio synthesis
+- Real-time audio processing with Web Audio API
+- Modular architecture and clean code patterns
+- Comprehensive testing strategies
+- React application development for audio tools
 
 ## Key Features
 
-- **Modular Components**: Reusable oscillators, filters, and effects
-- **Dynamic Bus System**: Add/remove effects on the fly
-- **Real-time Audio**: Low-latency sound generation and processing
-- **Extensible Architecture**: Easy to add new components
-- **Educational Focus**: Well-documented code for learning
+### Sound Generation
+- **Three Oscillators**: Independent waveform, volume, pan, octave, and detune controls
+- **FM Synthesis**: Oscillator 2 can modulate Oscillator 1 with adjustable depth
+- **Polyphonic Voices**: Play multiple notes simultaneously with proper voice management
+- **Four Waveforms**: Sine, Sawtooth, Square, and Triangle waves
+
+### Modulation & Control
+- **ADSR Envelopes**: Per-oscillator attack, decay, sustain, and release controls
+- **Multi-Target LFO**: Modulate pitch, volume, pan, or filter cutoff independently
+- **Arpeggiator**: 10+ patterns including up, down, random, chords, and progressions
+- **Step Sequencer**: Create melodic patterns with multiple playback modes
+
+### Sound Shaping
+- **Master Filter**: 10 filter types (lowpass, highpass, bandpass, notch, allpass, peaking, shelving, lowpass24)
+- **Effects Chain**: Delay, reverb, distortion, chorus, shimmer, flanger, phaser, ring modulator, and compressor
+- **Real-time Updates**: All parameters respond immediately, even on sustained notes
+
+### User Interface
+- **Visual Feedback**: Waveform analyzers for each oscillator and spectrum analyzer for master output
+- **Computer Keyboard**: US keyboard layout mapping (Z-' bottom row, Q-] top row)
+- **Mouse Support**: Click-to-play virtual piano keyboard
+- **Preset System**: Save, load, and manage custom presets with localStorage persistence
+- **Factory Presets**: 50+ built-in sounds to get started
 
 ## Getting Started
 
@@ -49,116 +67,152 @@ npm run build
 npm test
 ```
 
-## Project Structure
+## Architecture
+
+### Project Structure
 
 ```
 /src
-  /core           # Core audio engine and context
+  /core           # Audio engine, voice management, preset system
+    AudioEngine.ts      # Web Audio context and node creation
+    SynthEngine.ts      # Main synthesizer orchestration
+    VoiceManager.ts     # Polyphonic voice allocation
+    PresetManager.ts    # Save/load preset system
+    ParameterManager.ts # Real-time parameter updates
+    LFOManager.ts       # Multi-target LFO control
   /components
-    /oscillators  # Sound generators
-    /filters      # Frequency filters
-    /effects      # Audio effects
-    /envelopes    # Envelope generators
-    /modulation   # LFOs and modulators
-  /bus            # Audio routing system
-  /ui             # User interface
-  /utils          # Helper functions
-/examples         # Example patches
-/tests            # Tests
-/docs             # Documentation
+    /oscillators  # Sine, Sawtooth, Square, Triangle, FM
+    /filters      # 10 filter types with resonance control
+    /effects      # 9 effect processors
+    /envelopes    # ADSR envelope generators
+    /modulation   # LFO, arpeggiator, sequencer
+    /voice        # Voice synthesis and routing
+  /ui             # React components for all panels
+    OscillatorPanel.tsx
+    FilterPanel.tsx
+    EffectsPanel.tsx
+    LFOPanel.tsx
+    EnvelopePanel.tsx
+    PresetPanel.tsx
+    SimpleKeyboard.tsx
+    ArpeggiatorPanel.tsx
+    SequencerPanel.tsx
+  /hooks          # React hooks
+    useKeyboardInput.ts  # Computer keyboard MIDI mapping
+    useSynthEngine.ts    # Synth engine context
+  /bus            # Audio routing and effect chains
+  /utils          # Visualization and helpers
+/tests            # Comprehensive test suite (346 tests)
+/docs             # Technical documentation
 ```
 
-## Core Concepts
+### Core Architecture
 
-### Components
+**Signal Flow:**
+```
+Computer Keyboard → Voice Manager → [Oscillator 1, 2, 3] → Envelopes
+                                                    ↓
+                                            Master Gain/Pan
+                                                    ↓
+                                              Filter (optional)
+                                                    ↓
+                                              Effects Chain
+                                                    ↓
+                                            Spectrum Analyzer
+                                                    ↓
+                                               Speakers
+```
 
-All audio components follow a consistent interface:
+**Key Systems:**
+- **SynthEngine**: Main orchestrator, manages all subsystems
+- **VoiceManager**: Allocates polyphonic voices, applies parameters
+- **ParameterManager**: Updates parameters on active and future notes
+- **PresetManager**: Saves/loads complete synth state to localStorage
+- **LFOManager**: Routes LFO modulation to multiple targets simultaneously
 
-- Connect/disconnect to other components
-- Parameter control with validation
-- Enable/disable functionality
-- Type-safe implementation
+## Technical Documentation
 
-### Bus System
+- [Core System Architecture](./docs/CORE_SYSTEM.md) - Audio engine and bus system
+- [Oscillators](./docs/OSCILLATORS.md) - Waveform generation and FM synthesis
+- [Envelopes & Modulation](./docs/ENVELOPES_AND_MODULATION.md) - ADSR and modulation routing
+- [Multi-Target LFO](./docs/MULTI-TARGET-LFO.md) - LFO routing to multiple destinations
+- [FM Synthesis](./docs/FM-SYNTHESIS.md) - Frequency modulation implementation
+- [Arpeggiator](./docs/ARPEGGIATOR.md) - Pattern-based note generation
+- [Sequencer](./docs/SEQUENCER.md) - Step sequencer functionality
+- [Keyboard Layout](./docs/KEYBOARD-LAYOUT.md) - US keyboard to MIDI mapping
 
-The bus system allows dynamic signal routing:
+See [.github/copilot-instructions.md](./.github/copilot-instructions.md) for development guidelines and architectural principles.
 
-- **Master Bus**: Final output destination
-- **Aux Buses**: Parallel effect processing
-- **Insert Effects**: Serial signal chain
-- **Send/Return**: Wet/dry mix control
+## Testing
 
-### Parameters
+The project includes a comprehensive test suite with 346 passing tests covering:
+- Core audio systems (AudioEngine, VoiceManager, PresetManager)
+- Parameter management and real-time updates
+- LFO routing and modulation
+- UI components (all panels, keyboard, sliders)
+- Integration tests for complete workflows
 
-All parameters feature:
+Run tests with:
+```bash
+npm test              # Run all tests
+npm run test:ui       # Run with UI
+npm run test:coverage # Generate coverage report
+```
 
-- Min/max range validation
-- Smooth value transitions
-- Automation support
-- Real-time modification
-
-## Documentation
-
-See [PROJECT_RULES.md](./PROJECT_RULES.md) for detailed development guidelines and architecture decisions.
-
-## Learning Resources
-
-- [Web Audio API Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
-- [Digital Signal Processing Basics](https://en.wikipedia.org/wiki/Digital_signal_processing)
-- [Synthesizer Fundamentals](https://en.wikipedia.org/wiki/Synthesizer)
+CI/CD is automated via GitHub Actions on every pull request.
 
 ## Development Roadmap
 
-### Phase 1: Foundation ✅
+### Completed Features
 
-- [x] Project setup and rules
-- [x] Core audio context and bus architecture
+#### Phase 1: Foundation
+- [x] Project setup with TypeScript and Vite
+- [x] Core audio engine with Web Audio API
+- [x] Bus architecture for signal routing
 - [x] Basic oscillators (Sine, Sawtooth, Square, Triangle)
-- [x] Envelope generators (ADSR)
+- [x] ADSR envelope generators
 
-### Phase 2: Expansion ✅
+#### Phase 2: Sound Design
+- [x] 10 filter types with resonance control
+- [x] 9 audio effects with parameter controls
+- [x] Dynamic effect chain routing
+- [x] Per-oscillator volume, pan, octave, and detune
+- [x] FM synthesis (Osc 2 → Osc 1 modulation)
 
-- [x] Filters (10 types: Lowpass, Highpass, Bandpass, Notch, Allpass, Peaking, Lowshelf, Highshelf, Lowpass24)
-- [x] Effects (Delay, Reverb, Distortion, Chorus, Shimmer, Flanger, Phazer, Ring Mod., Compressor)
-- [x] Dynamic effect routing and bus system
-
-### Phase 3: Advanced Features ✅
-
-- [x] Modulation sources (LFO with multi-target support)
-- [x] Sequencer with multiple playback modes
+#### Phase 3: Modulation & Sequencing
+- [x] Multi-target LFO system (pitch, volume, pan, filter)
 - [x] Arpeggiator with 10+ patterns and chord progressions
-- [x] FM synthesis support
+- [x] Step sequencer with multiple playback modes
+- [x] Real-time parameter updates on sustained notes
 - [x] Polyphonic voice management
-- [x] Real-time parameter changes for held notes
 
-### Phase 4: User Interface ✅
+#### Phase 4: User Interface
+- [x] React-based full synthesizer UI
+- [x] Visual waveform analyzers (3 oscillators + master spectrum)
+- [x] Computer keyboard input (US layout Z-' and Q-])
+- [x] Mouse-playable virtual keyboard
+- [x] All parameter panels with real-time feedback
+- [x] Preset system with save/load functionality
+- [x] 50+ factory presets
 
-- [x] Full synthesizer UI with keyboard
-- [x] Visual waveform display (3 oscillator analyzers)
-- [x] Individual oscillator controls (volume, octave, pan, detune)
-- [x] Comprehensive effect controls
-- [x] Filter controls with multiple types
-- [x] LFO controls with multiple targets (pitch, volume, pan, filter)
-- [x] Envelope controls (ADSR per oscillator)
-- [x] Arpeggiator and sequencer interfaces
-- [x] MIDI note range support (C1-C8, 88 keys)
+#### Phase 5: Quality & Deployment
+- [x] Comprehensive test suite (346 tests, 100% passing)
+- [x] GitHub Actions CI/CD pipeline
+- [x] Automated deployment to GitHub Pages
+- [x] Test coverage reporting
+- [x] Clean documentation
 
-### Phase 5: Testing & Quality ✅
+### Future Enhancements
 
-- [x] Comprehensive test suite (236 tests)
-- [x] Automated CI/CD with GitHub Actions
-- [x] GitHub Pages deployment
-- [x] Test coverage for all major components
-
-### Future Enhancements 🚀
-
-- [ ] Preset save/load system
-- [ ] MIDI controller integration
-- [ ] Additional waveforms (noise, custom)
-- [ ] Recording/export functionality
-- [ ] Visual patch cable system
-- [ ] Modulation matrix
-- [ ] Additional envelope types (multi-stage)
+- [ ] MIDI controller support (Web MIDI API)
+- [ ] Audio recording and WAV export
+- [ ] Additional oscillator waveforms (noise, custom wavetables)
+- [ ] Visual modulation matrix
+- [ ] Additional envelope shapes (multi-stage, exponential curves)
+- [ ] Effect preset system (save individual effect chains)
+- [ ] Drag-and-drop preset import/export
+- [ ] Visual patch cable routing system
+- [ ] Performance optimizations for lower-end devices
 
 ## Contributing
 
