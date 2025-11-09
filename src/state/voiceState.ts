@@ -40,7 +40,7 @@ export interface OscillatorConfig {
   fmDepth?: number;
 }
 
-class VoiceStateManager {
+export class VoiceStateManager {
   // Map of MIDI note number to oscillator configuration
   public oscillatorConfigs: Map<number, OscillatorConfig> = new Map();
 

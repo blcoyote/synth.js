@@ -1,0 +1,262 @@
+/* LFOPanel.css - Styling for LFO controls */
+
+.lfo-panel {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #2a2a2a;
+}
+
+/* LFO Visualizer */
+.lfo-visualizer-container {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+}
+
+.lfo-visualizer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.lfo-visualizer canvas {
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 4px;
+}
+
+.lfo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.lfo-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #4a9eff;
+}
+
+.lfo-toggle {
+  background: #2a2a2a;
+  color: #888;
+  border: 2px solid #444;
+  padding: 8px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.lfo-toggle:hover {
+  border-color: #4a9eff;
+}
+
+.lfo-toggle.active {
+  background: #4a9eff;
+  color: #000;
+  border-color: #4a9eff;
+}
+
+.lfo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Mode Selector */
+.lfo-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.lfo-mode-selector label {
+  color: #aaa;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.lfo-mode-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* LFO mode buttons - inherit from base with blue theme */
+.lfo-mode-btn {
+  flex: 1;
+  background: rgba(74, 158, 255, 0.1);
+  border-color: rgba(74, 158, 255, 0.3);
+}
+
+.lfo-mode-btn:hover {
+  background: rgba(74, 158, 255, 0.2);
+  border-color: rgba(74, 158, 255, 0.5);
+}
+
+.lfo-mode-btn.active {
+  background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%);
+  border-color: #4a9eff;
+  color: white;
+}
+
+/* Waveform Selector */
+.lfo-waveform-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lfo-waveform-selector label {
+  color: #aaa;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.lfo-waveform-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* LFO waveform buttons - inherit from base with blue theme */
+.lfo-waveform-btn {
+  background: rgba(74, 158, 255, 0.1);
+  color: #4a9eff;
+  border-color: rgba(74, 158, 255, 0.3);
+  text-transform: capitalize;
+}
+
+.lfo-waveform-btn:hover {
+  background: rgba(74, 158, 255, 0.2);
+  border-color: rgba(74, 158, 255, 0.5);
+}
+
+.lfo-waveform-btn.active {
+  background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%);
+  color: white;
+  border-color: #4a9eff;
+}
+
+.lfo-targets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #3a3a3a;
+}
+
+.lfo-targets h4 {
+  grid-column: 1 / -1;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #4a9eff;
+}
+
+.lfo-target {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: #252525;
+  border-radius: 6px;
+  border: 1px solid #3a3a3a;
+}
+
+.lfo-target-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lfo-target-header input[type="checkbox"] {
+  /* Hide default checkbox */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  width: 40px;
+  height: 20px;
+  background: #3a3a3a;
+  border: 2px solid #555;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.lfo-target-header input[type="checkbox"]:hover {
+  border-color: #4a9eff;
+}
+
+.lfo-target-header input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  top: 1px;
+  left: 1px;
+  background: #888;
+  transition: all 0.3s ease;
+}
+
+.lfo-target-header input[type="checkbox"]:checked {
+  background: #4a9eff;
+  border-color: #4a9eff;
+}
+
+.lfo-target-header input[type="checkbox"]:checked::before {
+  left: 21px;
+  background: #fff;
+}
+
+.lfo-target-header label {
+  color: #ccc;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  flex: 1;
+}
+
+.lfo-target-info {
+  padding: 8px;
+  background: #2a2a2a;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.lfo-target-info small {
+  color: #666;
+  font-style: italic;
+}
+
+/* LFO Envelope Section */
+.lfo-envelope-section {
+  padding-top: 15px;
+  border-top: 1px solid #3a3a3a;
+  margin-top: 15px;
+}
+
+.lfo-envelope-section h4 {
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  color: #4a9eff;
+}
+
+.lfo-envelope-visualizer-container {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+}
