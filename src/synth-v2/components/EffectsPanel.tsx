@@ -3,7 +3,7 @@
  * Add, remove, bypass effects with parameter controls
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { audioState } from '../../state';
 import type { EffectSlot } from '../core/EffectsManager';
 import {
@@ -27,20 +27,20 @@ export function EffectsPanel() {
   const [chainBypassed, setChainBypassed] = useState(false);
 
   // Refresh effects list
-  const refreshEffects = () => {
+  const refreshEffects = useCallback(() => {
     if (effectsManager) {
       setEffects(effectsManager.getEffects());
       setChainBypassed(effectsManager.isChainBypassed());
     }
-  };
+  }, [effectsManager]);
 
   // Initialize and set up refresh
   useEffect(() => {
     refreshEffects();
-  }, [effectsManager]);
+  }, [refreshEffects]);
 
   // Add effect to chain
-  const handleAddEffect = (
+  const handleAddEffect = useCallback((
     type: 'delay' | 'reverb' | 'distortion' | 'chorus' | 'shimmer' | 'flanger' | 'phaser' | 'compressor' | 'ringmod'
   ) => {
     if (!effectsManager) return;
@@ -88,37 +88,37 @@ export function EffectsPanel() {
 
     effectsManager.addEffect(effect);
     refreshEffects();
-  };
+  }, [effectsManager, refreshEffects]);
 
   // Remove effect
-  const handleRemoveEffect = (id: string) => {
+  const handleRemoveEffect = useCallback((id: string) => {
     if (!effectsManager) return;
     effectsManager.removeEffect(id);
     refreshEffects();
-  };
+  }, [effectsManager, refreshEffects]);
 
   // Bypass effect
-  const handleBypassEffect = (id: string, bypass: boolean) => {
+  const handleBypassEffect = useCallback((id: string, bypass: boolean) => {
     if (!effectsManager) return;
     effectsManager.bypassEffect(id, bypass);
     refreshEffects();
-  };
+  }, [effectsManager, refreshEffects]);
 
   // Bypass entire chain
-  const handleChainBypass = (bypass: boolean) => {
+  const handleChainBypass = useCallback((bypass: boolean) => {
     if (!effectsManager) return;
     effectsManager.bypassChain(bypass);
     setChainBypassed(bypass);
-  };
+  }, [effectsManager]);
 
   // Update effect parameter
-  const handleParameterChange = (id: string, paramName: string, value: number) => {
+  const handleParameterChange = useCallback((id: string, paramName: string, value: number) => {
     if (!effectsManager) return;
     const slot = effects.find(s => s.id === id);
     if (slot) {
       slot.effect.setParameter(paramName, value);
     }
-  };
+  }, [effectsManager, effects]);
 
   if (!effectsManager) {
     return (

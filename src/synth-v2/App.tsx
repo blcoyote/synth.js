@@ -3,7 +3,7 @@
  * Phase 1: Get audio working with basic oscillator controls
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SynthProvider, useSynthEngine } from './context/SynthContext';
 import { SynthEngine } from './core/SynthEngine';
 import { OscillatorPanel } from './components/OscillatorPanel';
@@ -36,10 +36,10 @@ function SynthControls() {
   // Arpeggiator / Sequencer mode
   const [arpSeqMode, setArpSeqMode] = useState<'arpeggiator' | 'sequencer'>('arpeggiator');
 
-  const handlePresetLoad = () => {
+  const handlePresetLoad = useCallback(() => {
     // Force re-render of all components by changing the key
     setRefreshKey(prev => prev + 1);
-  };
+  }, []);
 
   // Auto-initialize on first user interaction (like v1)
   useEffect(() => {
@@ -67,7 +67,7 @@ function SynthControls() {
     };
   }, [engine]);
 
-  // Update active voice count periodically
+  // Update active voice count periodically (optimized: 250ms instead of 100ms)
   useEffect(() => {
     if (!isInitialized) return;
     
@@ -79,7 +79,7 @@ function SynthControls() {
       }
     };
 
-    const interval = setInterval(updateVoiceCount, 100);
+    const interval = setInterval(updateVoiceCount, 250); // Optimized from 100ms
     return () => clearInterval(interval);
   }, [engine, isInitialized]);
 

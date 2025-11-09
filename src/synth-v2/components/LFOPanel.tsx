@@ -3,7 +3,7 @@
  * Modulates parameters like filter cutoff, oscillator pitch, volume, pan
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { audioState } from '../../state';
 import { Slider } from './common/Slider';
@@ -42,23 +42,23 @@ export function LFOPanel() {
   });
 
   // Handle mode change (free vs trigger)
-  const handleModeChange = (newMode: LFOMode) => {
+  const handleModeChange = useCallback((newMode: LFOMode) => {
     if (!lfoManager) return;
     setMode(newMode);
     // In trigger mode, LFO starts on note press (handled in VoiceManager)
     // In free mode, LFO runs continuously
     // Note: Enable state is now controlled by CollapsiblePanel
-  };
+  }, [lfoManager]);
 
   // Handle rate change
-  const handleRateChange = (value: number) => {
+  const handleRateChange = useCallback((value: number) => {
     if (!lfoManager) return;
     setRate(value);
     lfoManager.setRate(value);
-  };
+  }, [lfoManager]);
 
   // Handle depth change
-  const handleDepthChange = (value: number) => {
+  const handleDepthChange = useCallback((value: number) => {
     if (!lfoManager) return;
     setDepth(value);
     // Update depth for all active targets
@@ -67,17 +67,17 @@ export function LFOPanel() {
       lfoManager.setTargetDepth('filter', depthValue * 5000); // Max 5000 Hz for filter
     }
     // Note: Pitch, volume, pan depths would be updated here when implemented
-  };
+  }, [lfoManager, targets.filter]);
 
   // Handle waveform change
-  const handleWaveformChange = (newWaveform: LFOWaveform) => {
+  const handleWaveformChange = useCallback((newWaveform: LFOWaveform) => {
     if (!lfoManager) return;
     setWaveform(newWaveform);
     lfoManager.setWaveform(newWaveform);
-  };
+  }, [lfoManager]);
 
   // Handle target toggle
-  const handleTargetToggle = (target: keyof LFOTargets) => {
+  const handleTargetToggle = useCallback((target: keyof LFOTargets) => {
     if (!lfoManager) return;
     
     const newTargets = { ...targets, [target]: !targets[target] };
@@ -104,7 +104,7 @@ export function LFOPanel() {
     } else if (target === 'pan') {
       voiceManager.setLFOPanTarget(newTargets.pan, depth);
     }
-  };
+  }, [lfoManager, synthEngine, targets, depth]);
 
   return (
     <div className="lfo-panel">

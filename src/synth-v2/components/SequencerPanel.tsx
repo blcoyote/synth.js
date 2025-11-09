@@ -2,7 +2,7 @@
  * SequencerPanel - Step sequencer UI
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import type { SequencerMode } from '../core/SequencerManager';
 import { Slider } from './common/Slider';
@@ -41,21 +41,14 @@ export function SequencerPanel() {
   const [stepVelocity, setStepVelocity] = useState(100);
   const [stepLength, setStepLength] = useState(80); // 0-100%
 
-  // Update manager when settings change
+  // Consolidated useEffect for manager updates
   useEffect(() => {
     if (!seqManager) return;
+    
     seqManager.setMode(mode);
-  }, [seqManager, mode]);
-
-  useEffect(() => {
-    if (!seqManager) return;
     seqManager.setTempo(tempo);
-  }, [seqManager, tempo]);
-
-  useEffect(() => {
-    if (!seqManager) return;
     seqManager.setSwing(swing / 100);
-  }, [seqManager, swing]);
+  }, [seqManager, mode, tempo, swing]);
 
   // Listen for step changes during playback
   useEffect(() => {
@@ -79,7 +72,7 @@ export function SequencerPanel() {
     }
   }, [seqManager, selectedStep]);
 
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     if (!seqManager) return;
 
     if (isPlaying) {
@@ -89,35 +82,35 @@ export function SequencerPanel() {
       seqManager.start();
       setIsPlaying(true);
     }
-  };
+  }, [seqManager, isPlaying]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     if (!seqManager) return;
     seqManager.stop();
     setIsPlaying(false);
     setCurrentStep(0);
-  };
+  }, [seqManager]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     if (!seqManager) return;
     seqManager.reset();
     setCurrentStep(0);
-  };
+  }, [seqManager]);
 
-  const handleStepCountChange = (count: typeof STEP_COUNTS[number]) => {
+  const handleStepCountChange = useCallback((count: typeof STEP_COUNTS[number]) => {
     if (!seqManager) return;
     seqManager.setSteps(count);
     setStepCount(count);
     if (selectedStep >= count) {
       setSelectedStep(0);
     }
-  };
+  }, [seqManager, selectedStep]);
 
-  const handleStepClick = (index: number) => {
+  const handleStepClick = useCallback((index: number) => {
     setSelectedStep(index);
-  };
+  }, []);
 
-  const handleStepGateToggle = (index: number) => {
+  const handleStepGateToggle = useCallback((index: number) => {
     if (!seqManager) return;
     
     const step = seqManager.getStep(index);
@@ -127,39 +120,39 @@ export function SequencerPanel() {
         setStepGate(!step.gate);
       }
     }
-  };
+  }, [seqManager, selectedStep]);
 
-  const handleStepGateChange = (gate: boolean) => {
+  const handleStepGateChange = useCallback((gate: boolean) => {
     if (!seqManager) return;
     seqManager.setStep(selectedStep, { gate });
     setStepGate(gate);
-  };
+  }, [seqManager, selectedStep]);
 
-  const handleStepPitchChange = (pitch: number) => {
+  const handleStepPitchChange = useCallback((pitch: number) => {
     if (!seqManager) return;
     seqManager.setStep(selectedStep, { pitch });
     setStepPitch(pitch);
-  };
+  }, [seqManager, selectedStep]);
 
-  const handleStepVelocityChange = (velocity: number) => {
+  const handleStepVelocityChange = useCallback((velocity: number) => {
     if (!seqManager) return;
     seqManager.setStep(selectedStep, { velocity });
     setStepVelocity(velocity);
-  };
+  }, [seqManager, selectedStep]);
 
-  const handleStepLengthChange = (length: number) => {
+  const handleStepLengthChange = useCallback((length: number) => {
     if (!seqManager) return;
     seqManager.setStep(selectedStep, { length: length / 100 });
     setStepLength(length);
-  };
+  }, [seqManager, selectedStep]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     if (!seqManager) return;
     seqManager.clear();
     setStepGate(false);
-  };
+  }, [seqManager]);
 
-  const handleRandomize = () => {
+  const handleRandomize = useCallback(() => {
     if (!seqManager) return;
     seqManager.randomize(0.5);
     
@@ -170,15 +163,27 @@ export function SequencerPanel() {
       setStepPitch(step.pitch);
       setStepVelocity(step.velocity);
     }
-  };
+  }, [seqManager, selectedStep]);
+
+  const handleModeChange = useCallback((m: SequencerMode) => {
+    setMode(m);
+  }, []);
+
+  const handleTempoChange = useCallback((val: number) => {
+    setTempo(val);
+  }, []);
+
+  const handleSwingChange = useCallback((val: number) => {
+    setSwing(val);
+  }, []);
 
   // Helper to convert MIDI note to note name
-  const midiToNoteName = (midi: number): string => {
+  const midiToNoteName = useCallback((midi: number): string => {
     const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const octave = Math.floor(midi / 12) - 1;
     const noteName = noteNames[midi % 12];
     return `${noteName}${octave}`;
-  };
+  }, []);
 
   return (
     <div className="seq-panel">
@@ -258,7 +263,7 @@ export function SequencerPanel() {
               <button
                 key={m.value}
                 className={`mode-btn-small primary ${mode === m.value ? 'active' : ''}`}
-                onClick={() => setMode(m.value)}
+                onClick={() => handleModeChange(m.value)}
                 disabled={!seqManager}
               >
                 {m.label}
@@ -277,7 +282,7 @@ export function SequencerPanel() {
             max={300}
             step={1}
             unit=" BPM"
-            onChange={setTempo}
+            onChange={handleTempoChange}
           />
         </div>
         <div className="control-group">
@@ -288,7 +293,7 @@ export function SequencerPanel() {
             max={100}
             step={1}
             unit="%"
-            onChange={setSwing}
+            onChange={handleSwingChange}
           />
         </div>
       </div>

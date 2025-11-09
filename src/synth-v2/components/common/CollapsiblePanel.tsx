@@ -2,7 +2,7 @@
  * CollapsiblePanel - Reusable collapsible container for panels
  */
 
-import { useState, ReactNode, useEffect } from 'react';
+import { useState, ReactNode, useEffect, useCallback } from 'react';
 
 interface CollapsiblePanelProps {
   title: string;
@@ -28,13 +28,13 @@ export function CollapsiblePanel({
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
 
-  const handleToggle = () => {
+  const handleToggle = useCallback(() => {
     const newState = !isOpen;
     if (!isControlled) {
       setInternalIsOpen(newState);
     }
     onToggle?.(newState);
-  };
+  }, [isOpen, isControlled, onToggle]);
 
   // Notify parent of initial state (only in uncontrolled mode)
   useEffect(() => {

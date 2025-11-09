@@ -3,7 +3,7 @@
  * Allows loading factory presets, saving/loading user presets, and import/export
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { FACTORY_PRESETS } from '../core/FactoryPresets';
 
@@ -27,7 +27,7 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
   const [newPresetName, setNewPresetName] = useState('');
   const [userPresets, setUserPresets] = useState<string[]>(presetManager?.getUserPresetNames() ?? []);
 
-  const handleLoadPreset = (presetName: string) => {
+  const handleLoadPreset = useCallback((presetName: string) => {
     if (!presetName || !presetManager) return;
 
     // Check factory presets first
@@ -48,9 +48,9 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
       // Notify parent to trigger re-render
       if (onPresetLoad) onPresetLoad();
     }
-  };
+  }, [presetManager, onPresetLoad]);
 
-  const handleSavePreset = () => {
+  const handleSavePreset = useCallback(() => {
     if (!newPresetName.trim() || !presetManager) return;
 
     try {
@@ -62,9 +62,9 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
     } catch (error) {
       alert(`Error saving preset: ${error}`);
     }
-  };
+  }, [presetManager, newPresetName]);
 
-  const handleDeletePreset = (presetName: string) => {
+  const handleDeletePreset = useCallback((presetName: string) => {
     if (!confirm(`Delete preset "${presetName}"?`) || !presetManager) return;
 
     if (presetManager.deletePreset(presetName)) {
@@ -73,9 +73,9 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
         setSelectedPreset('');
       }
     }
-  };
+  }, [presetManager, selectedPreset]);
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     if (!presetManager) return;
     
     const currentPreset = presetManager.getCurrentPreset();
@@ -89,9 +89,9 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
     a.download = `synth-preset-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [presetManager]);
 
-  const handleImport = () => {
+  const handleImport = useCallback(() => {
     if (!presetManager) return;
     
     const input = document.createElement('input');
@@ -117,7 +117,25 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
       reader.readAsText(file);
     };
     input.click();
-  };
+  }, [presetManager, onPresetLoad]);
+
+  const handleOpenSaveDialog = useCallback(() => {
+    setSaveDialogOpen(true);
+  }, []);
+
+  const handleCloseSaveDialog = useCallback(() => {
+    setSaveDialogOpen(false);
+  }, []);
+
+  const handlePresetNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewPresetName(e.target.value);
+  }, []);
+
+  const handlePresetNameKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSavePreset();
+    }
+  }, [handleSavePreset]);
 
   return (
     <div className="preset-panel">
@@ -154,7 +172,7 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
 
       {/* Action Buttons */}
       <div className="preset-actions">
-        <button onClick={() => setSaveDialogOpen(true)} className="preset-btn success">
+        <button onClick={handleOpenSaveDialog} className="preset-btn success">
           Save Preset
         </button>
         <button onClick={handleExport} className="preset-btn primary">
@@ -194,15 +212,15 @@ export function PresetPanel({ onPresetLoad }: PresetPanelProps) {
               type="text"
               placeholder="Preset name..."
               value={newPresetName}
-              onChange={(e) => setNewPresetName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
+              onChange={handlePresetNameChange}
+              onKeyDown={handlePresetNameKeyDown}
               autoFocus
             />
             <div className="dialog-actions">
               <button onClick={handleSavePreset} className="preset-btn success">
                 Save
               </button>
-              <button onClick={() => setSaveDialogOpen(false)} className="preset-btn">
+              <button onClick={handleCloseSaveDialog} className="preset-btn">
                 Cancel
               </button>
             </div>

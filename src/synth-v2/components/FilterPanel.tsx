@@ -3,7 +3,7 @@
  * Includes filter type selection, cutoff (logarithmic), resonance, and enable/bypass toggle
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { audioState, visualizationState } from '../../state';
 import { Lowpass12Filter, Lowpass24Filter } from '../../components/filters';
@@ -41,15 +41,15 @@ export function FilterPanel() {
   }, [enabled]);
 
   // Format frequency for display
-  const formatFrequency = (freq: number): string => {
+  const formatFrequency = useCallback((freq: number): string => {
     if (freq >= 1000) {
       return `${(freq / 1000).toFixed(2)} kHz`;
     }
     return `${Math.round(freq)} Hz`;
-  };
+  }, []);
 
   // Handle filter type change
-  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!audioEngine) return;
     
     const newType = e.target.value as BiquadFilterType | 'lowpass12' | 'lowpass24';
@@ -98,10 +98,10 @@ export function FilterPanel() {
       filter.connect(spectrumAnalyser);
       spectrumAnalyser.connect(context.destination);
     }
-  };
+  }, [audioEngine, engine, cutoff, resonance]);
 
   // Handle cutoff change (logarithmic scale)
-  const handleCutoffChange = (value: number) => {
+  const handleCutoffChange = useCallback((value: number) => {
     // Convert linear slider (0-100) to logarithmic frequency
     const logMin = Math.log(MIN_CUTOFF);
     const logMax = Math.log(MAX_CUTOFF);
@@ -118,10 +118,10 @@ export function FilterPanel() {
         (audioState.masterFilter as BiquadFilterNode).frequency.value = newCutoff;
       }
     }
-  };
+  }, []);
 
   // Handle resonance change
-  const handleResonanceChange = (value: number) => {
+  const handleResonanceChange = useCallback((value: number) => {
     const newResonance = value / 10; // Slider 0-50 -> Q 0-5
     audioState.filterSettings.resonance = newResonance;
     setResonance(newResonance);
@@ -131,7 +131,7 @@ export function FilterPanel() {
     } else if (audioState.masterFilter) {
       (audioState.masterFilter as BiquadFilterNode).Q.value = newResonance;
     }
-  };
+  }, []);
 
   // Calculate initial slider position from frequency
   const getSliderValueFromFrequency = (freq: number): number => {

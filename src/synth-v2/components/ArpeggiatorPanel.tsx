@@ -2,7 +2,7 @@
  * ArpeggiatorPanel - Arpeggiator controls UI
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import type { ArpPattern, NoteDivision } from '../core/ArpeggiatorManager';
 import { Slider } from './common/Slider';
@@ -47,38 +47,19 @@ export function ArpeggiatorPanel() {
   const [gateLength, setGateLength] = useState(80); // 0-100%
   const [noteHold, setNoteHold] = useState(false);
 
-  // Update manager when settings change
+  // Consolidated useEffect for all manager updates
   useEffect(() => {
     if (!arpManager) return;
+    
     arpManager.setPattern(pattern);
-  }, [arpManager, pattern]);
-
-  useEffect(() => {
-    if (!arpManager) return;
     arpManager.setOctaves(octaves);
-  }, [arpManager, octaves]);
-
-  useEffect(() => {
-    if (!arpManager) return;
     arpManager.setTempo(tempo);
-  }, [arpManager, tempo]);
-
-  useEffect(() => {
-    if (!arpManager) return;
     arpManager.setDivision(division);
-  }, [arpManager, division]);
-
-  useEffect(() => {
-    if (!arpManager) return;
     arpManager.setGateLength(gateLength / 100);
-  }, [arpManager, gateLength]);
-
-  useEffect(() => {
-    if (!arpManager) return;
     arpManager.setNoteHold(noteHold);
-  }, [arpManager, noteHold]);
+  }, [arpManager, pattern, octaves, tempo, division, gateLength, noteHold]);
 
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     if (!arpManager) return;
 
     if (isPlaying) {
@@ -90,13 +71,37 @@ export function ArpeggiatorPanel() {
       arpManager.start();
       setIsPlaying(true);
     }
-  };
+  }, [arpManager, isPlaying]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     if (!arpManager) return;
     arpManager.stop();
     setIsPlaying(false);
-  };
+  }, [arpManager]);
+
+  const handlePatternChange = useCallback((p: ArpPattern) => {
+    setPattern(p);
+  }, []);
+
+  const handleOctavesChange = useCallback((val: number) => {
+    setOctaves(val);
+  }, []);
+
+  const handleTempoChange = useCallback((val: number) => {
+    setTempo(val);
+  }, []);
+
+  const handleDivisionChange = useCallback((d: NoteDivision) => {
+    setDivision(d);
+  }, []);
+
+  const handleGateLengthChange = useCallback((val: number) => {
+    setGateLength(val);
+  }, []);
+
+  const handleNoteHoldChange = useCallback((checked: boolean) => {
+    setNoteHold(checked);
+  }, []);
 
   return (
     <div className="arp-panel">
@@ -126,7 +131,7 @@ export function ArpeggiatorPanel() {
             <button
               key={p.value}
               className={`pattern-btn primary ${pattern === p.value ? 'active' : ''}`}
-              onClick={() => setPattern(p.value)}
+              onClick={() => handlePatternChange(p.value)}
               disabled={!arpManager}
             >
               {p.label}
@@ -145,7 +150,7 @@ export function ArpeggiatorPanel() {
             min={1}
             max={4}
             step={1}
-            onChange={(val) => setOctaves(val)}
+            onChange={handleOctavesChange}
           />
         </div>
 
@@ -158,7 +163,7 @@ export function ArpeggiatorPanel() {
             max={300}
             step={1}
             unit=" BPM"
-            onChange={(val) => setTempo(val)}
+            onChange={handleTempoChange}
           />
         </div>
       </div>
@@ -172,7 +177,7 @@ export function ArpeggiatorPanel() {
               <button
                 key={d.value}
                 className={`division-btn info ${division === d.value ? 'active' : ''}`}
-                onClick={() => setDivision(d.value)}
+                onClick={() => handleDivisionChange(d.value)}
                 disabled={!arpManager}
               >
                 {d.label}
@@ -192,7 +197,7 @@ export function ArpeggiatorPanel() {
             max={100}
             step={1}
             unit="%"
-            onChange={(val) => setGateLength(val)}
+            onChange={handleGateLengthChange}
           />
         </div>
 
@@ -202,7 +207,7 @@ export function ArpeggiatorPanel() {
             <input
               type="checkbox"
               checked={noteHold}
-              onChange={(e) => setNoteHold(e.target.checked)}
+              onChange={(e) => handleNoteHoldChange(e.target.checked)}
               disabled={!arpManager}
             />
             <span>Note Hold</span>

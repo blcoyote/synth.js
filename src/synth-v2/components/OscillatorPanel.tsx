@@ -3,7 +3,7 @@
  * Includes waveform, volume, pan, octave, and detune controls
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { Slider } from './common/Slider';
 import { WaveformDisplay } from './common/WaveformDisplay';
@@ -32,43 +32,43 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
   );
   const [fmEnabled, setFmEnabled] = useState(config?.fmEnabled ?? false);
 
-  const handleWaveformChange = (newWaveform: 'sine' | 'sawtooth' | 'square' | 'triangle') => {
+  const handleWaveformChange = useCallback((newWaveform: 'sine' | 'sawtooth' | 'square' | 'triangle') => {
     if (!config) return;
     config.waveform = newWaveform;
     setWaveform(newWaveform);
-  };
+  }, [config]);
 
-  const handleVolumeChange = (value: number) => {
+  const handleVolumeChange = useCallback((value: number) => {
     if (!paramManager) return;
     paramManager.updateOscillatorParameter(oscNum, 'volume', value / 100);
-  };
+  }, [paramManager, oscNum]);
 
-  const handlePanChange = (value: number) => {
+  const handlePanChange = useCallback((value: number) => {
     if (!paramManager) return;
     paramManager.updateOscillatorParameter(oscNum, 'pan', value / 100);
-  };
+  }, [paramManager, oscNum]);
 
-  const handleOctaveChange = (value: number) => {
+  const handleOctaveChange = useCallback((value: number) => {
     if (!paramManager) return;
     paramManager.updateOscillatorParameter(oscNum, 'octave', value);
-  };
+  }, [paramManager, oscNum]);
 
-  const handleDetuneChange = (value: number) => {
+  const handleDetuneChange = useCallback((value: number) => {
     if (!paramManager) return;
     paramManager.updateOscillatorParameter(oscNum, 'detune', value);
-  };
+  }, [paramManager, oscNum]);
 
-  const handleFmToggle = () => {
+  const handleFmToggle = useCallback(() => {
     if (!config || !paramManager || oscNum < 2) return;
     const newFmEnabled = !config.fmEnabled;
     paramManager.updateFMEnabled(oscNum as 2 | 3, newFmEnabled);
     setFmEnabled(newFmEnabled);
-  };
+  }, [config, paramManager, oscNum]);
 
-  const handleFmDepthChange = (value: number) => {
+  const handleFmDepthChange = useCallback((value: number) => {
     if (!config || !paramManager || oscNum < 2) return;
     paramManager.updateFMDepth(oscNum as 2 | 3, value);
-  };
+  }, [config, paramManager, oscNum]);
 
   return (
     <div className="oscillator-panel">

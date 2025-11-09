@@ -2,7 +2,7 @@
  * MasterOutputPanel - Master volume control
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { audioState } from '../../state';
 
 export function MasterOutputPanel() {
@@ -25,7 +25,7 @@ export function MasterOutputPanel() {
     // Try to initialize immediately
     initVolume();
 
-    // Also retry periodically until initialized
+    // Also retry periodically until initialized (optimized: 250ms instead of 100ms)
     const interval = setInterval(() => {
       try {
         const bus = audioState.masterBus;
@@ -35,12 +35,12 @@ export function MasterOutputPanel() {
       } catch {
         // Still not ready
       }
-    }, 100);
+    }, 250); // Optimized from 100ms
 
     return () => clearInterval(interval);
   }, [masterVolume]);
 
-  const handleVolumeChange = (value: number) => {
+  const handleVolumeChange = useCallback((value: number) => {
     setMasterVolume(value);
     const volume = value / 100;
     
@@ -52,7 +52,7 @@ export function MasterOutputPanel() {
     } catch (err) {
       // Bus not initialized yet, ignore
     }
-  };
+  }, []);
 
   return (
     <div className="master-output-panel">
