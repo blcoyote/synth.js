@@ -55,10 +55,10 @@ describe('useKeyboardInput', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
       });
       
-      expect(onNotePress).toHaveBeenCalledWith(25); // C#2
+      expect(onNotePress).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
       expect(onNotePress).toHaveBeenCalledTimes(1);
     });
 
@@ -69,17 +69,17 @@ describe('useKeyboardInput', () => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
       });
       
-      expect(onNotePress).toHaveBeenCalledWith(26); // D2
+      expect(onNotePress).toHaveBeenCalledWith(36); // C2 (startNote 36 + relative 0)
     });
 
     it('should handle uppercase keys by converting to lowercase', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'A' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'S' }));
       });
       
-      expect(onNotePress).toHaveBeenCalledWith(25); // C#2
+      expect(onNotePress).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
     });
 
     it('should prevent key repeat when held down', () => {
@@ -87,9 +87,9 @@ describe('useKeyboardInput', () => {
       
       // Press key multiple times
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
       });
       
       // Should only trigger once
@@ -100,7 +100,7 @@ describe('useKeyboardInput', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' })); // Not mapped
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' })); // Not mapped
       });
       
       expect(onNotePress).not.toHaveBeenCalled();
@@ -112,11 +112,11 @@ describe('useKeyboardInput', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
-        window.dispatchEvent(new KeyboardEvent('keyup', { key: 'a' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
+        window.dispatchEvent(new KeyboardEvent('keyup', { key: 's' }));
       });
       
-      expect(onNoteRelease).toHaveBeenCalledWith(25); // C#2
+      expect(onNoteRelease).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
       expect(onNoteRelease).toHaveBeenCalledTimes(1);
     });
 
@@ -125,7 +125,7 @@ describe('useKeyboardInput', () => {
       
       // Release without press
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keyup', { key: 'a' }));
+        window.dispatchEvent(new KeyboardEvent('keyup', { key: 's' }));
       });
       
       expect(onNoteRelease).not.toHaveBeenCalled();
@@ -135,15 +135,15 @@ describe('useKeyboardInput', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' })); // C#2 (25)
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' })); // D2 (26)
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })); // E2 (28)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' })); // C#2 (37)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' })); // C2 (36)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })); // D2 (38)
       });
       
       expect(onNotePress).toHaveBeenCalledTimes(3);
-      expect(onNotePress).toHaveBeenNthCalledWith(1, 25);
-      expect(onNotePress).toHaveBeenNthCalledWith(2, 26);
-      expect(onNotePress).toHaveBeenNthCalledWith(3, 28);
+      expect(onNotePress).toHaveBeenNthCalledWith(1, 37);
+      expect(onNotePress).toHaveBeenNthCalledWith(2, 36);
+      expect(onNotePress).toHaveBeenNthCalledWith(3, 38);
     });
 
     it('should release only specific keys', () => {
@@ -151,7 +151,7 @@ describe('useKeyboardInput', () => {
       
       act(() => {
         // Press three keys
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' }));
         
@@ -160,7 +160,7 @@ describe('useKeyboardInput', () => {
       });
       
       expect(onNoteRelease).toHaveBeenCalledTimes(1);
-      expect(onNoteRelease).toHaveBeenCalledWith(26); // D2
+      expect(onNoteRelease).toHaveBeenCalledWith(36); // C2
     });
   });
 
@@ -170,7 +170,7 @@ describe('useKeyboardInput', () => {
       
       act(() => {
         // Press multiple keys
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' }));
         
@@ -186,11 +186,11 @@ describe('useKeyboardInput', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
         window.dispatchEvent(new Event('blur'));
         
         // Press same key again
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
       });
       
       // Should trigger press twice (once before blur, once after)
@@ -219,80 +219,52 @@ describe('useKeyboardInput', () => {
     });
   });
 
-  describe('Danish keyboard layout mapping - C2 octave', () => {
-    it('should map "<" to C2 (MIDI 24)', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
+  describe('US keyboard layout mapping - bottom row (Z-\')', () => {
+    it('should map "z" to C4 (MIDI 48)', () => {
+      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: '<' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
       });
       
-      expect(onNotePress).toHaveBeenCalledWith(24);
+      expect(onNotePress).toHaveBeenCalledWith(48);
     });
 
-    it('should map "a" to C#2 (MIDI 25)', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
-      
-      act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
-      });
-      
-      expect(onNotePress).toHaveBeenCalledWith(25);
-    });
-
-    it('should map all C2 octave keys correctly', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
-      
-      const c2Keys = [
-        { key: '<', midi: 24 }, // C2
-        { key: 'a', midi: 25 }, // C#2
-        { key: 'z', midi: 26 }, // D2
-        { key: 's', midi: 27 }, // D#2
-        { key: 'x', midi: 28 }, // E2
-        { key: 'c', midi: 29 }, // F2
-        { key: 'f', midi: 30 }, // F#2
-        { key: 'v', midi: 31 }, // G2
-        { key: 'g', midi: 32 }, // G#2
-        { key: 'b', midi: 33 }, // A2
-        { key: 'h', midi: 34 }, // A#2
-        { key: 'n', midi: 35 }, // B2
-      ];
-
-      c2Keys.forEach(({ key, midi }) => {
-        onNotePress.mockClear();
-        act(() => {
-          window.dispatchEvent(new KeyboardEvent('keydown', { key }));
-        });
-        expect(onNotePress).toHaveBeenCalledWith(midi);
-      });
-    });
-  });
-
-  describe('Danish keyboard layout mapping - C3 octave', () => {
-    it('should map "m" to C3 (MIDI 36)', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
+    it('should map "m" to B4 (MIDI 59)', () => {
+      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
       
       act(() => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm' }));
       });
       
-      expect(onNotePress).toHaveBeenCalledWith(36);
+      expect(onNotePress).toHaveBeenCalledWith(59);
     });
 
-    it('should map partial C3 octave keys correctly', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
+    it('should map all bottom row keys correctly', () => {
+      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
       
-      const c3Keys = [
-        { key: 'm', midi: 36 }, // C3
-        { key: 'k', midi: 37 }, // C#3
-        { key: ',', midi: 38 }, // D3
-        { key: 'l', midi: 39 }, // D#3
-        { key: '.', midi: 40 }, // E3
-        { key: '-', midi: 41 }, // F3
-        // F#3 (MIDI 42) has no key mapping
+      const bottomRowKeys = [
+        { key: 'z', midi: 48 }, // C4
+        { key: 's', midi: 49 }, // C#4
+        { key: 'x', midi: 50 }, // D4
+        { key: 'd', midi: 51 }, // D#4
+        { key: 'c', midi: 52 }, // E4
+        { key: 'v', midi: 53 }, // F4
+        { key: 'g', midi: 54 }, // F#4
+        { key: 'b', midi: 55 }, // G4
+        { key: 'h', midi: 56 }, // G#4
+        { key: 'n', midi: 57 }, // A4
+        { key: 'j', midi: 58 }, // A#4
+        { key: 'm', midi: 59 }, // B4
+        { key: ',', midi: 60 }, // C5
+        { key: 'l', midi: 61 }, // C#5
+        { key: '.', midi: 62 }, // D5
+        { key: ';', midi: 63 }, // D#5
+        { key: '/', midi: 64 }, // E5
+        { key: "'", midi: 65 }, // F5
       ];
 
-      c3Keys.forEach(({ key, midi }) => {
+      bottomRowKeys.forEach(({ key, midi }) => {
         onNotePress.mockClear();
         act(() => {
           window.dispatchEvent(new KeyboardEvent('keydown', { key }));
@@ -300,67 +272,56 @@ describe('useKeyboardInput', () => {
         expect(onNotePress).toHaveBeenCalledWith(midi);
       });
     });
-
-    it('should not have mapping for F#3 (MIDI 42)', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
-      
-      // Try various keys that might be F#3 - none should work
-      act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: '4' }));
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: '7' }));
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }));
-      });
-      
-      expect(onNotePress).not.toHaveBeenCalled();
-    });
   });
 
-  describe('Danish keyboard layout mapping - G3 to C5', () => {
-    it('should map "q" to G3 (MIDI 43)', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
+  describe('US keyboard layout mapping - top row (Q-])', () => {
+    it('should map "q" to C5 (MIDI 60)', () => {
+      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
       
       act(() => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'q' }));
       });
       
-      expect(onNotePress).toHaveBeenCalledWith(43);
-    });
-
-    it('should map "å" to C5 (MIDI 60)', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
-      
-      act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'å' }));
-      });
-      
       expect(onNotePress).toHaveBeenCalledWith(60);
     });
 
-    it('should map all upper row keys correctly', () => {
-      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
+    it('should map "]" to G6 (MIDI 79)', () => {
+      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
       
-      const upperKeys = [
-        { key: 'q', midi: 43 }, // G3
-        { key: '2', midi: 44 }, // G#3
-        { key: 'w', midi: 45 }, // A3
-        { key: '3', midi: 46 }, // A#3
-        { key: 'e', midi: 47 }, // B3
-        { key: 'r', midi: 48 }, // C4
-        { key: '5', midi: 49 }, // C#4
-        { key: 't', midi: 50 }, // D4
-        { key: '6', midi: 51 }, // D#4
-        { key: 'y', midi: 52 }, // E4
-        { key: 'u', midi: 53 }, // F4
-        { key: '8', midi: 54 }, // F#4
-        { key: 'i', midi: 55 }, // G4
-        { key: '9', midi: 56 }, // G#4
-        { key: 'o', midi: 57 }, // A4
-        { key: '0', midi: 58 }, // A#4
-        { key: 'p', midi: 59 }, // B4
-        { key: 'å', midi: 60 }, // C5
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: ']' }));
+      });
+      
+      expect(onNotePress).toHaveBeenCalledWith(79);
+    });
+
+    it('should map all top row keys correctly', () => {
+      renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
+      
+      const topRowKeys = [
+        { key: 'q', midi: 60 }, // C5
+        { key: '2', midi: 61 }, // C#5
+        { key: 'w', midi: 62 }, // D5
+        { key: '3', midi: 63 }, // D#5
+        { key: 'e', midi: 64 }, // E5
+        { key: 'r', midi: 65 }, // F5
+        { key: '5', midi: 66 }, // F#5
+        { key: 't', midi: 67 }, // G5
+        { key: '6', midi: 68 }, // G#5
+        { key: 'y', midi: 69 }, // A5
+        { key: '7', midi: 70 }, // A#5
+        { key: 'u', midi: 71 }, // B5
+        { key: 'i', midi: 72 }, // C6
+        { key: '9', midi: 73 }, // C#6
+        { key: 'o', midi: 74 }, // D6
+        { key: '0', midi: 75 }, // D#6
+        { key: 'p', midi: 76 }, // E6
+        { key: '[', midi: 77 }, // F6
+        { key: '=', midi: 78 }, // F#6
+        { key: ']', midi: 79 }, // G6
       ];
 
-      upperKeys.forEach(({ key, midi }) => {
+      topRowKeys.forEach(({ key, midi }) => {
         onNotePress.mockClear();
         act(() => {
           window.dispatchEvent(new KeyboardEvent('keydown', { key }));
@@ -372,107 +333,96 @@ describe('useKeyboardInput', () => {
 });
 
 describe('getKeyLabel', () => {
-  describe('C2 octave labels', () => {
-    it('should return "<" for C2 (MIDI 24)', () => {
-      expect(getKeyLabel(24)).toBe('<');
+  describe('C4 octave labels (default startNote=48)', () => {
+    it('should return "Z" for C4 (MIDI 48)', () => {
+      expect(getKeyLabel(48)).toBe('Z');
     });
 
-    it('should return "A" for C#2 (MIDI 25)', () => {
-      expect(getKeyLabel(25)).toBe('A');
+    it('should return "S" for C#4 (MIDI 49)', () => {
+      expect(getKeyLabel(49)).toBe('S');
     });
 
-    it('should return correct labels for all C2 octave notes', () => {
-      const c2Labels = [
-        { midi: 24, label: '<' },  // C2
-        { midi: 25, label: 'A' },  // C#2
-        { midi: 26, label: 'Z' },  // D2
-        { midi: 27, label: 'S' },  // D#2
-        { midi: 28, label: 'X' },  // E2
-        { midi: 29, label: 'C' },  // F2
-        { midi: 30, label: 'F' },  // F#2
-        { midi: 31, label: 'V' },  // G2
-        { midi: 32, label: 'G' },  // G#2
-        { midi: 33, label: 'B' },  // A2
-        { midi: 34, label: 'H' },  // A#2
-        { midi: 35, label: 'N' },  // B2
+    it('should return correct labels for all C4 octave notes', () => {
+      const c4Labels = [
+        { midi: 48, label: 'Z' },  // C4
+        { midi: 49, label: 'S' },  // C#4
+        { midi: 50, label: 'X' },  // D4
+        { midi: 51, label: 'D' },  // D#4
+        { midi: 52, label: 'C' },  // E4
+        { midi: 53, label: 'V' },  // F4
+        { midi: 54, label: 'G' },  // F#4
+        { midi: 55, label: 'B' },  // G4
+        { midi: 56, label: 'H' },  // G#4
+        { midi: 57, label: 'N' },  // A4
+        { midi: 58, label: 'J' },  // A#4
+        { midi: 59, label: 'M' },  // B4
       ];
 
-      c2Labels.forEach(({ midi, label }) => {
+      c4Labels.forEach(({ midi, label }) => {
         expect(getKeyLabel(midi)).toBe(label);
       });
     });
   });
 
-  describe('C3 octave labels', () => {
-    it('should return "M" for C3 (MIDI 36)', () => {
-      expect(getKeyLabel(36)).toBe('M');
+  describe('C5 octave labels', () => {
+    it('should return "," for C5 (MIDI 60)', () => {
+      expect(getKeyLabel(60)).toBe(',');
     });
 
-    it('should return correct labels for partial C3 octave', () => {
-      const c3Labels = [
-        { midi: 36, label: 'M' },  // C3
-        { midi: 37, label: 'K' },  // C#3
-        { midi: 38, label: ',' },  // D3
-        { midi: 39, label: 'L' },  // D#3
-        { midi: 40, label: '.' },  // E3
-        { midi: 41, label: '-' },  // F3
+    it('should return correct labels for partial C5 octave', () => {
+      const c5Labels = [
+        { midi: 60, label: ',' },  // C5
+        { midi: 61, label: 'L' },  // C#5
+        { midi: 62, label: '.' },  // D5
+        { midi: 63, label: ';' },  // D#5
+        { midi: 64, label: '/' },  // E5
+        { midi: 65, label: "'" },  // F5
       ];
 
-      c3Labels.forEach(({ midi, label }) => {
+      c5Labels.forEach(({ midi, label }) => {
         expect(getKeyLabel(midi)).toBe(label);
       });
     });
-
-    it('should return null for F#3 (MIDI 42) - intentional gap', () => {
-      expect(getKeyLabel(42)).toBe(null);
-    });
   });
 
-  describe('G3 to C5 labels', () => {
-    it('should return "Q" for G3 (MIDI 43)', () => {
-      expect(getKeyLabel(43)).toBe('Q');
+  describe('Top row Q-] labels (overlaps with bottom row)', () => {
+    it('should return "," for C5 (MIDI 60) - same as bottom row', () => {
+      // Both Q row and bottom row can play C5
+      expect(getKeyLabel(60)).toBe(',');
     });
 
-    it('should return "Å" for C5 (MIDI 60)', () => {
-      expect(getKeyLabel(60)).toBe('Å');
-    });
-
-    it('should return correct labels for all upper row notes', () => {
-      const upperLabels = [
-        { midi: 43, label: 'Q' },  // G3
-        { midi: 44, label: '2' },  // G#3
-        { midi: 45, label: 'W' },  // A3
-        { midi: 46, label: '3' },  // A#3
-        { midi: 47, label: 'E' },  // B3
-        { midi: 48, label: 'R' },  // C4
-        { midi: 49, label: '5' },  // C#4
-        { midi: 50, label: 'T' },  // D4
-        { midi: 51, label: '6' },  // D#4
-        { midi: 52, label: 'Y' },  // E4
-        { midi: 53, label: 'U' },  // F4
-        { midi: 54, label: '8' },  // F#4
-        { midi: 55, label: 'I' },  // G4
-        { midi: 56, label: '9' },  // G#4
-        { midi: 57, label: 'O' },  // A4
-        { midi: 58, label: '0' },  // A#4
-        { midi: 59, label: 'P' },  // B4
-        { midi: 60, label: 'Å' },  // C5
+    it('should return correct labels for top row starting from R (MIDI 65)', () => {
+      const topRowLabels = [
+        { midi: 66, label: '5' },  // F#5
+        { midi: 67, label: 'T' },  // G5
+        { midi: 68, label: '6' },  // G#5
+        { midi: 69, label: 'Y' },  // A5
+        { midi: 70, label: '7' },  // A#5
+        { midi: 71, label: 'U' },  // B5
+        { midi: 72, label: 'I' },  // C6
+        { midi: 73, label: '9' },  // C#6
+        { midi: 74, label: 'O' },  // D6
+        { midi: 75, label: '0' },  // D#6
+        { midi: 76, label: 'P' },  // E6
+        { midi: 77, label: '[' },  // F6
+        { midi: 78, label: '=' },  // F#6
+        { midi: 79, label: ']' },  // G6
       ];
 
-      upperLabels.forEach(({ midi, label }) => {
+      topRowLabels.forEach(({ midi, label }) => {
         expect(getKeyLabel(midi)).toBe(label);
       });
     });
   });
 
   describe('Edge cases', () => {
-    it('should return null for MIDI notes below C2 (< 24)', () => {
-      expect(getKeyLabel(23)).toBe(null);
+    it('should return null for MIDI notes below C4 (< 48)', () => {
+      expect(getKeyLabel(47)).toBe(null);
       expect(getKeyLabel(0)).toBe(null);
     });
 
-    it('should return null for MIDI notes above C5 (> 60)', () => {
-      expect(getKeyLabel(61)).toBe(null);
+    it('should return null for MIDI notes above G6 (> 79)', () => {
+      expect(getKeyLabel(80)).toBe(null);
       expect(getKeyLabel(127)).toBe(null);
     });
 

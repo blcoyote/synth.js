@@ -9,19 +9,20 @@ import { SimpleKeyboard } from '../../../src/ui/SimpleKeyboard';
 import { SynthProvider } from '../../../src/context/SynthContext';
 
 // Mock the synth engine and managers
-const createMockEngine = () => {
-  const mockVoiceManager = {
-    playNote: vi.fn(),
-    releaseNote: vi.fn(),
-  };
+  const createMockEngine = () => {
+    const mockVoiceManager = {
+      playNote: vi.fn(),
+      releaseNote: vi.fn(),
+    };
 
-  return {
-    getVoiceManager: vi.fn(() => mockVoiceManager),
-    voiceManager: mockVoiceManager,
-  };
-};
-
-describe('SimpleKeyboard', () => {
+    return {
+      isReady: vi.fn(() => true),
+      playNote: vi.fn(),
+      releaseNote: vi.fn(),
+      getVoiceManager: vi.fn(() => mockVoiceManager),
+      voiceManager: mockVoiceManager,
+    };
+  };describe('SimpleKeyboard', () => {
   let mockEngine: ReturnType<typeof createMockEngine>;
 
   beforeEach(() => {
@@ -106,8 +107,8 @@ describe('SimpleKeyboard', () => {
       const firstKey = screen.getByText('C3').closest('button')!;
       fireEvent.mouseDown(firstKey);
       
-      // C3 is note index 36 (octave 3 * 12 notes)
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledWith(36, 0.8);
+      // C3 is note index 48 ((octave 3 + 1) * 12 notes)
+      expect(mockEngine.playNote).toHaveBeenCalledWith(48, 0.8);
     });
 
     it('should calculate correct note indices for octave 4', () => {
@@ -116,8 +117,8 @@ describe('SimpleKeyboard', () => {
       const firstKey = screen.getByText('C4').closest('button')!;
       fireEvent.mouseDown(firstKey);
       
-      // C4 is note index 48 (octave 4 * 12 notes)
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledWith(48, 0.8);
+      // C4 is note index 60 ((octave 4 + 1) * 12 notes)
+      expect(mockEngine.playNote).toHaveBeenCalledWith(60, 0.8);
     });
 
     it('should calculate correct indices for black keys', () => {
@@ -126,8 +127,8 @@ describe('SimpleKeyboard', () => {
       const cSharpKey = screen.getByText('C#3').closest('button')!;
       fireEvent.mouseDown(cSharpKey);
       
-      // C#3 is note index 37 (C3 + 1)
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledWith(37, 0.8);
+      // C#3 is note index 49 (C3 + 1)
+      expect(mockEngine.playNote).toHaveBeenCalledWith(49, 0.8);
     });
   });
 
@@ -138,8 +139,8 @@ describe('SimpleKeyboard', () => {
       const firstKey = screen.getAllByRole('button')[0];
       fireEvent.mouseDown(firstKey);
       
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledTimes(1);
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledWith(
+      expect(mockEngine.playNote).toHaveBeenCalledTimes(1);
+      expect(mockEngine.playNote).toHaveBeenCalledWith(
         expect.any(Number),
         0.8
       );
@@ -152,7 +153,7 @@ describe('SimpleKeyboard', () => {
       fireEvent.mouseDown(firstKey);
       fireEvent.mouseUp(firstKey);
       
-      expect(mockEngine.voiceManager.releaseNote).toHaveBeenCalledTimes(1);
+      expect(mockEngine.releaseNote).toHaveBeenCalledTimes(1);
     });
 
     it('should release note on mouse leave', () => {
@@ -162,7 +163,7 @@ describe('SimpleKeyboard', () => {
       fireEvent.mouseDown(firstKey);
       fireEvent.mouseLeave(firstKey);
       
-      expect(mockEngine.voiceManager.releaseNote).toHaveBeenCalledTimes(1);
+      expect(mockEngine.releaseNote).toHaveBeenCalledTimes(1);
     });
 
     it('should use velocity of 0.8 for all notes', () => {
@@ -173,9 +174,9 @@ describe('SimpleKeyboard', () => {
       fireEvent.mouseDown(keys[5]);
       fireEvent.mouseDown(keys[10]);
       
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledWith(expect.any(Number), 0.8);
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledWith(expect.any(Number), 0.8);
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledWith(expect.any(Number), 0.8);
+      expect(mockEngine.playNote).toHaveBeenCalledWith(expect.any(Number), 0.8);
+      expect(mockEngine.playNote).toHaveBeenCalledWith(expect.any(Number), 0.8);
+      expect(mockEngine.playNote).toHaveBeenCalledWith(expect.any(Number), 0.8);
     });
 
     it('should pass same note index to playNote and releaseNote', () => {
@@ -185,14 +186,12 @@ describe('SimpleKeyboard', () => {
       fireEvent.mouseDown(cKey);
       fireEvent.mouseUp(cKey);
       
-      const playCallArgs = mockEngine.voiceManager.playNote.mock.calls[0];
-      const releaseCallArgs = mockEngine.voiceManager.releaseNote.mock.calls[0];
-      
+      const playCallArgs = mockEngine.playNote.mock.calls[0];
+      const releaseCallArgs = mockEngine.releaseNote.mock.calls[0];
+
       expect(playCallArgs[0]).toBe(releaseCallArgs[0]); // Same note index
     });
-  });
-
-  describe('Multiple Keys', () => {
+  });  describe('Multiple Keys', () => {
     it('should handle multiple simultaneous key presses', () => {
       renderKeyboard();
       
@@ -202,7 +201,7 @@ describe('SimpleKeyboard', () => {
       fireEvent.mouseDown(keys[4]); // E
       fireEvent.mouseDown(keys[7]); // G
       
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledTimes(3);
+      expect(mockEngine.playNote).toHaveBeenCalledTimes(3);
     });
 
     it('should release only the key being released', () => {
@@ -214,8 +213,8 @@ describe('SimpleKeyboard', () => {
       fireEvent.mouseDown(keys[1]);
       fireEvent.mouseUp(keys[0]);
       
-      expect(mockEngine.voiceManager.releaseNote).toHaveBeenCalledTimes(1);
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledTimes(2);
+      expect(mockEngine.releaseNote).toHaveBeenCalledTimes(1);
+      expect(mockEngine.playNote).toHaveBeenCalledTimes(2);
     });
 
     it('should handle rapid key presses', () => {
@@ -229,8 +228,8 @@ describe('SimpleKeyboard', () => {
       fireEvent.mouseUp(key);
       fireEvent.mouseDown(key);
       
-      expect(mockEngine.voiceManager.playNote).toHaveBeenCalledTimes(3);
-      expect(mockEngine.voiceManager.releaseNote).toHaveBeenCalledTimes(2);
+      expect(mockEngine.playNote).toHaveBeenCalledTimes(3);
+      expect(mockEngine.releaseNote).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -276,7 +275,7 @@ describe('SimpleKeyboard', () => {
       const c4 = screen.getByText('C4').closest('button')!;
       fireEvent.mouseDown(c4);
       
-      const playedIndices = mockEngine.voiceManager.playNote.mock.calls.map(call => call[0]);
+      const playedIndices = mockEngine.playNote.mock.calls.map(call => call[0]);
       
       // B3 and C4 should be consecutive indices
       expect(playedIndices[1] - playedIndices[0]).toBe(1);
@@ -312,12 +311,6 @@ describe('SimpleKeyboard', () => {
       expect(() => {
         render(<SimpleKeyboard />);
       }).toThrow('useSynthEngine must be used within a SynthProvider');
-    });
-
-    it('should access voice manager from synth engine', () => {
-      renderKeyboard();
-      
-      expect(mockEngine.getVoiceManager).toHaveBeenCalled();
     });
   });
 });
