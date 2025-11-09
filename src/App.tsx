@@ -9,7 +9,7 @@ import { SynthEngine } from './core/SynthEngine';
 import { OscillatorPanel } from './ui/OscillatorPanel';
 import { EnvelopePanel } from './ui/EnvelopePanel';
 import { SimpleKeyboard } from './ui/SimpleKeyboard';
-import { PresetPanel } from './ui/PresetPanel';
+import { PresetMenu } from './ui/PresetMenu';
 import { FilterPanel } from './ui/FilterPanel';
 import { EffectsPanel } from './ui/EffectsPanel';
 import { LFOPanel } from './ui/LFOPanel';
@@ -86,22 +86,19 @@ function SynthControls() {
   return (
     <div className="synth-app">
       <div className="main-content" key={refreshKey}>
-        {/* Top Section: Status & Presets */}
-        <div className="top-section">
-          <section className="presets-section">
-            <CollapsiblePanel title="Presets" defaultOpen={false}>
-              <PresetPanel onPresetLoad={handlePresetLoad} />
-            </CollapsiblePanel>
-          </section>          
+        {/* Header Section */}
+        <div className="app-header">
+          <PresetMenu onPresetLoad={handlePresetLoad} />
+          <h1 className="synth-title">Modular Synth</h1>
+          <p className="synth-tagline">Web Audio Synthesizer · Analog-Style Modular Design</p>
           <div className="status-badge">
             <span className={`status-indicator ${isInitialized ? 'active' : 'inactive'}`}>
               {isInitialized ? '●' : '○'}
             </span>
             <span className="status-text">
-              {isInitialized ? `${activeVoices} voices` : 'Click to start'}
+              {isInitialized ? `${activeVoices} voices active` : 'Click anywhere to start'}
             </span>
           </div>
-
         </div>
 
         {/* Three Column Layout */}

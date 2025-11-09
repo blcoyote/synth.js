@@ -29,6 +29,8 @@ export function SequencerPanel() {
 
   const [enabled, setEnabled] = useState(false);
   const [noteHold, setNoteHold] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordStep, setRecordStep] = useState(0);
   const [mode, setMode] = useState<SequencerMode>('forward');
   const [stepCount, setStepCount] = useState(16);
   const [tempo, setTempo] = useState(120);
@@ -88,6 +90,30 @@ export function SequencerPanel() {
     seqManager.reset();
     setCurrentStep(0);
   }, [seqManager]);
+
+  const handleRecordToggle = useCallback(() => {
+    if (!seqManager) return;
+    
+    if (isRecording) {
+      seqManager.stopRecording();
+      setIsRecording(false);
+      setRecordStep(0);
+    } else {
+      seqManager.startRecording();
+      setIsRecording(true);
+      setRecordStep(0);
+      
+      // Listen for step updates during recording
+      seqManager.onStep((stepIndex: number) => {
+        setRecordStep(stepIndex);
+      });
+    }
+  }, [seqManager, isRecording]);
+
+  const handleRecordRest = useCallback(() => {
+    if (!seqManager || !isRecording) return;
+    seqManager.recordRest();
+  }, [seqManager, isRecording]);
 
   const handleStepCountChange = useCallback((count: typeof STEP_COUNTS[number]) => {
     if (!seqManager) return;
@@ -212,13 +238,42 @@ export function SequencerPanel() {
       {/* Transport Controls */}
       <div className="seq-transport">
         <button
+          className={`transport-btn ${isRecording ? 'danger' : 'info'}`}
+          onClick={handleRecordToggle}
+          disabled={!seqManager}
+          style={{ fontWeight: isRecording ? 700 : 400 }}
+        >
+          {isRecording ? '⏹ Stop Recording' : '⏺ Record'}
+        </button>
+        {isRecording && (
+          <button
+            className="transport-btn warning"
+            onClick={handleRecordRest}
+            disabled={!seqManager}
+          >
+            ⏸ Add Rest
+          </button>
+        )}
+        <button
           className="transport-btn success"
           onClick={handleReset}
-          disabled={!seqManager}
+          disabled={!seqManager || isRecording}
         >
           ⏮ Reset
         </button>
       </div>
+
+      {/* Recording Status */}
+      {isRecording && (
+        <div className="recording-status">
+          <span style={{ color: '#ff4444', fontWeight: 700 }}>
+            🔴 RECORDING - Step {recordStep + 1}/{stepCount}
+          </span>
+          <p className="control-hint" style={{ margin: '0.25rem 0 0 0' }}>
+            Play notes on keyboard to record, or press "Add Rest" for empty steps
+          </p>
+        </div>
+      )}
 
       {/* Step Count Selection */}
       <div className="control-group">

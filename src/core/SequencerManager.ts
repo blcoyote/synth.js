@@ -45,6 +45,11 @@ export class SequencerManager {
   private rootNote: number | null = null;  // Currently held root note
   private noteHoldEnabled: boolean = false; // Latch mode - continue playing after key release
   
+  // Step recording mode
+  private isRecording: boolean = false;
+  private recordStep: number = 0;
+  private recordRootNote: number | null = null; // Root note when recording started
+  
   // Step data (stores intervals relative to root note, not absolute pitches)
   private steps: SequencerStep[] = [];
   
@@ -222,6 +227,129 @@ export class SequencerManager {
   public reset(): void {
     this.currentStep = 0;
     this.direction = 1;
+  }
+
+  /**
+   * Start step recording mode
+   */
+  public startRecording(rootNote?: number): void {
+    if (this.isPlaying) {
+      this.stop();
+    }
+    
+    this.isRecording = true;
+    this.recordStep = 0;
+    this.recordRootNote = rootNote || null;
+    
+    // Clear all steps for fresh recording
+    this.steps.forEach(step => {
+      step.gate = false;
+      step.pitch = 0;
+      step.velocity = 100;
+      step.length = 0.8;
+    });
+    
+    console.log('🔴 Recording started at step 0');
+    
+    // Notify UI of current record step
+    if (this.onStepCallback) {
+      this.onStepCallback(this.recordStep);
+    }
+  }
+
+  /**
+   * Stop recording mode
+   */
+  public stopRecording(): void {
+    this.isRecording = false;
+    this.recordStep = 0;
+    this.recordRootNote = null;
+    console.log('⏹️ Recording stopped');
+  }
+
+  /**
+   * Check if currently recording
+   */
+  public getIsRecording(): boolean {
+    return this.isRecording;
+  }
+
+  /**
+   * Get current recording step
+   */
+  public getRecordStep(): number {
+    return this.recordStep;
+  }
+
+  /**
+   * Record a note at current step and advance
+   */
+  public recordNote(noteIndex: number, velocity: number = 100): void {
+    if (!this.isRecording || this.recordStep >= this.stepCount) return;
+
+    // Set root note if this is the first note
+    if (this.recordRootNote === null) {
+      this.recordRootNote = noteIndex;
+      console.log(`🎹 Root note set to ${noteIndex}`);
+    }
+
+    // Calculate interval from root
+    const interval = noteIndex - this.recordRootNote;
+    
+    // Record step
+    this.steps[this.recordStep] = {
+      gate: true,
+      pitch: interval,
+      velocity,
+      length: 0.8,
+    };
+
+    console.log(`✏️ Recorded step ${this.recordStep}: interval ${interval >= 0 ? '+' : ''}${interval}`);
+
+    // Advance to next step
+    this.recordStep++;
+
+    // Stop recording if we've filled all steps
+    if (this.recordStep >= this.stepCount) {
+      console.log('✅ Recording complete (all steps filled)');
+      this.stopRecording();
+    }
+
+    // Notify UI of current record step
+    if (this.onStepCallback) {
+      this.onStepCallback(this.recordStep);
+    }
+  }
+
+  /**
+   * Record a rest (empty step) and advance
+   */
+  public recordRest(): void {
+    if (!this.isRecording || this.recordStep >= this.stepCount) return;
+
+    // Record empty step (gate off)
+    this.steps[this.recordStep] = {
+      gate: false,
+      pitch: 0,
+      velocity: 100,
+      length: 0.8,
+    };
+
+    console.log(`🔇 Recorded rest at step ${this.recordStep}`);
+
+    // Advance to next step
+    this.recordStep++;
+
+    // Stop recording if we've filled all steps
+    if (this.recordStep >= this.stepCount) {
+      console.log('✅ Recording complete (all steps filled)');
+      this.stopRecording();
+    }
+
+    // Notify UI of current record step
+    if (this.onStepCallback) {
+      this.onStepCallback(this.recordStep);
+    }
   }
 
   /**

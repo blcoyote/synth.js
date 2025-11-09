@@ -287,13 +287,17 @@ export class SynthEngine {
   }
 
   /**
-   * Play a note (routes through arpeggiator/sequencer if enabled)
+   * Play a note (routes through arpeggiator/sequencer/recording if enabled)
    */
   playNote(noteIndex: number, velocity: number = 0.8): void {
     if (!this.voiceManager) return;
     
-    // Priority: Sequencer > Arpeggiator > Direct
-    if (this.sequencerManager?.isEnabled()) {
+    // Priority: Recording > Sequencer > Arpeggiator > Direct
+    if (this.sequencerManager?.getIsRecording()) {
+      // Recording mode - record note and play it for feedback
+      this.sequencerManager.recordNote(noteIndex, Math.floor(velocity * 127));
+      this.voiceManager.playNote(noteIndex, velocity);
+    } else if (this.sequencerManager?.isEnabled()) {
       this.sequencerManager.handleNoteOn(noteIndex);
     } else if (this.arpeggiatorManager?.isEnabled()) {
       this.arpeggiatorManager.handleNoteOn(noteIndex);

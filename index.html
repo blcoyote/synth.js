@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Synth V2 - React Edition</title>
+  <title>Modular Synth - React Edition</title>
   <style>
     * {
       margin: 0;
@@ -364,24 +364,366 @@
       gap: 2rem;
     }
 
-    /* Top Section */
-    .top-section {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.5rem;
+    /* App Header - Centered, clean design */
+    .app-header {
+      position: relative;
+      text-align: center;
+      padding: 1.5rem 1.5rem 1rem 1.5rem;
       margin-bottom: 1rem;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, transparent 100%);
+      border-radius: 12px 12px 0 0;
+    }
+
+    .synth-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(135deg, #00d4ff 0%, #00a3cc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.3));
+      letter-spacing: -0.02em;
+    }
+
+    .synth-tagline {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin: 0.5rem 0 0.75rem 0;
+      font-weight: 400;
+      letter-spacing: 0.03em;
     }
 
     .status-badge {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: rgba(0, 0, 0, 0.3);
+      padding: 0.4rem 1rem;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(0, 212, 255, 0.2);
       border-radius: 20px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       white-space: nowrap;
+      margin-top: 0.5rem;
+    }
+
+    /* Presets Bar - Horizontal compact layout */
+    .presets-bar {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .presets-bar .preset-panel {
+      background: transparent;
+      padding: 0;
+    }
+
+    .presets-bar .preset-panel h3 {
+      display: none; /* Hide title in bar mode */
+    }
+
+    .presets-bar .preset-selector {
+      display: inline-block;
+      margin-right: 1rem;
+      margin-bottom: 0;
+      vertical-align: middle;
+    }
+
+    .presets-bar .preset-selector label {
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 0.85rem;
+      color: #9ca3af;
+      font-weight: 500;
+    }
+
+    .presets-bar .preset-selector select {
+      display: inline-block;
+      width: auto;
+      min-width: 200px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+      vertical-align: middle;
+    }
+
+    .presets-bar .preset-actions {
+      display: inline-flex;
+      gap: 0.5rem;
+      vertical-align: middle;
+    }
+
+    .presets-bar .preset-actions button {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    .presets-bar .user-presets-list {
+      display: none; /* Hide in bar mode */
+    }
+
+    /* Hamburger Preset Menu - Inside header border, vertically centered */
+    .preset-menu-container {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      z-index: 100;
+    }
+
+    .hamburger-btn {
+      width: 48px;
+      height: 48px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 2px solid rgba(0, 212, 255, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      padding: 0;
+      transition: all 0.3s ease;
+    }
+
+    .hamburger-btn:hover {
+      background: rgba(0, 212, 255, 0.15);
+      border-color: rgba(0, 212, 255, 0.8);
+      box-shadow: 0 0 25px rgba(0, 212, 255, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .hamburger-btn:active {
+      transform: translateY(0);
+    }
+
+    .hamburger-btn span {
+      width: 24px;
+      height: 2px;
+      background: #00d4ff;
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+
+    .hamburger-btn.open span:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+
+    .hamburger-btn.open span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger-btn.open span:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    /* Floating Preset Menu */
+    .preset-floating-menu {
+      position: absolute;
+      top: 60px;
+      right: 0;
+      width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
+      background: rgba(20, 20, 30, 0.98);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      animation: slideIn 0.2s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .preset-menu-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    .preset-menu-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #00d4ff;
+      font-weight: 600;
+    }
+
+    .preset-menu-section {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .preset-menu-section:last-of-type {
+      border-bottom: none;
+    }
+
+    .preset-menu-section h4 {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.85rem;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .preset-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .preset-item {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: #e5e7eb;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+    }
+
+    .preset-item:hover {
+      background: rgba(0, 212, 255, 0.1);
+      border-color: rgba(0, 212, 255, 0.3);
+      color: #00d4ff;
+    }
+
+    .preset-item.active {
+      background: rgba(0, 212, 255, 0.2);
+      border-color: #00d4ff;
+      color: #00d4ff;
+      font-weight: 600;
+    }
+
+    .preset-item-with-delete {
+      display: flex;
+      gap: 0.4rem;
+      align-items: stretch;
+    }
+
+    .preset-item-with-delete .preset-item {
+      flex: 1;
+    }
+
+    .preset-item-with-delete .delete-btn {
+      width: 32px;
+      padding: 0;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 6px;
+      color: #ef4444;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preset-item-with-delete .delete-btn:hover {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: #ef4444;
+    }
+
+    .preset-menu-actions {
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .menu-action-btn {
+      width: 100%;
+      padding: 0.7rem;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: 6px;
+      color: #00d4ff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .menu-action-btn:hover {
+      background: rgba(0, 212, 255, 0.2);
+      border-color: #00d4ff;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+    }
+
+    .save-dialog-inline {
+      padding: 1rem 1.25rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .save-dialog-inline input {
+      width: 100%;
+      padding: 0.6rem;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: #e5e7eb;
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .save-dialog-inline input:focus {
+      outline: none;
+      border-color: #00d4ff;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    }
+
+    .save-dialog-inline .dialog-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .save-dialog-inline .save-btn,
+    .save-dialog-inline .cancel-btn {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .save-dialog-inline .save-btn {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #10b981;
+    }
+
+    .save-dialog-inline .save-btn:hover {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: #10b981;
+    }
+
+    .save-dialog-inline .cancel-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #9ca3af;
+    }
+
+    .save-dialog-inline .cancel-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.3);
     }
 
     .status-indicator {
@@ -406,11 +748,6 @@
     .status-text {
       color: #9ca3af;
       font-size: 0.85rem;
-    }
-
-    .presets-section {
-      flex: 1;
-      min-width: 0;
     }
 
     section {
@@ -812,6 +1149,16 @@
       display: flex;
       gap: 0.75rem;
       justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Recording Status */
+    .recording-status {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid rgba(255, 68, 68, 0.3);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
     }
 
     /* Step Count Selection */
