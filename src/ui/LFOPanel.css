@@ -7,6 +7,27 @@
   border: 2px solid #2a2a2a;
 }
 
+/* LFO Visualizer */
+.lfo-visualizer-container {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+}
+
+.lfo-visualizer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.lfo-visualizer canvas {
+  background: rgba(139, 92, 246, 0.05);
+  border-radius: 4px;
+}
+
 .lfo-header {
   display: flex;
   justify-content: space-between;
@@ -216,4 +237,26 @@
 .lfo-target-info small {
   color: #666;
   font-style: italic;
+}
+
+/* LFO Envelope Section */
+.lfo-envelope-section {
+  padding-top: 15px;
+  border-top: 1px solid #3a3a3a;
+  margin-top: 15px;
+}
+
+.lfo-envelope-section h4 {
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  color: #4a9eff;
+}
+
+.lfo-envelope-visualizer-container {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
 }

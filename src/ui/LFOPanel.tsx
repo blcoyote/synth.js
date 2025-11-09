@@ -7,6 +7,8 @@ import { useState, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { audioState } from "../state";
 import { Slider } from './common/Slider';
+import { LFOVisualizer } from './LFOVisualizer';
+import { EnvelopeVisualizer } from './EnvelopeVisualizer';
 import './LFOPanel.css';
 
 type LFOWaveform = 'sine' | 'triangle' | 'square' | 'sawtooth' | 'random';
@@ -40,6 +42,12 @@ export function LFOPanel() {
     pan: false,
     filter: false,
   });
+
+  // ADSR envelope for LFO amplitude
+  const [attack, setAttack] = useState(0); // seconds
+  const [decay, setDecay] = useState(0); // seconds
+  const [sustain, setSustain] = useState(1); // 0-1
+  const [release, setRelease] = useState(0); // seconds
 
   // Handle mode change (free vs trigger)
   const handleModeChange = useCallback((newMode: LFOMode) => {
@@ -106,8 +114,46 @@ export function LFOPanel() {
     }
   }, [lfoManager, synthEngine, targets, depth]);
 
+  // ADSR envelope handlers
+  const handleAttackChange = useCallback((value: number) => {
+    const seconds = value / 1000;
+    setAttack(seconds);
+    // TODO: Apply envelope to LFO amplitude
+  }, []);
+
+  const handleDecayChange = useCallback((value: number) => {
+    const seconds = value / 1000;
+    setDecay(seconds);
+    // TODO: Apply envelope to LFO amplitude
+  }, []);
+
+  const handleSustainChange = useCallback((value: number) => {
+    const level = value / 100;
+    setSustain(level);
+    // TODO: Apply envelope to LFO amplitude
+  }, []);
+
+  const handleReleaseChange = useCallback((value: number) => {
+    const seconds = value / 1000;
+    setRelease(seconds);
+    // TODO: Apply envelope to LFO amplitude
+  }, []);
+
   return (
     <div className="lfo-panel">
+      {/* LFO Waveform Visualizer */}
+      <div className="lfo-visualizer-container">
+        <LFOVisualizer
+          waveform={waveform}
+          rate={rate}
+          depth={depth}
+          attack={attack}
+          decay={decay}
+          sustain={sustain}
+          release={release}
+        />
+      </div>
+
       <div className="lfo-controls">
         {/* Mode Selector */}
         <div className="lfo-mode-selector">
@@ -125,6 +171,22 @@ export function LFOPanel() {
             >
               Trigger
             </button>
+          </div>
+        </div>
+
+        {/* Waveform Selector */}
+        <div className="lfo-waveform-selector">
+          <label>Waveform:</label>
+          <div className="lfo-waveform-buttons">
+            {(['sine', 'triangle', 'square', 'sawtooth', 'random'] as LFOWaveform[]).map((wf) => (
+              <button
+                key={wf}
+                className={`lfo-waveform-btn primary ${waveform === wf ? 'active' : ''}`}
+                onClick={() => handleWaveformChange(wf)}
+              >
+                {wf}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -150,20 +212,55 @@ export function LFOPanel() {
           onChange={handleDepthChange}
         />
 
-        {/* Waveform Selector */}
-        <div className="lfo-waveform-selector">
-          <label>Waveform:</label>
-          <div className="lfo-waveform-buttons">
-            {(['sine', 'triangle', 'square', 'sawtooth', 'random'] as LFOWaveform[]).map((wf) => (
-              <button
-                key={wf}
-                className={`lfo-waveform-btn primary ${waveform === wf ? 'active' : ''}`}
-                onClick={() => handleWaveformChange(wf)}
-              >
-                {wf}
-              </button>
-            ))}
+        {/* ADSR Envelope Section */}
+        <div className="lfo-envelope-section">
+          <h4>Amplitude Envelope</h4>
+          
+          {/* Visual display of ADSR curve */}
+          <div className="lfo-envelope-visualizer-container">
+            <EnvelopeVisualizer
+              attack={attack}
+              decay={decay}
+              sustain={sustain}
+              release={release}
+            />
           </div>
+          
+          <Slider
+            label="Attack"
+            min={1}
+            max={2000}
+            initialValue={attack * 1000}
+            unit="ms"
+            onChange={handleAttackChange}
+          />
+
+          <Slider
+            label="Decay"
+            min={1}
+            max={2000}
+            initialValue={decay * 1000}
+            unit="ms"
+            onChange={handleDecayChange}
+          />
+
+          <Slider
+            label="Sustain"
+            min={0}
+            max={100}
+            initialValue={sustain * 100}
+            unit="%"
+            onChange={handleSustainChange}
+          />
+
+          <Slider
+            label="Release"
+            min={10}
+            max={5000}
+            initialValue={release * 1000}
+            unit="ms"
+            onChange={handleReleaseChange}
+          />
         </div>
 
         {/* Modulation Targets */}
