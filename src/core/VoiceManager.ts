@@ -211,7 +211,11 @@ export class VoiceManager {
    * @param noteIndex - Index of the note in the notes array
    * @param velocity - Note velocity (0-1)
    */
-  playNote(noteIndex: number, velocity: number = 1.0): void {
+  playNote(noteIndex: number, velocity: number = 1.0, scheduleTime?: number): void {
+    // Use AudioContext time for sample-accurate scheduling
+    const context = this.audioEngine.getContext();
+    const startTime = scheduleTime ?? context.currentTime;
+    
     // If note is already playing, clean it up SYNCHRONOUSLY to allow instant retrigger
     if (this.voiceState.activeVoices.has(noteIndex)) {
       const existingVoice = this.voiceState.activeVoices.get(noteIndex);
@@ -221,13 +225,10 @@ export class VoiceManager {
         clearTimeout(existingVoice.releaseTimeout);
       }
       
-      // Stop oscillators immediately without fade (retriggering case)
-      // This prevents phase cancellation when rapidly retriggering the same note
+      // Stop oscillators at the scheduled time (sample-accurate)
       existingVoice?.oscillators.forEach(({ oscillator }) => {
         try {
-          // Use immediate stop - no fade needed since we're retriggering
-          const context = this.audioEngine.getContext();
-          oscillator.stop(context.currentTime);
+          oscillator.stop(startTime);
         } catch (e) {
           // Ignore if already stopped
         }
@@ -250,8 +251,6 @@ export class VoiceManager {
       oscillators: [],
       isActive: true,
     };
-
-    const context = this.audioEngine.getContext();
 
     // Create oscillators for each enabled config
     this.voiceState.oscillatorConfigs.forEach((config, oscNum) => {
@@ -294,11 +293,11 @@ export class VoiceManager {
         panNode.connect(envelope.getInputNode());
         envelope.connect(oscBus);
 
-        // Start the oscillator
-        oscillator.start();
+        // Start the oscillator at scheduled time (sample-accurate)
+        oscillator.start(startTime);
 
-        // Trigger the envelope
-        envelope.trigger(velocity);
+        // Trigger the envelope at scheduled time (sample-accurate)
+        envelope.trigger(velocity, startTime);
 
         // Store oscillator data
         voice.oscillators.push({ oscillator, panNode, envelope, oscNum });
@@ -395,7 +394,7 @@ export class VoiceManager {
    * Release a note
    * @param noteIndex - Index of the note to release
    */
-  releaseNote(noteIndex: number): void {
+  releaseNote(noteIndex: number, scheduleTime?: number): void {
     const voice = this.voiceState.activeVoices.get(noteIndex);
     if (!voice) return;
 
@@ -404,9 +403,9 @@ export class VoiceManager {
       clearTimeout(voice.releaseTimeout);
     }
 
-    // Trigger envelope release for all oscillators
+    // Trigger envelope release for all oscillators at scheduled time
     voice.oscillators.forEach(({ envelope }) => {
-      envelope.triggerRelease();
+      envelope.triggerRelease(scheduleTime);
     });
 
     // Mark as inactive

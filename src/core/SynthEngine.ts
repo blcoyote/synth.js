@@ -176,13 +176,13 @@ export class SynthEngine {
       // Create Sequencer manager with AudioContext for precise timing
       this.sequencerManager = new SequencerManager(undefined, context);
       
-      // Connect sequencer to voice manager
-      this.sequencerManager.onNote((pitch: number, velocity: number) => {
-        this.voiceManager?.playNote(pitch, velocity);
+      // Connect sequencer to voice manager with AudioContext scheduling support
+      this.sequencerManager.onNote((pitch: number, velocity: number, time?: number) => {
+        this.voiceManager?.playNote(pitch, velocity, time);
       });
       
-      this.sequencerManager.onNoteOff((pitch: number) => {
-        this.voiceManager?.releaseNote(pitch);
+      this.sequencerManager.onNoteOff((pitch: number, time?: number) => {
+        this.voiceManager?.releaseNote(pitch, time);
       });
       
       console.log('🎵 Created Sequencer manager with precise audio timing');

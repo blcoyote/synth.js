@@ -83,8 +83,10 @@ export class ArpeggiatorManager {
   // Audio timing - for precise scheduling
   private audioContext: AudioContext | null = null;
   private nextNoteTime: number = 0;
-  private scheduleAheadTime: number = 0.1; // Look ahead 100ms
-  private scheduleInterval: number = 25; // Check every 25ms
+  private scheduleAheadTime: number = 0.2; // Look ahead 200ms (increased for reliability)
+  private schedulerTimerId: number | null = null; // Use setTimeout for scheduling loop
+  private scheduledNoteOffs: Map<number, number> = new Map(); // Track scheduled note-offs
+  private tempoChanged: boolean = false; // Flag for tempo changes
   private currentChordIndex: number = 0;
   private barsPerChord: number = 1;
   private currentBar: number = 0;
@@ -281,11 +283,12 @@ export class ArpeggiatorManager {
     this.currentNoteIndex = 0;
     this.generateArpeggioSequence();
     
-    // Initialize timing - use AudioContext time if available
-    if (this.audioContext) {
-      this.nextNoteTime = this.audioContext.currentTime;
-    } else {
+    // Initialize timing - require AudioContext for accurate timing
+    if (!this.audioContext) {
+      console.warn('⚠️ No AudioContext available - timing may be imprecise');
       this.nextNoteTime = performance.now() / 1000;
+    } else {
+      this.nextNoteTime = this.audioContext.currentTime;
     }
     
     this.scheduleNotes();
@@ -299,10 +302,22 @@ export class ArpeggiatorManager {
     
     this.isPlaying = false;
     
+    // Cancel scheduling loop
     if (this.intervalId !== null) {
-      clearInterval(this.intervalId);
+      clearTimeout(this.intervalId);
       this.intervalId = null;
     }
+    
+    if (this.schedulerTimerId !== null) {
+      cancelAnimationFrame(this.schedulerTimerId);
+      this.schedulerTimerId = null;
+    }
+    
+    // Cancel all scheduled note-offs
+    this.scheduledNoteOffs.forEach((timeoutId) => {
+      clearTimeout(timeoutId);
+    });
+    this.scheduledNoteOffs.clear();
     
     // Stop currently playing note if in hold mode
     if (this.currentlyPlayingNote !== null && this.onNoteOffCallback) {
@@ -364,7 +379,11 @@ export class ArpeggiatorManager {
   }
 
   public setTempo(tempo: number): void {
-    this.tempo = Math.max(40, Math.min(300, tempo));
+    const newTempo = Math.max(40, Math.min(300, tempo));
+    if (newTempo !== this.tempo) {
+      this.tempo = newTempo;
+      this.tempoChanged = true;
+    }
   }
 
   public getTempo(): number {
@@ -538,14 +557,33 @@ export class ArpeggiatorManager {
   }
 
   /**
+   * Get current time from most accurate source
+   */
+  private getCurrentTime(): number {
+    return this.audioContext 
+      ? this.audioContext.currentTime 
+      : performance.now() / 1000;
+  }
+
+  /**
    * Schedule notes using look-ahead approach for precise timing
    */
   private scheduleNotes(): void {
     if (!this.isPlaying) return;
 
-    const currentTime = this.audioContext 
-      ? this.audioContext.currentTime 
-      : performance.now() / 1000;
+    const currentTime = this.getCurrentTime();
+
+    // Handle tempo changes - reschedule if needed
+    if (this.tempoChanged) {
+      // Adjust nextNoteTime to maintain phase continuity
+      const timeToNextNote = this.nextNoteTime - currentTime;
+      if (timeToNextNote > 0) {
+        // Recalculate based on new tempo, maintaining relative position
+        const newNoteDuration = this.getNoteDuration() / 1000;
+        this.nextNoteTime = currentTime + Math.min(timeToNextNote, newNoteDuration);
+      }
+      this.tempoChanged = false;
+    }
 
     // Schedule all notes that fall within the look-ahead window
     while (this.nextNoteTime < currentTime + this.scheduleAheadTime) {
@@ -554,12 +592,24 @@ export class ArpeggiatorManager {
       // Advance timing
       const duration = this.getNoteDuration() / 1000; // Convert to seconds
       this.nextNoteTime += duration;
+      
+      // CRITICAL FIX: Prevent timing drift accumulation
+      // If we're scheduling too far behind current time, resync to current time
+      // This prevents "catching up" behavior that causes rubber-banding
+      if (this.nextNoteTime < currentTime - 0.05) {
+        console.warn('Arpeggiator fell behind, resyncing timing');
+        this.nextNoteTime = currentTime;
+      }
     }
 
-    // Continue scheduling with regular checks
-    this.intervalId = window.setTimeout(() => {
+    // Calculate optimal next check time based on when we'll need to schedule again
+    // Use shorter interval for more consistent scheduling (25ms = ~40Hz, good balance)
+    const nextCheckDelay = 25; // Fixed 25ms interval for consistent timing
+    
+    this.schedulerTimerId = window.setTimeout(() => {
+      this.schedulerTimerId = null;
       this.scheduleNotes();
-    }, this.scheduleInterval);
+    }, nextCheckDelay);
   }
 
   /**
@@ -572,11 +622,7 @@ export class ArpeggiatorManager {
     const pitch = this.arpeggioSequence[noteIndex];
     const duration = this.getNoteDuration();
     const gateDuration = duration * this.gateLength;
-
-    const currentTime = this.audioContext 
-      ? this.audioContext.currentTime 
-      : performance.now() / 1000;
-    
+    const currentTime = this.getCurrentTime();
     const delay = Math.max(0, (time - currentTime) * 1000); // Convert to ms for setTimeout
 
     // Check if we need to change chord (progression mode)
@@ -593,6 +639,8 @@ export class ArpeggiatorManager {
 
     // Schedule note on
     setTimeout(() => {
+      if (!this.isPlaying) return; // Check if still playing
+      
       // Stop previous note if in hold mode
       if (this.noteHold && this.currentlyPlayingNote !== null && this.onNoteOffCallback) {
         this.onNoteOffCallback(this.currentlyPlayingNote);
@@ -613,10 +661,25 @@ export class ArpeggiatorManager {
 
     // Schedule note off (if not in hold mode)
     if (!this.noteHold && this.onNoteOffCallback) {
-      setTimeout(() => {
+      const noteOffTimeout = window.setTimeout(() => {
+        if (!this.isPlaying) return; // Check if still playing
+        
         this.onNoteOffCallback!(pitch);
+        
+        // Remove from scheduled note-offs tracking
+        this.scheduledNoteOffs.delete(pitch);
       }, delay + gateDuration);
+      
+      // Track scheduled note-off for potential cancellation
+      this.scheduledNoteOffs.set(pitch, noteOffTimeout);
     }
+  }
+
+  /**
+   * Set AudioContext for precise timing (should be called after audio initialization)
+   */
+  public setAudioContext(audioContext: AudioContext): void {
+    this.audioContext = audioContext;
   }
   
   /**

@@ -59,18 +59,20 @@ export class ADSREnvelope implements AudioComponent {
   /**
    * Trigger the envelope (Attack -> Decay -> Sustain)
    */
-  public trigger(velocity: number = 1.0): void {
-    const now = this.engine.getCurrentTime();
+  public trigger(velocity: number = 1.0, scheduleTime?: number): void {
+    // Use scheduled time for sample-accurate timing, or current time for immediate playback
+    const now = scheduleTime ?? this.engine.getCurrentTime();
     const param = this.gainNode.gain;
 
     // Cancel any scheduled changes
     param.cancelScheduledValues(now);
 
-    // Get current value for smooth retriggering
-    const currentValue = param.value;
+    // Get current value for smooth retriggering (only if immediate playback)
+    const currentValue = scheduleTime ? 0 : param.value;
     
     // If retriggering while releasing, use exponential ramp for smoother transition
-    if (!this.isActive && currentValue > 0.01) {
+    // (Only for immediate playback - scheduled notes always start fresh)
+    if (!scheduleTime && !this.isActive && currentValue > 0.01) {
       // Quick fade to zero before starting new envelope (prevents clicks)
       param.setValueAtTime(currentValue, now);
       param.exponentialRampToValueAtTime(0.0001, now + 0.005); // 5ms fade
@@ -81,8 +83,8 @@ export class ADSREnvelope implements AudioComponent {
       param.linearRampToValueAtTime(velocity, startTime + this.attack);
       param.linearRampToValueAtTime(this.sustain * velocity, startTime + this.attack + this.decay);
     } else {
-      // Normal triggering or retriggering from zero
-      const startValue = this.isActive ? currentValue : 0;
+      // Normal triggering for scheduled notes or retriggering from zero
+      const startValue = (!scheduleTime && this.isActive) ? currentValue : 0;
       param.setValueAtTime(startValue, now);
 
       // Attack phase: ramp to peak (velocity scaled)
@@ -100,17 +102,17 @@ export class ADSREnvelope implements AudioComponent {
   /**
    * Release the envelope (Sustain -> Release -> 0)
    */
-  public triggerRelease(): void {
+  public triggerRelease(scheduleTime?: number): void {
     if (!this.isActive) return;
 
-    const now = this.engine.getCurrentTime();
+    const now = scheduleTime ?? this.engine.getCurrentTime();
     const param = this.gainNode.gain;
 
     // Cancel future scheduled values but keep current
     param.cancelScheduledValues(now);
     
-    // Start release from current value
-    const currentValue = param.value;
+    // Start release from current value (or scheduled value for future releases)
+    const currentValue = scheduleTime ? this.sustain : param.value;
     param.setValueAtTime(currentValue, now);
 
     // Release phase: use exponential ramp for smoother, more natural decay
