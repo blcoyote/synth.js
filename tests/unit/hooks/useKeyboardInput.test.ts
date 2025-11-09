@@ -57,8 +57,7 @@ describe('useKeyboardInput', () => {
       act(() => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
       });
-      
-      expect(onNotePress).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
+      expect(onNotePress).toHaveBeenCalledWith(49); // C#3 (startNote 48 + relative 1)
       expect(onNotePress).toHaveBeenCalledTimes(1);
     });
 
@@ -68,8 +67,7 @@ describe('useKeyboardInput', () => {
       act(() => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
       });
-      
-      expect(onNotePress).toHaveBeenCalledWith(36); // C2 (startNote 36 + relative 0)
+      expect(onNotePress).toHaveBeenCalledWith(48); // C3 (startNote 48 + relative 0)
     });
 
     it('should handle uppercase keys by converting to lowercase', () => {
@@ -78,8 +76,7 @@ describe('useKeyboardInput', () => {
       act(() => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'S' }));
       });
-      
-      expect(onNotePress).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
+      expect(onNotePress).toHaveBeenCalledWith(49); // C#3 (startNote 48 + relative 1)
     });
 
     it('should prevent key repeat when held down', () => {
@@ -115,8 +112,7 @@ describe('useKeyboardInput', () => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
         window.dispatchEvent(new KeyboardEvent('keyup', { key: 's' }));
       });
-      
-      expect(onNoteRelease).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
+      expect(onNoteRelease).toHaveBeenCalledWith(49); // C#3 (startNote 48 + relative 1)
       expect(onNoteRelease).toHaveBeenCalledTimes(1);
     });
 
@@ -135,15 +131,15 @@ describe('useKeyboardInput', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' })); // C#2 (37)
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' })); // C2 (36)
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })); // D2 (38)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' })); // C#3 (49)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' })); // C3 (48)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })); // D3 (50)
       });
       
       expect(onNotePress).toHaveBeenCalledTimes(3);
-      expect(onNotePress).toHaveBeenNthCalledWith(1, 37);
-      expect(onNotePress).toHaveBeenNthCalledWith(2, 36);
-      expect(onNotePress).toHaveBeenNthCalledWith(3, 38);
+      expect(onNotePress).toHaveBeenNthCalledWith(1, 49);
+      expect(onNotePress).toHaveBeenNthCalledWith(2, 48);
+      expect(onNotePress).toHaveBeenNthCalledWith(3, 50);
     });
 
     it('should release only specific keys', () => {
@@ -158,9 +154,8 @@ describe('useKeyboardInput', () => {
         // Release middle key
         window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }));
       });
-      
       expect(onNoteRelease).toHaveBeenCalledTimes(1);
-      expect(onNoteRelease).toHaveBeenCalledWith(36); // C2
+      expect(onNoteRelease).toHaveBeenCalledWith(48); // C3
     });
   });
 
