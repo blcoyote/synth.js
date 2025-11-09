@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 
 interface EnvelopeVisualizerProps {
   attack: number;
@@ -12,8 +12,9 @@ interface EnvelopeVisualizerProps {
 /**
  * EnvelopeVisualizer - Canvas-based ADSR envelope curve display
  * Shows the envelope shape in real-time as parameters change
+ * Memoized to prevent unnecessary canvas re-renders
  */
-export function EnvelopeVisualizer({
+export const EnvelopeVisualizer = memo(function EnvelopeVisualizer({
   attack,
   decay,
   sustain,
@@ -140,4 +141,4 @@ export function EnvelopeVisualizer({
       />
     </div>
   );
-}
+});

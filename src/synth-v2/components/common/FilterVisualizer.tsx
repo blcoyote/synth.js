@@ -1,9 +1,10 @@
 /**
  * FilterVisualizer - Spectrum analyzer with filter curve overlay
  * Uses WaveSurferVisualizer in spectrum mode
+ * Memoized to prevent unnecessary canvas re-renders
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import { WaveSurferVisualizer } from '../../../utils/WaveSurferVisualizer';
 import { AudioEngine } from '../../../core/AudioEngine';
 
@@ -16,7 +17,7 @@ interface FilterVisualizerProps {
   className?: string;
 }
 
-export function FilterVisualizer({ 
+export const FilterVisualizer = memo(function FilterVisualizer({ 
   analyserNode, 
   filterNode, 
   filterEnabled,
@@ -79,4 +80,4 @@ export function FilterVisualizer({
       }}
     />
   );
-}
+});

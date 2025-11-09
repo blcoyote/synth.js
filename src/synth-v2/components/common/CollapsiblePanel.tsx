@@ -1,8 +1,9 @@
 /**
  * CollapsiblePanel - Reusable collapsible container for panels
+ * Memoized to prevent unnecessary re-renders (used 8+ times)
  */
 
-import { useState, ReactNode, useEffect, useCallback } from 'react';
+import { useState, ReactNode, useEffect, useCallback, memo } from 'react';
 
 interface CollapsiblePanelProps {
   title: string;
@@ -14,7 +15,7 @@ interface CollapsiblePanelProps {
   onToggle?: (isOpen: boolean) => void;
 }
 
-export function CollapsiblePanel({ 
+export const CollapsiblePanel = memo(function CollapsiblePanel({ 
   title, 
   children, 
   defaultOpen = true,
@@ -61,4 +62,4 @@ export function CollapsiblePanel({
       </div>
     </div>
   );
-}
+});

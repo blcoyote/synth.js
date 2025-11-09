@@ -1,9 +1,10 @@
 /**
  * Slider - Reusable slider component with label and value display
  * Clean, simple, and follows real-time parameter update pattern
+ * Memoized to prevent unnecessary re-renders (used 30+ times)
  */
 
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, memo } from 'react';
 
 interface SliderProps {
   label: string;
@@ -16,7 +17,7 @@ interface SliderProps {
   formatValue?: (value: number) => string;
 }
 
-export function Slider({
+export const Slider = memo(function Slider({
   label,
   min,
   max,
@@ -53,4 +54,4 @@ export function Slider({
       <span className="slider-value">{displayValue}</span>
     </div>
   );
-}
+});
