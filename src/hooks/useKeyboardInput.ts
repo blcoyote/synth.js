@@ -7,7 +7,8 @@ import { useEffect, useRef } from 'react';
 export function useKeyboardInput(
   onNotePress: (noteIndex: number) => void,
   onNoteRelease: (noteIndex: number) => void,
-  enabled: boolean = true
+  enabled: boolean = true,
+  startNote: number = 36 // Default to C2 (MIDI 36) to match keyboard default startOctave=2
 ) {
   const pressedKeys = useRef<Set<string>>(new Set());
   
@@ -29,10 +30,10 @@ export function useKeyboardInput(
       // Prevent repeating when key is held
       if (pressedKeys.current.has(key)) return;
       
-      const noteIndex = getKeyMapping(key);
-      if (noteIndex !== null) {
+      const relativeIndex = getKeyMapping(key);
+      if (relativeIndex !== null) {
         pressedKeys.current.add(key);
-        onNotePressRef.current(noteIndex);
+        onNotePressRef.current(startNote + relativeIndex);
         e.preventDefault();
       }
     };
@@ -42,9 +43,9 @@ export function useKeyboardInput(
       
       if (pressedKeys.current.has(key)) {
         pressedKeys.current.delete(key);
-        const noteIndex = getKeyMapping(key);
-        if (noteIndex !== null) {
-          onNoteReleaseRef.current(noteIndex);
+        const relativeIndex = getKeyMapping(key);
+        if (relativeIndex !== null) {
+          onNoteReleaseRef.current(startNote + relativeIndex);
           e.preventDefault();
         }
       }
@@ -53,9 +54,9 @@ export function useKeyboardInput(
     // Cleanup on window blur (release all notes)
     const handleBlur = () => {
       pressedKeys.current.forEach((key) => {
-        const noteIndex = getKeyMapping(key);
-        if (noteIndex !== null) {
-          onNoteReleaseRef.current(noteIndex);
+        const relativeIndex = getKeyMapping(key);
+        if (relativeIndex !== null) {
+          onNoteReleaseRef.current(startNote + relativeIndex);
         }
       });
       pressedKeys.current.clear();
@@ -70,80 +71,86 @@ export function useKeyboardInput(
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [onNotePress, onNoteRelease, enabled]);
+  }, [onNotePress, onNoteRelease, enabled, startNote]);
 }
 
 /**
- * Map computer keyboard keys to note indices (MIDI note numbers)
- * Danish keyboard layout matching V1 synth
- * Complete mapping for C2 (MIDI 24) to C5 (MIDI 60) = 37 keys
+ * Map computer keyboard keys to RELATIVE note indices (0-36)
+ * Piano-style layout: Z=C (white keys), S=C# (black keys)
+ * Two octaves across two keyboard rows
+ * Standard US keyboard layout
+ * These are RELATIVE indices that get added to the keyboard's startNote
  */
 function getKeyMapping(key: string): number | null {
   const keyMap: Record<string, number> = {
-    // C2 octave (MIDI 24-35) - Bottom row
-    '<': 24,  // C2
-    'a': 25,  // C#2
-    'z': 26,  // D2
-    's': 27,  // D#2
-    'x': 28,  // E2
-    'c': 29,  // F2
-    'f': 30,  // F#2
-    'v': 31,  // G2
-    'g': 32,  // G#2
-    'b': 33,  // A2
-    'h': 34,  // A#2
-    'n': 35,  // B2
+    // First octave - Bottom row (ZXCVBNM,./;')
+    'z': 0,   // C
+    's': 1,   // C#
+    'x': 2,   // D
+    'd': 3,   // D#
+    'c': 4,   // E
+    'v': 5,   // F
+    'g': 6,   // F#
+    'b': 7,   // G
+    'h': 8,   // G#
+    'n': 9,   // A
+    'j': 10,  // A#
+    'm': 11,  // B
+    ',': 12,  // C (octave up)
+    'l': 13,  // C#
+    '.': 14,  // D
+    ';': 15,  // D#
+    '/': 16,  // E
+    "'": 17,  // F
     
-    // C3 octave (MIDI 36-47) - Bottom row continues
-    'm': 36,  // C3
-    'k': 37,  // C#3
-    ',': 38,  // D3
-    'l': 39,  // D#3
-    '.': 40,  // E3
-    '-': 41,  // F3
-    // F#3 has no key (null in V1)
-    
-    // G3 to C5 (MIDI 43-60) - Top letter/number row
-    'q': 43,  // G3
-    '2': 44,  // G#3
-    'w': 45,  // A3
-    '3': 46,  // A#3
-    'e': 47,  // B3
-    'r': 48,  // C4
-    '5': 49,  // C#4
-    't': 50,  // D4
-    '6': 51,  // D#4
-    'y': 52,  // E4
-    'u': 53,  // F4
-    '8': 54,  // F#4
-    'i': 55,  // G4
-    '9': 56,  // G#4
-    'o': 57,  // A4
-    '0': 58,  // A#4
-    'p': 59,  // B4
-    'å': 60,  // C5
+    // Second octave - Top row (QWERTYUIOP[])
+    'q': 12,  // C
+    '2': 13,  // C#
+    'w': 14,  // D
+    '3': 15,  // D#
+    'e': 16,  // E
+    'r': 17,  // F
+    '5': 18,  // F#
+    't': 19,  // G
+    '6': 20,  // G#
+    'y': 21,  // A
+    '7': 22,  // A#
+    'u': 23,  // B
+    'i': 24,  // C (octave up)
+    '9': 25,  // C#
+    'o': 26,  // D
+    '0': 27,  // D#
+    'p': 28,  // E
+    '[': 29,  // F
+    '=': 30,  // F#
+    ']': 31,  // G
   };
 
   return keyMap[key] ?? null;
 }
 
 /**
- * Get the keyboard key label for a MIDI note number (C2=24 to C5=60)
- * Returns the PC keyboard key that triggers this note (Danish layout)
+ * Get the keyboard key label for an absolute MIDI note
+ * Needs to know the startNote to calculate relative position
+ * Danish keyboard layout
  */
-export function getKeyLabel(noteIndex: number): string | null {
-  // Map MIDI note numbers to Danish keyboard labels
+export function getKeyLabel(noteIndex: number, startNote: number = 48): string | null {
+  // Calculate relative position from keyboard start
+  const relativeIndex = noteIndex - startNote;
+  
+  // Map relative indices to keyboard labels (US layout)
   const labelMap: Record<number, string> = {
-    // C2 octave (24-35)
-    24: '<', 25: 'A', 26: 'Z', 27: 'S', 28: 'X', 29: 'C',
-    30: 'F', 31: 'V', 32: 'G', 33: 'B', 34: 'H', 35: 'N',
-    // C3 octave (36-41, F#3 missing)
-    36: 'M', 37: 'K', 38: ',', 39: 'L', 40: '.', 41: '-',
-    // G3 to C5 (43-60)
-    43: 'Q', 44: '2', 45: 'W', 46: '3', 47: 'E', 48: 'R',
-    49: '5', 50: 'T', 51: '6', 52: 'Y', 53: 'U', 54: '8',
-    55: 'I', 56: '9', 57: 'O', 58: '0', 59: 'P', 60: 'Å'
+    // First octave - Bottom row
+    0: 'Z', 1: 'S', 2: 'X', 3: 'D', 4: 'C', 5: 'V',
+    6: 'G', 7: 'B', 8: 'H', 9: 'N', 10: 'J', 11: 'M',
+    12: ',', 13: 'L', 14: '.', 15: ';', 16: '/', 17: "'",
+    
+    // Second octave - Top row (overlaps with first octave C)
+    // Note: 12-17 overlap with bottom row
+    18: '5', 19: 'T', 20: '6', 21: 'Y', 22: '7',
+    23: 'U', 24: 'I', 25: '9', 26: 'O', 27: '0', 28: 'P',
+    29: '[', 30: '=', 31: ']'
   };
   
-  return labelMap[noteIndex] ?? null;
+  return labelMap[relativeIndex] ?? null;
 }

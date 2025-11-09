@@ -7,6 +7,7 @@ import { useSynthEngine } from '../context/SynthContext';
 import { ArpeggiatorManager } from '../core/ArpeggiatorManager';
 import type { ArpPattern, NoteDivision } from '../core/ArpeggiatorManager';
 import { Slider } from './common/Slider';
+import { Switch } from './common/Switch';
 
 const ARP_PATTERNS: { value: ArpPattern; label: string }[] = [
   { value: 'up', label: 'Up' },
@@ -119,21 +120,16 @@ export function ArpeggiatorPanel() {
   return (
     <div className="arp-panel">
       {/* Enable/Disable Toggle */}
-      <div className="arp-enable-section">
-        <label className="checkbox-label" style={{ fontSize: '1.1rem', justifyContent: 'center' }}>
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={handleToggle}
-            disabled={!arpManager}
-            style={{ width: '24px', height: '24px' }}
-          />
-          <span style={{ color: enabled ? '#00ff88' : '#999', fontWeight: 700 }}>
-            {enabled ? '🎹 ARPEGGIATOR ON' : 'ARPEGGIATOR OFF'}
-          </span>
-        </label>
+      <div className="arp-enable-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+        <Switch
+          checked={enabled}
+          onChange={handleToggle}
+          disabled={!arpManager}
+          label={enabled ? 'ARPEGGIATOR ON' : 'ARPEGGIATOR OFF'}
+          labelPosition="right"
+        />
         {enabled && (
-          <p className="control-hint" style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+          <p className="control-hint" style={{ textAlign: 'center' }}>
             Play notes on the keyboard to arpeggiate them
           </p>
         )}
@@ -206,31 +202,33 @@ export function ArpeggiatorPanel() {
         </div>
 
         <div className="controls-row">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={noteHold}
-              onChange={(e) => handleNoteHoldChange(e.target.checked)}
-              disabled={!arpManager}
-            />
-            <span>Note Hold (legato)</span>
-          </label>
+          <Switch
+            checked={noteHold}
+            onChange={handleNoteHoldChange}
+            disabled={!arpManager}
+            label="Note Hold (legato)"
+            labelPosition="right"
+          />
         </div>
       </div>
 
       {/* Chord Progressions */}
       <div className="control-group progression-section">
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={useProgression}
-            onChange={(e) => setUseProgression(e.target.checked)}
-            disabled={!arpManager}
-          />
-          <span style={{ color: '#33ccff', fontWeight: 700 }}>CHORD PROGRESSION</span>
-        </label>
+        <Switch
+          checked={useProgression}
+          onChange={setUseProgression}
+          disabled={!arpManager || !enabled}
+          label="CHORD PROGRESSION"
+          labelPosition="right"
+        />
         
-        {useProgression && (
+        {!enabled && (
+          <p className="control-hint" style={{ color: '#ff6b6b' }}>
+            Enable arpeggiator first to use progressions
+          </p>
+        )}
+        
+        {useProgression && enabled && (
           <>
             <div className="controls-row">
               {/* Progression Select */}
@@ -259,10 +257,11 @@ export function ArpeggiatorPanel() {
                   disabled={!arpManager}
                   className="note-select"
                 >
-                  <option value={48}>C2</option>
-                  <option value={60}>C3</option>
-                  <option value={72}>C4</option>
-                  <option value={84}>C5</option>
+                  <option value={36}>C2</option>
+                  <option value={48}>C3</option>
+                  <option value={60}>C4</option>
+                  <option value={72}>C5</option>
+                  <option value={84}>C6</option>
                 </select>
               </div>
 
@@ -279,8 +278,8 @@ export function ArpeggiatorPanel() {
               </div>
             </div>
             
-            <p className="control-hint">
-              Arpeggiator will cycle through progression chords automatically
+            <p className="control-hint" style={{ color: '#00ff88' }}>
+              Press ANY key to start the progression - chords will change automatically every {barsPerChord} bar{barsPerChord > 1 ? 's' : ''}
             </p>
           </>
         )}

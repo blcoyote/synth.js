@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
-  base: '/synth.js/',
+  base: '/', // Use '/synth.js/' for GitHub Pages deployment
   server: {
     port: 3000,
     open: true,

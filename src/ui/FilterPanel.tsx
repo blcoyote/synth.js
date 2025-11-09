@@ -8,6 +8,7 @@ import { useSynthEngine } from '../context/SynthContext';
 import { audioState, visualizationState } from "../state";
 import { Lowpass12Filter, Lowpass24Filter } from "../components/filters";
 import { Slider } from './common/Slider';
+import { Switch } from './common/Switch';
 import { FilterVisualizer } from './common/FilterVisualizer';
 import './FilterPanel.css';
 
@@ -25,7 +26,7 @@ export function FilterPanel() {
     audioEngine = null;
   }
 
-  const [enabled, setEnabled] = useState(audioState.filterSettings.enabled);
+  const [enabled, setEnabled] = useState(true); // Default enabled
   const [filterType, setFilterType] = useState(audioState.filterSettings.type);
   const [cutoff, setCutoff] = useState(audioState.filterSettings.cutoff);
   const [resonance, setResonance] = useState(audioState.filterSettings.resonance);
@@ -37,15 +38,35 @@ export function FilterPanel() {
     range: Math.log(MAX_CUTOFF) - Math.log(MIN_CUTOFF),
   }), []); // Constants never change
 
-  // Sync enabled state with audioState (updated by CollapsiblePanel)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (audioState.filterSettings.enabled !== enabled) {
-        setEnabled(audioState.filterSettings.enabled);
+  // Handle filter enable/disable toggle
+  const handleEnabledChange = useCallback((newEnabled: boolean) => {
+    setEnabled(newEnabled);
+    audioState.filterSettings.enabled = newEnabled;
+    
+    if (!audioEngine) return;
+    
+    if (newEnabled) {
+      // Enable filter with current cutoff
+      if (audioState.currentCustomFilter) {
+        audioState.currentCustomFilter.setParameter('cutoff', cutoff);
+      } else if (audioState.masterFilter) {
+        (audioState.masterFilter as BiquadFilterNode).frequency.value = cutoff;
       }
-    }, 100);
-    return () => clearInterval(interval);
-  }, [enabled]);
+    } else {
+      // Bypass filter (set cutoff to max)
+      if (audioState.currentCustomFilter) {
+        audioState.currentCustomFilter.setParameter('cutoff', MAX_CUTOFF);
+      } else if (audioState.masterFilter) {
+        (audioState.masterFilter as BiquadFilterNode).frequency.value = MAX_CUTOFF;
+      }
+    }
+  }, [audioEngine, cutoff]);
+
+  // Initialize filter as enabled on mount
+  useEffect(() => {
+    if (!audioEngine) return;
+    audioState.filterSettings.enabled = true;
+  }, [audioEngine]);
 
   // Format frequency for display
   const formatFrequency = useCallback((freq: number): string => {
@@ -168,8 +189,15 @@ export function FilterPanel() {
       />
 
       <div className="filter-controls">
-        {/* Filter Type */}
         <div className="control-group">
+          {/* Filter Enable/Disable */}
+          <Switch
+            label="Filter Enabled"
+            checked={enabled}
+            onChange={handleEnabledChange}
+          />
+
+          {/* Filter Type */}
           <label htmlFor="filter-type">Filter Type</label>
           <select 
             id="filter-type"
@@ -188,27 +216,27 @@ export function FilterPanel() {
             <option value="lowshelf">Low Shelf</option>
             <option value="highshelf">High Shelf</option>
           </select>
+
+          {/* Cutoff Frequency */}
+          <Slider
+            label="Cutoff"
+            min={0}
+            max={100}
+            initialValue={sliderValue}
+            onChange={handleCutoffChange}
+            formatValue={() => formatFrequency(cutoff)}
+          />
+
+          {/* Resonance */}
+          <Slider
+            label="Resonance"
+            min={0}
+            max={50}
+            initialValue={resonance * 10}
+            onChange={handleResonanceChange}
+            formatValue={(val: number) => (val / 10).toFixed(1)}
+          />
         </div>
-
-        {/* Cutoff Frequency */}
-        <Slider
-          label="Cutoff"
-          min={0}
-          max={100}
-          initialValue={sliderValue}
-          onChange={handleCutoffChange}
-          formatValue={() => formatFrequency(cutoff)}
-        />
-
-        {/* Resonance */}
-        <Slider
-          label="Resonance"
-          min={0}
-          max={50}
-          initialValue={resonance * 10}
-          onChange={handleResonanceChange}
-          formatValue={(val: number) => (val / 10).toFixed(1)}
-        />
       </div>
     </div>
   );

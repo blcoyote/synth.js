@@ -463,13 +463,12 @@
       display: none; /* Hide in bar mode */
     }
 
-    /* Hamburger Preset Menu - Inside header border, vertically centered */
+    /* Hamburger Preset Menu - Sticky in top-right corner of viewport */
     .preset-menu-container {
-      position: absolute;
-      top: 50%;
-      right: 0;
-      transform: translateY(-50%);
-      z-index: 100;
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 9999;
     }
 
     .hamburger-btn {
@@ -1066,6 +1065,82 @@
       font-size: 0.9rem;
     }
 
+    /* Switch Component */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .switch-container.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .switch {
+      position: relative;
+      width: 48px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input[type="checkbox"] {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .switch-slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .switch-slider::before {
+      content: '';
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background: #9ca3af;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .switch input:checked + .switch-slider {
+      background: rgba(0, 212, 255, 0.3);
+      border-color: #00d4ff;
+    }
+
+    .switch input:checked + .switch-slider::before {
+      transform: translateX(24px);
+      background: #00d4ff;
+      box-shadow: 0 2px 8px rgba(0, 212, 255, 0.5);
+    }
+
+    .switch input:disabled + .switch-slider {
+      cursor: not-allowed;
+    }
+
+    .switch-label {
+      font-weight: 500;
+      color: #e0e0e0;
+      font-size: 0.95rem;
+    }
+
+    /* Legacy checkbox support */
     .checkbox-label {
       display: flex;
       align-items: center;

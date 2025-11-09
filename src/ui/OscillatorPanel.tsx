@@ -3,7 +3,7 @@
  * Includes waveform, volume, pan, octave, and detune controls
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { Slider } from './common/Slider';
 import { WaveformDisplay } from './common/WaveformDisplay';
@@ -31,6 +31,13 @@ export function OscillatorPanel({ oscNum }: OscillatorPanelProps) {
     config?.waveform ?? 'sine'
   );
   const [fmEnabled, setFmEnabled] = useState(config?.fmEnabled ?? false);
+
+  // Sync waveform state with config when it becomes available
+  useEffect(() => {
+    if (config && config.waveform !== waveform) {
+      setWaveform(config.waveform);
+    }
+  }, [config, waveform]);
 
   const handleWaveformChange = useCallback((newWaveform: 'sine' | 'sawtooth' | 'square' | 'triangle') => {
     if (!config) return;

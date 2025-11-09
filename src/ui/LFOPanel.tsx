@@ -7,6 +7,7 @@ import { useState, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import { audioState } from "../state";
 import { Slider } from './common/Slider';
+import { Switch } from './common/Switch';
 import { LFOVisualizer } from './LFOVisualizer';
 import { EnvelopeVisualizer } from './EnvelopeVisualizer';
 import './LFOPanel.css';
@@ -270,52 +271,44 @@ export function LFOPanel() {
           {/* Filter Cutoff */}
           <div className="lfo-target">
             <div className="lfo-target-header">
-              <input
-                type="checkbox"
-                id="lfo-filter"
+              <Switch
                 checked={targets.filter}
                 onChange={() => handleTargetToggle('filter')}
+                label="Filter Cutoff"
               />
-              <label htmlFor="lfo-filter">Filter Cutoff</label>
             </div>
           </div>
 
           {/* Pitch */}
           <div className="lfo-target">
             <div className="lfo-target-header">
-              <input
-                type="checkbox"
-                id="lfo-pitch"
+              <Switch
                 checked={targets.pitch}
                 onChange={() => handleTargetToggle('pitch')}
+                label="Pitch"
               />
-              <label htmlFor="lfo-pitch">Pitch</label>
             </div>
           </div>
 
           {/* Volume */}
           <div className="lfo-target">
             <div className="lfo-target-header">
-              <input
-                type="checkbox"
-                id="lfo-volume"
+              <Switch
                 checked={targets.volume}
                 onChange={() => handleTargetToggle('volume')}
+                label="Volume"
               />
-              <label htmlFor="lfo-volume">Volume</label>
             </div>
           </div>
 
           {/* Pan */}
           <div className="lfo-target">
             <div className="lfo-target-header">
-              <input
-                type="checkbox"
-                id="lfo-pan"
+              <Switch
                 checked={targets.pan}
                 onChange={() => handleTargetToggle('pan')}
+                label="Pan"
               />
-              <label htmlFor="lfo-pan">Pan</label>
             </div>
           </div>
         </div>

@@ -77,7 +77,7 @@ export class SynthEngine {
       // Initialize oscillator configurations (3 oscillators)
       voiceState.oscillatorConfigs.set(1, {
         enabled: true,
-        waveform: 'sine',
+        waveform: 'sawtooth',
         octave: 0,
         detune: 0,
         volume: 0.8,
@@ -104,7 +104,7 @@ export class SynthEngine {
 
       console.log(`🎛️ Initialized ${voiceState.oscillatorConfigs.size} oscillator configs`);
       
-      // Create master filter (default: lowpass at 20kHz, essentially bypassed)
+      // Create master filter (default: lowpass at 20kHz, enabled)
       const masterFilter = context.createBiquadFilter();
       masterFilter.type = 'lowpass';
       masterFilter.frequency.value = 20000; // Wide open by default
@@ -113,9 +113,9 @@ export class SynthEngine {
       audioState.filterSettings.type = 'lowpass';
       audioState.filterSettings.cutoff = 20000;
       audioState.filterSettings.resonance = 1.0;
-      audioState.filterSettings.enabled = false;
+      audioState.filterSettings.enabled = true;
       
-      console.log('🎚️ Created master filter (bypassed by default)');
+      console.log('🎚️ Created master filter (enabled by default)');
       
       // Now create voice manager with initialized audio engine AND analyzers
       // VoiceManager will connect: masterGain -> destination
@@ -292,17 +292,25 @@ export class SynthEngine {
   playNote(noteIndex: number, velocity: number = 0.8): void {
     if (!this.voiceManager) return;
     
+    const arpEnabled = this.arpeggiatorManager?.isEnabled() || false;
+    const seqEnabled = this.sequencerManager?.isEnabled() || false;
+    const recording = this.sequencerManager?.getIsRecording() || false;
+    const contextState = this.audioEngine.getContext().state;
+    
+    console.log(`🎹 playNote: note=${noteIndex}, arp=${arpEnabled}, seq=${seqEnabled}, rec=${recording}, contextState=${contextState}`);
+    
     // Priority: Recording > Sequencer > Arpeggiator > Direct
-    if (this.sequencerManager?.getIsRecording()) {
+    if (recording) {
       // Recording mode - record note and play it for feedback
-      this.sequencerManager.recordNote(noteIndex, Math.floor(velocity * 127));
+      this.sequencerManager!.recordNote(noteIndex, Math.floor(velocity * 127));
       this.voiceManager.playNote(noteIndex, velocity);
-    } else if (this.sequencerManager?.isEnabled()) {
-      this.sequencerManager.handleNoteOn(noteIndex);
-    } else if (this.arpeggiatorManager?.isEnabled()) {
-      this.arpeggiatorManager.handleNoteOn(noteIndex);
+    } else if (seqEnabled) {
+      this.sequencerManager!.handleNoteOn(noteIndex);
+    } else if (arpEnabled) {
+      this.arpeggiatorManager!.handleNoteOn(noteIndex);
     } else {
       // Direct playback
+      console.log(`🎹 Direct playback: note=${noteIndex}`);
       this.voiceManager.playNote(noteIndex, velocity);
     }
   }

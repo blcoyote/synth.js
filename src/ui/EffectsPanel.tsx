@@ -18,6 +18,7 @@ import {
   RingModulatorEffect,
 } from "../components/effects";
 import { Slider } from './common/Slider';
+import { Switch } from './common/Switch';
 import './EffectsPanel.css';
 
 export function EffectsPanel() {
@@ -208,13 +209,11 @@ export function EffectsPanel() {
 
         {/* Chain Bypass Toggle */}
         <div className="effects-chain-toggle">
-          <input
-            type="checkbox"
-            id="chain-bypass"
+          <Switch
             checked={chainBypassed}
-            onChange={(e) => handleChainBypass(e.target.checked)}
+            onChange={handleChainBypass}
+            label="Bypass Entire Chain"
           />
-          <label htmlFor="chain-bypass">Bypass Entire Chain</label>
         </div>
 
         {/* Effects List */}

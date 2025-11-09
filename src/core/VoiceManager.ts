@@ -24,15 +24,14 @@ import {
 import { ADSREnvelope } from "../components/envelopes/ADSREnvelope";
 import type { LFOManager } from './LFOManager';
 
-// Note frequencies (C2 to C7, chromatic scale)
-const NOTE_FREQUENCIES = [
-  65.41, 69.30, 73.42, 77.78, 82.41, 87.31, 92.50, 98.00, 103.83, 110.00, 116.54, 123.47, // C2-B2
-  130.81, 138.59, 146.83, 155.56, 164.81, 174.61, 185.00, 196.00, 207.65, 220.00, 233.08, 246.94, // C3-B3
-  261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88, // C4-B4
-  523.25, 554.37, 587.33, 622.25, 659.25, 698.46, 739.99, 783.99, 830.61, 880.00, 932.33, 987.77, // C5-B5
-  1046.50, 1108.73, 1174.66, 1244.51, 1318.51, 1396.91, 1479.98, 1567.98, 1661.22, 1760.00, 1864.66, 1975.53, // C6-B6
-  2093.00, // C7
-];
+// Note frequencies for all 88 piano keys (A0 to C8, MIDI notes 21-108)
+// Using standard MIDI note numbering where A4 = 440Hz = MIDI note 69
+const NOTE_FREQUENCIES: { [key: number]: number } = {};
+
+// Generate all frequencies using equal temperament formula: f = 440 * 2^((n-69)/12)
+for (let midi = 21; midi <= 108; midi++) {
+  NOTE_FREQUENCIES[midi] = 440 * Math.pow(2, (midi - 69) / 12);
+}
 
 const DEFAULT_MASTER_VOLUME = 0.3; // 30% to prevent clipping with multiple oscillators
 

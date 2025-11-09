@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSynthEngine } from '../context/SynthContext';
 import type { SequencerMode } from '../core/SequencerManager';
 import { Slider } from './common/Slider';
+import { Switch } from './common/Switch';
 
 const SEQUENCER_MODES: { value: SequencerMode; label: string }[] = [
   { value: 'forward', label: 'Forward' },
@@ -205,32 +206,26 @@ export function SequencerPanel() {
     <div className="seq-panel">
       {/* Enable/Disable Toggle */}
       <div className="seq-enable-section">
-        <label className="checkbox-label" style={{ fontSize: '1.1rem', justifyContent: 'center' }}>
-          <input
-            type="checkbox"
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <Switch
             checked={enabled}
             onChange={handleToggle}
             disabled={!seqManager}
-            style={{ width: '24px', height: '24px' }}
+            label={enabled ? 'SEQUENCER ON' : 'SEQUENCER OFF'}
+            labelPosition="right"
           />
-          <span style={{ color: enabled ? '#00ff88' : '#999', fontWeight: 700 }}>
-            {enabled ? '🎵 SEQUENCER ON' : 'SEQUENCER OFF'}
-          </span>
-        </label>
+        </div>
         {enabled && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
             <p className="control-hint" style={{ textAlign: 'center', margin: 0 }}>
               Play a root note on keyboard to start sequencing
             </p>
-            <label className="checkbox-label" style={{ fontSize: '0.9rem' }}>
-              <input
-                type="checkbox"
-                checked={noteHold}
-                onChange={handleNoteHoldToggle}
-                disabled={!seqManager}
-              />
-              <span>Note Hold (Latch Mode)</span>
-            </label>
+            <Switch
+              checked={noteHold}
+              onChange={handleNoteHoldToggle}
+              disabled={!seqManager}
+              label="Note Hold (Latch Mode)"
+            />
           </div>
         )}
       </div>
@@ -243,7 +238,7 @@ export function SequencerPanel() {
           disabled={!seqManager}
           style={{ fontWeight: isRecording ? 700 : 400 }}
         >
-          {isRecording ? '⏹ Stop Recording' : '⏺ Record'}
+          {isRecording ? 'Stop Recording' : 'Record'}
         </button>
         {isRecording && (
           <button
@@ -251,7 +246,7 @@ export function SequencerPanel() {
             onClick={handleRecordRest}
             disabled={!seqManager}
           >
-            ⏸ Add Rest
+            Add Rest
           </button>
         )}
         <button
@@ -259,7 +254,7 @@ export function SequencerPanel() {
           onClick={handleReset}
           disabled={!seqManager || isRecording}
         >
-          ⏮ Reset
+          Reset
         </button>
       </div>
 
@@ -267,7 +262,7 @@ export function SequencerPanel() {
       {isRecording && (
         <div className="recording-status">
           <span style={{ color: '#ff4444', fontWeight: 700 }}>
-            🔴 RECORDING - Step {recordStep + 1}/{stepCount}
+            RECORDING - Step {recordStep + 1}/{stepCount}
           </span>
           <p className="control-hint" style={{ margin: '0.25rem 0 0 0' }}>
             Play notes on keyboard to record, or press "Add Rest" for empty steps
@@ -363,15 +358,12 @@ export function SequencerPanel() {
       <div className="step-editor">
         <div className="step-editor-header">
           <h3>Step {selectedStep + 1}</h3>
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={stepGate}
-              onChange={(e) => handleStepGateChange(e.target.checked)}
-              disabled={!seqManager}
-            />
-            <span>Gate</span>
-          </label>
+          <Switch
+            checked={stepGate}
+            onChange={handleStepGateChange}
+            disabled={!seqManager}
+            label="Gate"
+          />
         </div>
 
         <div className="controls-row">

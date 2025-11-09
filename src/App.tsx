@@ -17,7 +17,7 @@ import { ArpeggiatorPanel } from './ui/ArpeggiatorPanel';
 import { SequencerPanel } from './ui/SequencerPanel';
 import { MasterOutputPanel } from './ui/MasterOutputPanel';
 import { CollapsiblePanel } from './ui/common/CollapsiblePanel';
-import { voiceState, audioState } from './state';
+import { voiceState } from './state';
 
 // Create synth engine instance (singleton, created once)
 const synthEngine = new SynthEngine();
@@ -85,10 +85,12 @@ function SynthControls() {
 
   return (
     <div className="synth-app">
+      {/* Floating Preset Menu - Sticky in top-right corner */}
+      <PresetMenu onPresetLoad={handlePresetLoad} />
+      
       <div className="main-content" key={refreshKey}>
         {/* Header Section */}
         <div className="app-header">
-          <PresetMenu onPresetLoad={handlePresetLoad} />
           <h1 className="synth-title">Modular Synth</h1>
           <p className="synth-tagline">Web Audio Synthesizer · Analog-Style Modular Design</p>
           <div className="status-badge">
@@ -207,23 +209,6 @@ function SynthControls() {
               <CollapsiblePanel 
                 title="Master Filter" 
                 defaultOpen={true}
-                showLed={true}
-                onToggle={(isOpen) => {
-                  // Enable/disable filter based on panel state
-                  audioState.filterSettings.enabled = isOpen;
-                  
-                  if (isOpen) {
-                    // Enable filter with current cutoff
-                    if (audioState.currentCustomFilter) {
-                      audioState.currentCustomFilter.setParameter('cutoff', audioState.filterSettings.cutoff);
-                    }
-                  } else {
-                    // Bypass filter (set cutoff to max)
-                    if (audioState.currentCustomFilter) {
-                      audioState.currentCustomFilter.setParameter('cutoff', 20000);
-                    }
-                  }
-                }}
               >
                 <FilterPanel />
               </CollapsiblePanel>
@@ -268,9 +253,9 @@ function SynthControls() {
         <section className="keyboard-section">
           <CollapsiblePanel title="Keyboard" defaultOpen={true}>
             <p style={{ marginBottom: '1rem', color: '#9ca3af' }}>
-              Click keys or use your computer keyboard (AZSX... / QWER...) to play notes (C2-C5)
+              Click keys or use your computer keyboard (AZSX... / QWER...) to play notes (C3-C6)
             </p>
-            <SimpleKeyboard startOctave={2} octaves={3} extraKeys={1} />
+            <SimpleKeyboard startOctave={3} octaves={3} extraKeys={1} />
           </CollapsiblePanel>
         </section>
       </div>

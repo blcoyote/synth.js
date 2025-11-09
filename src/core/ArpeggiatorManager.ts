@@ -150,6 +150,23 @@ export class ArpeggiatorManager {
         [7, 11, 14, 18, 21],  // maj9 (V)
       ]
     }],
+    ['blues-12bar', {
+      name: '12-Bar Blues',
+      chords: [
+        [0, 4, 7, 10],      // I7 (C7)
+        [0, 4, 7, 10],      // I7 (C7)
+        [0, 4, 7, 10],      // I7 (C7)
+        [0, 4, 7, 10],      // I7 (C7)
+        [5, 9, 12, 15],     // IV7 (F7)
+        [5, 9, 12, 15],     // IV7 (F7)
+        [0, 4, 7, 10],      // I7 (C7)
+        [0, 4, 7, 10],      // I7 (C7)
+        [7, 11, 14, 17],    // V7 (G7)
+        [5, 9, 12, 15],     // IV7 (F7)
+        [0, 4, 7, 10],      // I7 (C7)
+        [7, 11, 14, 17],    // V7 (G7) - turnaround
+      ]
+    }],
   ]);
 
   constructor(config?: ArpeggiatorConfig, audioContext?: AudioContext) {
@@ -210,8 +227,11 @@ export class ArpeggiatorManager {
     // Add to held notes
     this.heldNotes.add(noteIndex);
     
-    // Update input notes from held notes
-    this.updateInputNotesFromHeld();
+    // In progression mode, keyboard just triggers start/stop, not note selection
+    if (!this.currentProgression) {
+      // Update input notes from held notes (manual mode)
+      this.updateInputNotesFromHeld();
+    }
     
     // If this is the first note, start playback
     if (this.heldNotes.size === 1 && !this.isPlaying) {
@@ -228,8 +248,11 @@ export class ArpeggiatorManager {
     // Remove from held notes
     this.heldNotes.delete(noteIndex);
     
-    // Update input notes from held notes
-    this.updateInputNotesFromHeld();
+    // In progression mode, keyboard just triggers start/stop, not note selection
+    if (!this.currentProgression) {
+      // Update input notes from held notes (manual mode)
+      this.updateInputNotesFromHeld();
+    }
     
     // If no more notes held, stop playback
     if (this.heldNotes.size === 0) {
@@ -620,6 +643,7 @@ export class ArpeggiatorManager {
     
     const chord = this.currentProgression.chords[this.currentChordIndex];
     const notes = chord.map(interval => this.rootNote + interval);
+    console.log(`[Arpeggiator] Chord ${this.currentChordIndex}: intervals=${chord}, rootNote=${this.rootNote}, notes=${notes}`);
     this.setNotes(notes);
   }
   

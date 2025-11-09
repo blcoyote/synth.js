@@ -39,12 +39,13 @@ export function SimpleKeyboard({ startOctave = 3, octaves = 2, extraKeys = 0 }: 
     engine.releaseNote(noteIndex);
   }, [engine]);
 
-  // Enable computer keyboard input
-  useKeyboardInput(handleNoteOn, handleNoteOff, true);
-
   // Generate keys for the specified octaves + extra keys
   const keys = [];
-  const startNote = startOctave * 12; // C of start octave
+  // MIDI note numbering: C4 (middle C) = 60, so C0 = 12, C1 = 24, C2 = 36, C3 = 48, etc.
+  const startNote = (startOctave + 1) * 12; // MIDI note for C of start octave
+  
+  // Enable computer keyboard input with correct startNote offset
+  useKeyboardInput(handleNoteOn, handleNoteOff, true, startNote);
   const totalKeys = (octaves * 12) + extraKeys;
 
   for (let i = 0; i < totalKeys; i++) {
@@ -52,7 +53,7 @@ export function SimpleKeyboard({ startOctave = 3, octaves = 2, extraKeys = 0 }: 
     const noteName = NOTE_NAMES[i % 12];
     const octaveNum = startOctave + Math.floor(i / 12);
     const isBlackKey = noteName.includes('#');
-    const keyLabel = getKeyLabel(noteIndex); // Use absolute noteIndex, not relative i
+    const keyLabel = getKeyLabel(noteIndex, startNote); // Pass startNote for relative calculation
 
     keys.push({
       noteIndex,

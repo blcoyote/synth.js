@@ -201,13 +201,13 @@ export function PresetMenu({ onPresetLoad }: PresetMenuProps) {
           {/* Actions */}
           <div className="preset-menu-actions">
             <button onClick={() => setSaveDialogOpen(true)} className="menu-action-btn">
-              💾 Save Current
+              Save Current
             </button>
             <button onClick={handleImport} className="menu-action-btn">
-              📥 Import
+              Import
             </button>
             <button onClick={handleExport} className="menu-action-btn">
-              📤 Export
+              Export
             </button>
           </div>
 
