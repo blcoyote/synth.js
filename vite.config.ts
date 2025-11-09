@@ -19,7 +19,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        'synth-v2': resolve(__dirname, 'synth-v2.html'),
       },
     },
   },

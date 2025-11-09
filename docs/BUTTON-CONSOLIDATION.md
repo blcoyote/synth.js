@@ -183,7 +183,7 @@ className={`mode-btn primary ${arpSeqMode === 'arpeggiator' ? 'active' : ''}`}
 - Easy to understand at a glance
 
 ### 5. **File Size**
-- synth-v2.html reduced by ~3KB (28KB → 28KB after minification)
+- HTML reduced by ~3KB after consolidation
 - Better gzip compression due to repeated patterns
 
 ## Visual Consistency Table

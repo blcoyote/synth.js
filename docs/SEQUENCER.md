@@ -5,7 +5,7 @@ A step sequencer with visual playhead tracking, supporting up to 64 steps and mu
 
 ## Architecture
 
-### SequencerManager (`src/synth-v2/core/SequencerManager.ts`)
+### SequencerManager (`src/core/SequencerManager.ts`)
 **420 lines** - Core sequencer logic
 
 **Key Features:**
@@ -40,7 +40,7 @@ interface SequencerStep {
 }
 ```
 
-### SequencerPanel (`src/synth-v2/components/SequencerPanel.tsx`)
+### SequencerPanel (`src/ui/SequencerPanel.tsx`)
 **350+ lines** - React UI component
 
 **UI Sections:**
@@ -125,7 +125,7 @@ this.sequencerManager.onNoteOff((pitch: number) => {
 {arpSeqMode === 'sequencer' && <SequencerPanel />}
 ```
 
-## CSS Styling (`synth-v2.html`)
+## CSS Styling (`index.html`)
 
 **Key Visual Features:**
 - **Playhead pulse animation**: Green glow that pulses every 600ms

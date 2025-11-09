@@ -97,7 +97,7 @@ beforeEach(async () => {
 ## Next Steps
 
 ### Manual Browser Testing Recommended
-Test in synth-v2.html:
+Test in browser (http://localhost:3000/synth.js/):
 1. Enable LFO → verify it starts
 2. Change rate slider → verify modulation speed changes
 3. Test all waveforms (sine, triangle, square, sawtooth, random)

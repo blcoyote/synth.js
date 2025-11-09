@@ -5,7 +5,7 @@
  */
 
 import type { Lowpass12Filter, Lowpass24Filter } from '../components/filters';
-import type { EffectsManager } from '../synth-v2/core/EffectsManager';
+import type { EffectsManager } from '../core/EffectsManager';
 
 const DEFAULT_FILTER_CUTOFF = 2000;
 
