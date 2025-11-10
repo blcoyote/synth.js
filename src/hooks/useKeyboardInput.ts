@@ -8,7 +8,7 @@ export function useKeyboardInput(
   onNotePress: (noteIndex: number) => void,
   onNoteRelease: (noteIndex: number) => void,
   enabled: boolean = true,
-  startNote: number = 36 // Default to C2 (MIDI 36) to match keyboard default startOctave=2
+  startNote: number = 48 // Default to C3 (MIDI 48); corresponds to startOctave=3 (C3) in standard MIDI mapping
 ) {
   const pressedKeys = useRef<Set<string>>(new Set());
   
@@ -78,7 +78,7 @@ export function useKeyboardInput(
  * Map computer keyboard keys to RELATIVE note indices (0-36)
  * Piano-style layout: Z=C (white keys), S=C# (black keys)
  * Two octaves across two keyboard rows
- * Standard US keyboard layout
+ * Standard Dk keyboard layout
  * These are RELATIVE indices that get added to the keyboard's startNote
  */
 function getKeyMapping(key: string): number | null {
@@ -99,8 +99,8 @@ function getKeyMapping(key: string): number | null {
     ',': 12,  // C (octave up)
     'l': 13,  // C#
     '.': 14,  // D
-    ';': 15,  // D#
-    '/': 16,  // E
+    'æ': 15,  // D#
+    '-': 16,  // E
     "'": 17,  // F
     
     // Second octave - Top row (QWERTYUIOP[])
@@ -121,9 +121,9 @@ function getKeyMapping(key: string): number | null {
     'o': 26,  // D
     '0': 27,  // D#
     'p': 28,  // E
-    '[': 29,  // F
-    '=': 30,  // F#
-    ']': 31,  // G
+    'å': 29,  // F
+    '´': 30,  // F#
+    '¨': 31,  // G
   };
 
   return keyMap[key] ?? null;
@@ -138,18 +138,18 @@ export function getKeyLabel(noteIndex: number, startNote: number = 48): string |
   // Calculate relative position from keyboard start
   const relativeIndex = noteIndex - startNote;
   
-  // Map relative indices to keyboard labels (US layout)
+  // Map relative indices to keyboard labels (Dk layout)
   const labelMap: Record<number, string> = {
     // First octave - Bottom row
     0: 'Z', 1: 'S', 2: 'X', 3: 'D', 4: 'C', 5: 'V',
     6: 'G', 7: 'B', 8: 'H', 9: 'N', 10: 'J', 11: 'M',
-    12: ',', 13: 'L', 14: '.', 15: ';', 16: '/', 17: "'",
+    12: ',', 13: 'L', 14: '.', 15: 'æ', 16: '-', 17: "'",
     
     // Second octave - Top row (overlaps with first octave C)
     // Note: 12-17 overlap with bottom row
     18: '5', 19: 'T', 20: '6', 21: 'Y', 22: '7',
     23: 'U', 24: 'I', 25: '9', 26: 'O', 27: '0', 28: 'P',
-    29: '[', 30: '=', 31: ']'
+    29: 'å', 30: '´', 31: '¨'
   };
   
   return labelMap[relativeIndex] ?? null;

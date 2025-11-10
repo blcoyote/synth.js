@@ -36,8 +36,14 @@ export function SequencerPanel() {
   const [stepCount, setStepCount] = useState(16);
   const [tempo, setTempo] = useState(120);
   const [swing, setSwing] = useState(0);
-  const [currentStep, setCurrentStep] = useState(0);
   const [selectedStep, setSelectedStep] = useState(0);
+  const [visualizationEnabled, setVisualizationEnabled] = useState(true); // Toggle for step visualization
+  const playheadRef = useCallback((node: HTMLDivElement | null) => {
+    if (seqManager) {
+      // Give sequencer direct access to playhead DOM element (no React re-renders)
+      seqManager.setPlayheadElement(node);
+    }
+  }, [seqManager]);
   
   // Step edit values
   const [stepGate, setStepGate] = useState(false);
@@ -56,14 +62,8 @@ export function SequencerPanel() {
     seqManager.setSwing(swing / 100);
   }, [seqManager, enabled, noteHold, mode, tempo, swing]);
 
-  // Listen for step changes during playback
-  useEffect(() => {
-    if (!seqManager) return;
-    
-    seqManager.onStep((stepIndex: number) => {
-      setCurrentStep(stepIndex);
-    });
-  }, [seqManager]);
+  // Visualization is now handled via direct DOM manipulation in SequencerManager
+  // No React re-renders needed for playhead position updates!
 
   // Load selected step data
   useEffect(() => {
@@ -89,7 +89,7 @@ export function SequencerPanel() {
   const handleReset = useCallback(() => {
     if (!seqManager) return;
     seqManager.reset();
-    setCurrentStep(0);
+    // Playhead position will be reset by SequencerManager directly
   }, [seqManager]);
 
   const handleRecordToggle = useCallback(() => {
@@ -184,6 +184,47 @@ export function SequencerPanel() {
     }
   }, [seqManager, selectedStep]);
 
+  const handleBassline = useCallback(() => {
+    if (!seqManager) return;
+    seqManager.fillBassline();
+    
+    // Reload selected step
+    const step = seqManager.getStep(selectedStep);
+    if (step) {
+      setStepGate(step.gate);
+      setStepPitch(step.pitch);
+      setStepVelocity(step.velocity);
+    }
+  }, [seqManager, selectedStep]);
+
+  const handleMelodic = useCallback(() => {
+    if (!seqManager) return;
+    // Use major scale by default
+    seqManager.fillMelodic([0, 2, 4, 5, 7, 9, 11]);
+    
+    // Reload selected step
+    const step = seqManager.getStep(selectedStep);
+    if (step) {
+      setStepGate(step.gate);
+      setStepPitch(step.pitch);
+      setStepVelocity(step.velocity);
+    }
+  }, [seqManager, selectedStep]);
+
+  const handleGenerative = useCallback(() => {
+    if (!seqManager) return;
+    // Use major scale by default
+    seqManager.fillGenerative([0, 2, 4, 5, 7, 9, 11]);
+    
+    // Reload selected step
+    const step = seqManager.getStep(selectedStep);
+    if (step) {
+      setStepGate(step.gate);
+      setStepPitch(step.pitch);
+      setStepVelocity(step.velocity);
+    }
+  }, [seqManager, selectedStep]);
+
   const handleModeChange = useCallback((m: SequencerMode) => {
     setMode(m);
   }, []);
@@ -225,6 +266,12 @@ export function SequencerPanel() {
               onChange={handleNoteHoldToggle}
               disabled={!seqManager}
               label="Note Hold (Latch Mode)"
+            />
+            <Switch
+              checked={visualizationEnabled}
+              onChange={() => setVisualizationEnabled(!visualizationEnabled)}
+              disabled={!seqManager}
+              label="Step Visualization (disable for better timing)"
             />
           </div>
         )}
@@ -288,24 +335,48 @@ export function SequencerPanel() {
       </div>
 
       {/* Step Grid */}
-      <div className="step-grid-container">
+      <div className="step-grid-container" style={{ position: 'relative' }}>
+        {/* Moving playhead overlay - no React re-renders, just CSS transform */}
+        {visualizationEnabled && (
+          <div
+            ref={playheadRef}
+            className="playhead-overlay"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: `${100 / stepCount}%`,
+              height: '100%',
+              pointerEvents: 'none',
+              transition: 'transform 0.05s linear',
+              zIndex: 1,
+            }}
+          >
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: 'rgba(76, 175, 80, 0.3)',
+              border: '2px solid #4caf50',
+              boxSizing: 'border-box',
+            }}></div>
+          </div>
+        )}
+        
         <div className="step-grid" style={{ gridTemplateColumns: `repeat(${Math.min(stepCount, 16)}, 1fr)` }}>
           {Array.from({ length: stepCount }, (_, i) => {
             const step = seqManager?.getStep(i);
             const isActive = step?.gate || false;
-            const isCurrent = currentStep === i;
             const isSelected = selectedStep === i;
             
             return (
               <div
                 key={i}
-                className={`step-button ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''} ${isSelected ? 'selected' : ''}`}
+                className={`step-button ${isActive ? 'active' : ''} ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleStepClick(i)}
                 onDoubleClick={() => handleStepGateToggle(i)}
                 title={`Step ${i + 1}\nDouble-click to toggle`}
               >
                 <span className="step-number">{i + 1}</span>
-                {isCurrent && <div className="playhead-indicator"></div>}
               </div>
             );
           })}
@@ -415,6 +486,27 @@ export function SequencerPanel() {
           disabled={!seqManager}
         >
           Randomize
+        </button>
+        <button
+          className="tool-btn info"
+          onClick={handleBassline}
+          disabled={!seqManager}
+        >
+          Bassline
+        </button>
+        <button
+          className="tool-btn info"
+          onClick={handleMelodic}
+          disabled={!seqManager}
+        >
+          Melodic
+        </button>
+        <button
+          className="tool-btn info"
+          onClick={handleGenerative}
+          disabled={!seqManager}
+        >
+          Generative
         </button>
       </div>
 

@@ -57,8 +57,7 @@ describe('useKeyboardInput', () => {
       act(() => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
       });
-      
-      expect(onNotePress).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
+      expect(onNotePress).toHaveBeenCalledWith(49); // C#3 (startNote 48 + relative 1)
       expect(onNotePress).toHaveBeenCalledTimes(1);
     });
 
@@ -68,8 +67,7 @@ describe('useKeyboardInput', () => {
       act(() => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
       });
-      
-      expect(onNotePress).toHaveBeenCalledWith(36); // C2 (startNote 36 + relative 0)
+      expect(onNotePress).toHaveBeenCalledWith(48); // C3 (startNote 48 + relative 0)
     });
 
     it('should handle uppercase keys by converting to lowercase', () => {
@@ -78,8 +76,7 @@ describe('useKeyboardInput', () => {
       act(() => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'S' }));
       });
-      
-      expect(onNotePress).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
+      expect(onNotePress).toHaveBeenCalledWith(49); // C#3 (startNote 48 + relative 1)
     });
 
     it('should prevent key repeat when held down', () => {
@@ -115,8 +112,7 @@ describe('useKeyboardInput', () => {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
         window.dispatchEvent(new KeyboardEvent('keyup', { key: 's' }));
       });
-      
-      expect(onNoteRelease).toHaveBeenCalledWith(37); // C#2 (startNote 36 + relative 1)
+      expect(onNoteRelease).toHaveBeenCalledWith(49); // C#3 (startNote 48 + relative 1)
       expect(onNoteRelease).toHaveBeenCalledTimes(1);
     });
 
@@ -135,15 +131,15 @@ describe('useKeyboardInput', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' })); // C#2 (37)
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' })); // C2 (36)
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })); // D2 (38)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' })); // C#3 (49)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' })); // C3 (48)
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' })); // D3 (50)
       });
       
       expect(onNotePress).toHaveBeenCalledTimes(3);
-      expect(onNotePress).toHaveBeenNthCalledWith(1, 37);
-      expect(onNotePress).toHaveBeenNthCalledWith(2, 36);
-      expect(onNotePress).toHaveBeenNthCalledWith(3, 38);
+      expect(onNotePress).toHaveBeenNthCalledWith(1, 49);
+      expect(onNotePress).toHaveBeenNthCalledWith(2, 48);
+      expect(onNotePress).toHaveBeenNthCalledWith(3, 50);
     });
 
     it('should release only specific keys', () => {
@@ -158,9 +154,8 @@ describe('useKeyboardInput', () => {
         // Release middle key
         window.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }));
       });
-      
       expect(onNoteRelease).toHaveBeenCalledTimes(1);
-      expect(onNoteRelease).toHaveBeenCalledWith(36); // C2
+      expect(onNoteRelease).toHaveBeenCalledWith(48); // C3
     });
   });
 
@@ -219,7 +214,7 @@ describe('useKeyboardInput', () => {
     });
   });
 
-  describe('US keyboard layout mapping - bottom row (Z-\')', () => {
+  describe('Danish keyboard layout mapping - bottom row (Z-\')', () => {
     it('should map "z" to C4 (MIDI 48)', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
       
@@ -259,8 +254,8 @@ describe('useKeyboardInput', () => {
         { key: ',', midi: 60 }, // C5
         { key: 'l', midi: 61 }, // C#5
         { key: '.', midi: 62 }, // D5
-        { key: ';', midi: 63 }, // D#5
-        { key: '/', midi: 64 }, // E5
+        { key: 'æ', midi: 63 }, // D#5 (Danish layout)
+        { key: '-', midi: 64 }, // E5
         { key: "'", midi: 65 }, // F5
       ];
 
@@ -274,7 +269,7 @@ describe('useKeyboardInput', () => {
     });
   });
 
-  describe('US keyboard layout mapping - top row (Q-])', () => {
+  describe('Danish keyboard layout mapping - top row (Q-¨)', () => {
     it('should map "q" to C5 (MIDI 60)', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
       
@@ -285,11 +280,11 @@ describe('useKeyboardInput', () => {
       expect(onNotePress).toHaveBeenCalledWith(60);
     });
 
-    it('should map "]" to G6 (MIDI 79)', () => {
+    it('should map "¨" to G6 (MIDI 79)', () => {
       renderHook(() => useKeyboardInput(onNotePress, onNoteRelease, true, 48));
       
       act(() => {
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: ']' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: '¨' }));
       });
       
       expect(onNotePress).toHaveBeenCalledWith(79);
@@ -316,9 +311,9 @@ describe('useKeyboardInput', () => {
         { key: 'o', midi: 74 }, // D6
         { key: '0', midi: 75 }, // D#6
         { key: 'p', midi: 76 }, // E6
-        { key: '[', midi: 77 }, // F6
-        { key: '=', midi: 78 }, // F#6
-        { key: ']', midi: 79 }, // G6
+        { key: 'å', midi: 77 }, // F6 (Danish layout)
+        { key: '´', midi: 78 }, // F#6 (Danish layout)
+        { key: '¨', midi: 79 }, // G6 (Danish layout)
       ];
 
       topRowKeys.forEach(({ key, midi }) => {
@@ -374,8 +369,8 @@ describe('getKeyLabel', () => {
         { midi: 60, label: ',' },  // C5
         { midi: 61, label: 'L' },  // C#5
         { midi: 62, label: '.' },  // D5
-        { midi: 63, label: ';' },  // D#5
-        { midi: 64, label: '/' },  // E5
+        { midi: 63, label: 'æ' },  // D#5 (Danish layout)
+        { midi: 64, label: '-' },  // E5
         { midi: 65, label: "'" },  // F5
       ];
 
@@ -385,7 +380,7 @@ describe('getKeyLabel', () => {
     });
   });
 
-  describe('Top row Q-] labels (overlaps with bottom row)', () => {
+  describe('Top row Q-¨ labels (overlaps with bottom row)', () => {
     it('should return "," for C5 (MIDI 60) - same as bottom row', () => {
       // Both Q row and bottom row can play C5
       expect(getKeyLabel(60)).toBe(',');
@@ -404,9 +399,9 @@ describe('getKeyLabel', () => {
         { midi: 74, label: 'O' },  // D6
         { midi: 75, label: '0' },  // D#6
         { midi: 76, label: 'P' },  // E6
-        { midi: 77, label: '[' },  // F6
-        { midi: 78, label: '=' },  // F#6
-        { midi: 79, label: ']' },  // G6
+        { midi: 77, label: 'å' },  // F6 (Danish layout)
+        { midi: 78, label: '´' },  // F#6 (Danish layout)
+        { midi: 79, label: '¨' },  // G6 (Danish layout)
       ];
 
       topRowLabels.forEach(({ midi, label }) => {
@@ -426,8 +421,9 @@ describe('getKeyLabel', () => {
       expect(getKeyLabel(127)).toBe(null);
     });
 
-    it('should return null for unmapped note in range (F#3 = 42)', () => {
-      expect(getKeyLabel(42)).toBe(null);
+    it('should return null for unmapped note in range', () => {
+      // Test a note that doesn't have a key mapping (e.g., relative index 16 if we only go up to 31)
+      expect(getKeyLabel(100)).toBe(null);
     });
 
     it('should handle negative MIDI numbers', () => {

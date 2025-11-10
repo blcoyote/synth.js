@@ -53,10 +53,13 @@ export class SequencerManager {
   // Step data (stores intervals relative to root note, not absolute pitches)
   private steps: SequencerStep[] = [];
   
-  // Callbacks
-  private onNoteCallback: ((pitch: number, velocity: number) => void) | null = null;
-  private onNoteOffCallback: ((pitch: number) => void) | null = null;
+  // Callbacks - now with time parameter for AudioContext scheduling
+  private onNoteCallback: ((pitch: number, velocity: number, time?: number) => void) | null = null;
+  private onNoteOffCallback: ((pitch: number, time?: number) => void) | null = null;
   private onStepCallback: ((stepIndex: number) => void) | null = null;
+  
+  // Direct DOM manipulation for visualization (no React re-renders)
+  private playheadElement: HTMLElement | null = null;
   
   // Track currently playing notes for cleanup
   private activeNotes: Set<number> = new Set();
@@ -64,8 +67,11 @@ export class SequencerManager {
   // Audio timing - for precise scheduling
   private audioContext: AudioContext | null = null;
   private nextStepTime: number = 0;
-  private scheduleAheadTime: number = 0.1; // Look ahead 100ms
-  private scheduleInterval: number = 25; // Check every 25ms
+  private scheduleAheadTime: number = 0.2; // Look ahead 200ms (increased for reliability)
+  private schedulerTimerId: number | null = null; // Use setTimeout for scheduling loop
+  private scheduledNotes: Map<number, { timeoutId: number; pitch: number }> = new Map(); // Track scheduled note-offs
+  private tempoChanged: boolean = false; // Flag for tempo changes
+  private swingChanged: boolean = false; // Flag for swing changes
 
   constructor(config?: SequencerConfig, audioContext?: AudioContext) {
     this.audioContext = audioContext || null;
@@ -183,11 +189,12 @@ export class SequencerManager {
       this.direction = 1;
     }
     
-    // Initialize timing - use AudioContext time if available, fallback to performance.now()
-    if (this.audioContext) {
-      this.nextStepTime = this.audioContext.currentTime;
-    } else {
+    // Initialize timing - require AudioContext for accurate timing
+    if (!this.audioContext) {
+      console.warn('⚠️ No AudioContext available - timing may be imprecise');
       this.nextStepTime = performance.now() / 1000;
+    } else {
+      this.nextStepTime = this.audioContext.currentTime;
     }
     
     this.scheduleSteps();
@@ -202,10 +209,22 @@ export class SequencerManager {
     this.isPlaying = false;
     this.isPaused = false;
     
+    // Cancel scheduling loop
     if (this.intervalId !== null) {
-      clearInterval(this.intervalId);
+      clearTimeout(this.intervalId);
       this.intervalId = null;
     }
+    
+    if (this.schedulerTimerId !== null) {
+      cancelAnimationFrame(this.schedulerTimerId);
+      this.schedulerTimerId = null;
+    }
+    
+    // Cancel all scheduled note-offs
+    this.scheduledNotes.forEach(({ timeoutId }) => {
+      clearTimeout(timeoutId);
+    });
+    this.scheduledNotes.clear();
     
     // Stop all active notes
     this.stopAllNotes();
@@ -227,6 +246,8 @@ export class SequencerManager {
   public reset(): void {
     this.currentStep = 0;
     this.direction = 1;
+    // Reset playhead visualization
+    this.updatePlayheadPosition(0);
   }
 
   /**
@@ -400,6 +421,64 @@ export class SequencerManager {
   }
 
   /**
+   * Fill sequence with bassline pattern (root, fifth, octave)
+   */
+  public fillBassline(): void {
+    const intervals = [0, 7, 12, 7]; // root, fifth, octave, fifth
+    for (let i = 0; i < this.stepCount; i++) {
+      this.steps[i].gate = true;
+      this.steps[i].pitch = intervals[i % intervals.length];
+      this.steps[i].velocity = 110;
+      this.steps[i].length = 0.8;
+    }
+  }
+
+  /**
+   * Fill sequence with melodic pattern (scale intervals)
+   */
+  public fillMelodic(scale: number[] = [0, 2, 4, 5, 7, 9, 11]): void {
+    for (let i = 0; i < this.stepCount; i++) {
+      this.steps[i].gate = true;
+      this.steps[i].pitch = scale[i % scale.length];
+      this.steps[i].velocity = 100 + (i % 2 ? 10 : 0); // Slight accent on odd steps
+      this.steps[i].length = 0.8;
+    }
+  }
+
+  /**
+   * Fill sequence with generative pattern (pleasing intervals within scale)
+   */
+  public fillGenerative(scale: number[] = [0, 2, 4, 5, 7, 9, 11]): void {
+    for (let i = 0; i < this.stepCount; i++) {
+      // 80% chance of gate being active
+      this.steps[i].gate = Math.random() > 0.2;
+      
+      if (i === 0) {
+        // Start on root
+        this.steps[i].pitch = scale[0];
+      } else {
+        // Favor stepwise motion, avoid large leaps
+        const prevPitch = this.steps[i - 1].pitch;
+        const scaleIndex = scale.findIndex(note => note >= prevPitch % 12);
+        const centerIndex = scaleIndex >= 0 ? scaleIndex : 0;
+        
+        // Choose from nearby scale notes (±2 steps in scale)
+        const minIndex = Math.max(0, centerIndex - 2);
+        const maxIndex = Math.min(scale.length - 1, centerIndex + 2);
+        const noteIndex = minIndex + Math.floor(Math.random() * (maxIndex - minIndex + 1));
+        
+        this.steps[i].pitch = scale[noteIndex];
+      }
+      
+      // Varied velocity for dynamics
+      this.steps[i].velocity = 90 + Math.floor(Math.random() * 30); // 90-120
+      
+      // Varied note length for interest
+      this.steps[i].length = 0.6 + Math.random() * 0.3; // 0.6-0.9
+    }
+  }
+
+  /**
    * Set number of steps
    */
   public setSteps(count: 4 | 8 | 16 | 32 | 64): void {
@@ -433,7 +512,11 @@ export class SequencerManager {
    * Set tempo
    */
   public setTempo(tempo: number): void {
-    this.tempo = Math.max(40, Math.min(300, tempo));
+    const newTempo = Math.max(40, Math.min(300, tempo));
+    if (newTempo !== this.tempo) {
+      this.tempo = newTempo;
+      this.tempoChanged = true;
+    }
   }
 
   /**
@@ -461,7 +544,11 @@ export class SequencerManager {
    * Set swing amount
    */
   public setSwing(swing: number): void {
-    this.swing = Math.max(0, Math.min(1, swing));
+    const newSwing = Math.max(0, Math.min(1, swing));
+    if (newSwing !== this.swing) {
+      this.swing = newSwing;
+      this.swingChanged = true;
+    }
   }
 
   /**
@@ -496,8 +583,25 @@ export class SequencerManager {
     this.onNoteOffCallback = callback;
   }
 
-  public onStep(callback: (stepIndex: number) => void): void {
+  public onStep(callback: ((stepIndex: number) => void) | null): void {
     this.onStepCallback = callback;
+  }
+
+  /**
+   * Set playhead element for direct DOM manipulation (no React re-renders)
+   */
+  public setPlayheadElement(element: HTMLElement | null): void {
+    this.playheadElement = element;
+  }
+
+  /**
+   * Update playhead position using CSS transform (no React re-render)
+   */
+  private updatePlayheadPosition(stepIndex: number): void {
+    if (this.playheadElement) {
+      const position = (stepIndex / this.stepCount) * 100;
+      this.playheadElement.style.transform = `translateX(${position * this.stepCount}%)`;
+    }
   }
 
   /**
@@ -566,29 +670,67 @@ export class SequencerManager {
   }
 
   /**
+   * Get current time from most accurate source
+   */
+  private getCurrentTime(): number {
+    return this.audioContext 
+      ? this.audioContext.currentTime 
+      : performance.now() / 1000;
+  }
+
+  /**
    * Schedule steps using look-ahead approach for precise timing
    */
   private scheduleSteps(): void {
     if (!this.isPlaying) return;
 
-    const currentTime = this.audioContext 
-      ? this.audioContext.currentTime 
-      : performance.now() / 1000;
+    const currentTime = this.getCurrentTime();
+
+    // Handle tempo/swing changes - reschedule if needed
+    if (this.tempoChanged || this.swingChanged) {
+      // Adjust nextStepTime to maintain phase continuity
+      // This prevents sudden jumps when tempo changes
+      const timeToNextStep = this.nextStepTime - currentTime;
+      if (timeToNextStep > 0 && this.tempoChanged) {
+        // Recalculate based on new tempo, maintaining relative position
+        const newStepDuration = this.getStepDuration(this.currentStep) / 1000;
+        this.nextStepTime = currentTime + Math.min(timeToNextStep, newStepDuration);
+      }
+      this.tempoChanged = false;
+      this.swingChanged = false;
+    }
 
     // Schedule all steps that fall within the look-ahead window
     while (this.nextStepTime < currentTime + this.scheduleAheadTime) {
+      // Schedule current step
       this.scheduleStep(this.currentStep, this.nextStepTime);
       
-      // Advance to next step
+      // Calculate duration for THIS step before advancing
       const stepDuration = this.getStepDuration(this.currentStep) / 1000; // Convert to seconds
-      this.nextStepTime += stepDuration;
+      
+      // Advance to next step
       this.currentStep = this.getNextStepIndex();
+      
+      // Add the duration to get the time for the NEXT step
+      this.nextStepTime += stepDuration;
+      
+      // CRITICAL FIX: Prevent timing drift accumulation
+      // If we're scheduling too far behind current time, resync to current time
+      // This prevents "catching up" behavior that causes rubber-banding
+      if (this.nextStepTime < currentTime - 0.05) {
+        console.warn('Sequencer fell behind, resyncing timing');
+        this.nextStepTime = currentTime;
+      }
     }
 
-    // Continue scheduling with regular checks
-    this.intervalId = window.setTimeout(() => {
+    // Calculate optimal next check time based on when we'll need to schedule again
+    // Use shorter interval for more consistent scheduling (25ms = ~40Hz, good balance)
+    const nextCheckDelay = 25; // Fixed 25ms interval for consistent timing
+    
+    this.schedulerTimerId = window.setTimeout(() => {
+      this.schedulerTimerId = null;
       this.scheduleSteps();
-    }, this.scheduleInterval);
+    }, nextCheckDelay);
   }
 
   /**
@@ -597,46 +739,68 @@ export class SequencerManager {
   private scheduleStep(stepIndex: number, time: number): void {
     const step = this.steps[stepIndex];
     const stepDuration = this.getStepDuration(stepIndex) / 1000; // Convert to seconds
-    
-    const currentTime = this.audioContext 
-      ? this.audioContext.currentTime 
-      : performance.now() / 1000;
-    
-    const delay = Math.max(0, (time - currentTime) * 1000); // Convert to ms for setTimeout
-
-    // Schedule UI update at the correct time
-    setTimeout(() => {
-      if (this.onStepCallback) {
-        this.onStepCallback(stepIndex);
-      }
-    }, delay);
+    const currentTime = this.getCurrentTime();
+    const delay = Math.max(0, (time - currentTime) * 1000); // Convert to ms for setTimeout (UI only)
 
     // Play note if gate is active
     if (step.gate && this.onNoteCallback && this.rootNote !== null) {
       // Calculate absolute pitch from root note + interval
       const absolutePitch = this.rootNote + step.pitch;
+      const noteOffTime = time + (stepDuration * step.length);
       
-      // Schedule note on
-      setTimeout(() => {
-        // Remove from tracking if retriggering
-        if (this.activeNotes.has(absolutePitch)) {
-          this.activeNotes.delete(absolutePitch);
+      // Update visualization using direct DOM manipulation (no React re-render)
+      window.setTimeout(() => {
+        if (this.isPlaying) {
+          this.updatePlayheadPosition(stepIndex);
+          // Also call React callback if registered (for recording mode, etc.)
+          if (this.onStepCallback) {
+            this.onStepCallback(stepIndex);
+          }
         }
-
-        // Play new note (VoiceManager will handle cleanup if needed)
-        this.onNoteCallback!(absolutePitch, step.velocity / 127);
-        this.activeNotes.add(absolutePitch);
       }, delay);
+      
+      // CRITICAL: Pass AudioContext time to callback for sample-accurate scheduling
+      // This offloads timing to the audio engine instead of relying on setTimeout
+      if (!this.isPlaying) return;
+      
+      // Remove from tracking if retriggering
+      if (this.activeNotes.has(absolutePitch)) {
+        this.activeNotes.delete(absolutePitch);
+      }
 
-      // Schedule note off
-      const noteDuration = stepDuration * step.length * 1000; // Convert to ms
+      // Play note with PRECISE AudioContext time (no setTimeout!)
+      this.onNoteCallback(absolutePitch, step.velocity / 127, time);
+      this.activeNotes.add(absolutePitch);
+      
+      // Schedule note off with PRECISE AudioContext time
+      if (this.onNoteOffCallback) {
+        // Use setTimeout only to trigger the callback, but pass the precise time
+        window.setTimeout(() => {
+          if (this.isPlaying && this.activeNotes.has(absolutePitch)) {
+            this.onNoteOffCallback!(absolutePitch, noteOffTime);
+            this.activeNotes.delete(absolutePitch);
+          }
+        }, delay + (stepDuration * step.length * 1000));
+      }
+    } else {
+      // If no note, just update visualization
       setTimeout(() => {
-        if (this.onNoteOffCallback && this.activeNotes.has(absolutePitch)) {
-          this.onNoteOffCallback(absolutePitch);
-          this.activeNotes.delete(absolutePitch);
+        if (this.isPlaying) {
+          this.updatePlayheadPosition(stepIndex);
+          // Also call React callback if registered (for recording mode, etc.)
+          if (this.onStepCallback) {
+            this.onStepCallback(stepIndex);
+          }
         }
-      }, delay + noteDuration);
+      }, delay);
     }
+  }
+
+  /**
+   * Set AudioContext for precise timing (should be called after audio initialization)
+   */
+  public setAudioContext(audioContext: AudioContext): void {
+    this.audioContext = audioContext;
   }
 }
 

@@ -150,10 +150,11 @@ export class SynthEngine {
       // Create preset manager
       this.presetManager = new PresetManager(voiceState);
       
-      // Create LFO manager
+      // Create LFO manager and start it by default
       this.lfoManager = new LFOManager();
+      this.lfoManager.setEnabled(true); // Enable LFO by default
       modulationState.setMultiLFO(this.lfoManager.getLFO());
-      console.log('🌊 Created LFO manager');
+      console.log('🌊 Created LFO manager (enabled by default)');
       
       // Connect LFO manager to voice manager for voice-level modulation
       this.voiceManager.setLFOManager(this.lfoManager);
@@ -176,13 +177,13 @@ export class SynthEngine {
       // Create Sequencer manager with AudioContext for precise timing
       this.sequencerManager = new SequencerManager(undefined, context);
       
-      // Connect sequencer to voice manager
-      this.sequencerManager.onNote((pitch: number, velocity: number) => {
-        this.voiceManager?.playNote(pitch, velocity);
+      // Connect sequencer to voice manager with AudioContext scheduling support
+      this.sequencerManager.onNote((pitch: number, velocity: number, time?: number) => {
+        this.voiceManager?.playNote(pitch, velocity, time);
       });
       
-      this.sequencerManager.onNoteOff((pitch: number) => {
-        this.voiceManager?.releaseNote(pitch);
+      this.sequencerManager.onNoteOff((pitch: number, time?: number) => {
+        this.voiceManager?.releaseNote(pitch, time);
       });
       
       console.log('🎵 Created Sequencer manager with precise audio timing');

@@ -96,16 +96,18 @@ export function FilterPanel() {
 
     const context = audioEngine.getContext();
     const spectrumAnalyser = visualizationState.analyser;
+    const effectsManager = audioState.getEffectsManager();
     
-    // Create new filter and reconnect through analyser
-    // Signal chain: masterGain -> filter -> spectrumAnalyser -> destination
+    // Create new filter and reconnect through effects and analyser
+    // Signal chain: masterGain -> filter -> effects -> analyser -> destination
     if (newType === 'lowpass12') {
       const filter = new Lowpass12Filter(cutoff);
       filter.setParameter('resonance', resonance);
       audioState.setCurrentCustomFilter(filter);
       audioState.setMasterFilter(filter);
       masterGainNode.connect(filter.getInputNode());
-      filter.getOutputNode().connect(spectrumAnalyser);
+      filter.getOutputNode().connect(effectsManager.getInputNode());
+      effectsManager.getOutputNode().connect(spectrumAnalyser);
       spectrumAnalyser.connect(context.destination);
     } else if (newType === 'lowpass24') {
       const filter = new Lowpass24Filter(cutoff);
@@ -113,7 +115,8 @@ export function FilterPanel() {
       audioState.setCurrentCustomFilter(filter);
       audioState.setMasterFilter(filter);
       masterGainNode.connect(filter.getInputNode());
-      filter.getOutputNode().connect(spectrumAnalyser);
+      filter.getOutputNode().connect(effectsManager.getInputNode());
+      effectsManager.getOutputNode().connect(spectrumAnalyser);
       spectrumAnalyser.connect(context.destination);
     } else {
       audioState.setCurrentCustomFilter(null);
@@ -123,7 +126,8 @@ export function FilterPanel() {
       filter.Q.value = resonance;
       audioState.setMasterFilter(filter);
       masterGainNode.connect(filter);
-      filter.connect(spectrumAnalyser);
+      filter.connect(effectsManager.getInputNode());
+      effectsManager.getOutputNode().connect(spectrumAnalyser);
       spectrumAnalyser.connect(context.destination);
     }
   }, [audioEngine, engine, cutoff, resonance]);
