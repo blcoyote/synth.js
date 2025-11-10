@@ -1,0 +1,77 @@
+.synth-init-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(30, 30, 40, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.synth-init-dialog {
+  background: linear-gradient(135deg, #23243a 0%, #2e2f4b 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 2px #4e5d8a;
+  padding: 2.5rem 2rem 2rem 2rem;
+  min-width: 400px;
+  max-width: 90vw;
+  text-align: center;
+  border: 2px solid #4e5d8a;
+  animation: dialogFadeIn 0.3s ease-out;
+}
+
+@keyframes dialogFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.synth-init-title {
+  font-family: 'Orbitron', 'Montserrat', sans-serif;
+  font-size: 2rem;
+  color: #b8c6ff;
+  margin: 0 0 1rem 0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.synth-init-desc {
+  font-size: 1.05rem;
+  color: #dbeafe;
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.synth-init-ok {
+  background: linear-gradient(90deg, #4e5d8a 0%, #6c7fd1 100%);
+  color: #fff;
+  font-size: 1.1rem;
+  font-family: 'Orbitron', 'Montserrat', sans-serif;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75em 2.5em;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.synth-init-ok:hover {
+  background: linear-gradient(90deg, #6c7fd1 0%, #8a9de8 100%);
+  box-shadow: 0 4px 12px rgba(108, 127, 209, 0.4);
+  transform: translateY(-1px);
+}
+
+.synth-init-ok:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
