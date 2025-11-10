@@ -34,6 +34,14 @@ vi.mock('../../../src/state', () => {
   configs.set(2, { enabled: false, waveform: 'sawtooth', octave: 0, detune: 0, volume: 0.8, pan: 0 });
   configs.set(3, { enabled: false, waveform: 'square', octave: 0, detune: 0, volume: 0.8, pan: 0 });
 
+  // Mock effects manager with all required methods
+  const mockEffectsManager = {
+    addEffect: vi.fn(),
+    removeEffect: vi.fn(),
+    getInputNode: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() })),
+    getOutputNode: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() }))
+  };
+
   return {
     audioState: {
       filterSettings: mockFilterSettings,
@@ -41,8 +49,8 @@ vi.mock('../../../src/state', () => {
       currentCustomFilter: null as any,
       setMasterFilter: vi.fn(),
       setCurrentCustomFilter: vi.fn(),
-      getEffectsManager: vi.fn(() => ({ addEffect: vi.fn(), removeEffect: vi.fn() })),
-      getEffectsManagerOrNull: vi.fn(() => null),
+      getEffectsManager: vi.fn(() => mockEffectsManager),
+      getEffectsManagerOrNull: vi.fn(() => mockEffectsManager),
       setEffectsManager: vi.fn()
     },
     visualizationState: {
