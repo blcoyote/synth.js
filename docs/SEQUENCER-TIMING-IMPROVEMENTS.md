@@ -22,7 +22,7 @@ Comprehensive timing improvements to the SequencerManager to address precision i
 
 ### 4. **Proper Cleanup on Stop**
 - **Before**: Only cleared intervalId, leaving potential orphaned timeouts
-- **After**: Cancels all scheduled note-offs, clears RAF timer, and stops all active notes
+- **After**: Cancels all scheduled note-offs, clears timeout timer, and stops all active notes
 - **Impact**: No hanging notes or memory leaks
 
 ### 5. **Scheduled Note Tracking**
