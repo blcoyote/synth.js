@@ -34,11 +34,11 @@ Comprehensive timing improvements to the SequencerManager to address precision i
 
 ### Scheduling Loop
 ```typescript
-// Uses requestAnimationFrame for smoother, more predictable timing
-this.schedulerTimerId = window.requestAnimationFrame(() => {
+// Uses setTimeout for scheduling loop (actual implementation)
+this.schedulerTimerId = window.setTimeout(() => {
   this.schedulerTimerId = null;
   this.scheduleSteps();
-});
+}, 25);
 ```
 
 ### Tempo Change Handling
