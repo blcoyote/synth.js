@@ -8,7 +8,7 @@ export function useKeyboardInput(
   onNotePress: (noteIndex: number) => void,
   onNoteRelease: (noteIndex: number) => void,
   enabled: boolean = true,
-  startNote: number = 48 // Default to C3 (MIDI 48) to match keyboard default startOctave=2
+  startNote: number = 48 // Default to C3 (MIDI 48); corresponds to startOctave=3 (C3) in standard MIDI mapping
 ) {
   const pressedKeys = useRef<Set<string>>(new Set());
   
