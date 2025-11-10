@@ -1,18 +1,17 @@
 /**
  * LFOManager - Manages LFO for V2 synth
- * 
+ *
  * Responsibilities:
  * - Create and manage MultiTargetLFO instance
  * - Route LFO to multiple targets (pitch, filter, effects)
  * - Handle target enable/disable
  * - Update LFO parameters (rate, waveform, depth)
- * 
+ *
  * @remarks
  * Uses dependency injection - receives references to what it needs to modulate
  */
 
-import { MultiTargetLFO } from "../components/modulation/MultiTargetLFO";
-import type { LFOWaveform } from "../components/modulation/MultiTargetLFO";
+import { MultiTargetLFO, type LFOWaveform } from '../components/modulation/MultiTargetLFO';
 
 export interface LFOTargetConfig {
   enabled: boolean;
@@ -28,7 +27,7 @@ export class LFOManager {
   constructor() {
     // Create LFO with default settings
     this.lfo = new MultiTargetLFO({
-      frequency: 5.0,  // 5 Hz default
+      frequency: 5.0, // 5 Hz default
       waveform: 'sine',
     });
   }
@@ -157,7 +156,7 @@ export class LFOManager {
    * Clear all targets
    */
   clearTargets(): void {
-    this.getTargets().forEach(name => {
+    this.getTargets().forEach((name) => {
       this.removeTarget(name);
     });
     this.targets.clear();
@@ -170,6 +169,3 @@ export class LFOManager {
     return this.lfo;
   }
 }
-
-
-
