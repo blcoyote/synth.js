@@ -150,10 +150,11 @@ export class SynthEngine {
       // Create preset manager
       this.presetManager = new PresetManager(voiceState);
       
-      // Create LFO manager
+      // Create LFO manager and start it by default
       this.lfoManager = new LFOManager();
+      this.lfoManager.setEnabled(true); // Enable LFO by default
       modulationState.setMultiLFO(this.lfoManager.getLFO());
-      console.log('🌊 Created LFO manager');
+      console.log('🌊 Created LFO manager (enabled by default)');
       
       // Connect LFO manager to voice manager for voice-level modulation
       this.voiceManager.setLFOManager(this.lfoManager);
