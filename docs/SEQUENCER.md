@@ -1,7 +1,7 @@
 # Sequencer Implementation
 
 ## Overview
-A step sequencer with visual playhead tracking, supporting up to 64 steps and multiple playback modes.
+A step sequencer with visual playhead tracking, supporting up to 16 steps and multiple playback modes.
 
 ## Architecture
 
@@ -9,7 +9,7 @@ A step sequencer with visual playhead tracking, supporting up to 64 steps and mu
 **420 lines** - Core sequencer logic
 
 **Key Features:**
-- **Step Configuration**: 4, 8, 16, 32, or 64 steps
+- **Step Configuration**: 4, 8, or 16 steps
 - **Playback Modes**: forward, reverse, pingpong, random
 - **Step Data**: Each step has gate, pitch, velocity, and length
 - **Timing**: Tempo (40-300 BPM) with swing support (0-100%)
@@ -51,7 +51,7 @@ interface SequencerStep {
    - Reset button
 
 2. **Step Count Selection**
-   - Buttons for 4, 8, 16, 32, 64 steps
+   - Buttons for 4, 8, 16 steps
    - Grid adjusts responsively
 
 3. **Step Grid**
@@ -129,7 +129,7 @@ this.sequencerManager.onNoteOff((pitch: number) => {
 
 **Key Visual Features:**
 - **Playhead pulse animation**: Green glow that pulses every 600ms
-- **Responsive grid**: Adjusts for 4-64 steps
+- **Responsive grid**: Adjusts for 4-16 steps
 - **Active step indicator**: Purple background for gates
 - **Selected step**: Blue background for editing
 - **Current step**: Green border + pulse animation
@@ -141,7 +141,7 @@ this.sequencerManager.onNoteOff((pitch: number) => {
 
 ## Usage
 
-1. **Select Step Count**: Choose 4, 8, 16, 32, or 64 steps
+1. **Select Step Count**: Choose 4, 8, or 16 steps
 2. **Program Steps**:
    - Click step to select it
    - Double-click to toggle gate
@@ -166,7 +166,7 @@ this.sequencerManager.onNoteOff((pitch: number) => {
 
 ### Flexible Step Counts
 - Start simple with 4 steps
-- Scale up to 64 steps for complex patterns
+- Scale up to 16 steps for complex patterns
 - Grid adjusts automatically
 
 ### Playback Modes
@@ -209,14 +209,13 @@ this.sequencerManager.onNoteOff((pitch: number) => {
 - [ ] Scales/quantize mode (snap to scale)
 
 ### Performance Optimizations
-- [ ] Virtual scrolling for 64+ steps
-- [ ] Canvas rendering for very large grids
+- [ ] Canvas rendering for large grids
 - [ ] Worker thread for timing (more precise)
 
 ## Testing
 
 ### Manual Testing Checklist
-- [ ] Test all step counts (4, 8, 16, 32, 64)
+- [ ] Test all step counts (4, 8, 16)
 - [ ] Test all playback modes
 - [ ] Verify playhead indicator updates every step
 - [ ] Test step editing while playing
@@ -239,7 +238,7 @@ this.sequencerManager.onNoteOff((pitch: number) => {
 |---------|-------------|-----------|
 | **Input** | Held notes | Pre-programmed steps |
 | **Patterns** | 9 algorithmic | User-defined |
-| **Steps** | Dynamic (note count) | Fixed (4-64) |
+| **Steps** | Dynamic (note count) | Fixed (4-16) |
 | **Timing** | Note divisions | Tempo + swing |
 | **Use Case** | Live performance | Composition/loops |
 
@@ -248,7 +247,7 @@ this.sequencerManager.onNoteOff((pitch: number) => {
 The sequencer implementation provides:
 - ✅ **Clean architecture** following project guidelines
 - ✅ **Visual playhead** on all steps (as requested)
-- ✅ **Up to 64 steps** with responsive grid
+- ✅ **Up to 16 steps** with responsive grid
 - ✅ **4 playback modes** for variety
 - ✅ **Real-time editing** while playing
 - ✅ **Professional UI** with clear visual feedback

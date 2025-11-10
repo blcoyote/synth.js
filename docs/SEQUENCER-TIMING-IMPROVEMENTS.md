@@ -114,7 +114,7 @@ public setAudioContext(audioContext: AudioContext): void
    - Measure timing drift (should be minimal)
 
 5. **Test with various step counts**
-   - 4, 8, 16, 32, 64 steps
+   - 4, 8, 16 steps
    - Verify consistent timing across all configurations
 
 ## Future Improvements

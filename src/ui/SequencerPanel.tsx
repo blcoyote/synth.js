@@ -15,7 +15,7 @@ const SEQUENCER_MODES: { value: SequencerMode; label: string }[] = [
   { value: 'random', label: 'Random' },
 ];
 
-const STEP_COUNTS = [4, 8, 16, 32, 64] as const;
+const STEP_COUNTS = [4, 8, 16] as const;
 
 export function SequencerPanel() {
   const { engine: synthEngine } = useSynthEngine();

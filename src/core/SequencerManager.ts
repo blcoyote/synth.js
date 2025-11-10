@@ -2,7 +2,7 @@
  * SequencerManager - Step sequencer for Synth V2
  * 
  * Responsibilities:
- * - Manage step sequence (up to 64 steps)
+ * - Manage step sequence (up to 16 steps)
  * - Handle playback timing and step progression
  * - Track playhead position
  * - Generate notes from step data
@@ -20,7 +20,7 @@ export interface SequencerStep {
 export type SequencerMode = 'forward' | 'reverse' | 'pingpong' | 'random';
 
 export interface SequencerConfig {
-  steps?: number;           // Number of steps (4, 8, 16, 32, 64)
+  steps?: number;           // Number of steps (4, 8, 16)
   tempo?: number;           // BPM (40-300)
   mode?: SequencerMode;     // Playback mode
   swing?: number;           // 0-1, swing amount
