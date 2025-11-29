@@ -288,10 +288,16 @@ export class VoiceManager {
         // Get the appropriate oscillator bus
         const oscBus = oscNum === 1 ? this.osc1Bus : oscNum === 2 ? this.osc2Bus : this.osc3Bus;
 
+        // Check if this oscillator will be used as FM modulator (don't connect to audio output)
+        const willBeFMModulator = oscNum >= 2 && !!config.fmEnabled && !!config.fmDepth && config.fmDepth > 0;
+
+        // Connect to audio output only if NOT used as FM modulator
         // Connect: oscillator -> pan -> envelope -> oscBus (-> analyser -> master gain -> destination)
         oscillator.connect(panNode);
         panNode.connect(envelope.getInputNode());
-        envelope.connect(oscBus);
+        if (!willBeFMModulator) {
+          envelope.connect(oscBus);
+        }
 
         // Start the oscillator at scheduled time (sample-accurate)
         oscillator.start(startTime);
@@ -299,8 +305,8 @@ export class VoiceManager {
         // Trigger the envelope at scheduled time (sample-accurate)
         envelope.trigger(velocity, startTime);
 
-        // Store oscillator data
-        voice.oscillators.push({ oscillator, panNode, envelope, oscNum });
+        // Store oscillator data with FM modulator flag
+        voice.oscillators.push({ oscillator, panNode, envelope, oscNum, isFMModulator: willBeFMModulator });
       }
     });
     
@@ -379,6 +385,9 @@ export class VoiceManager {
       // Create FM gain node to scale modulation depth
       const fmGain = context.createGain();
       fmGain.gain.value = config.fmDepth;
+      
+      // Store fmGain node for real-time updates
+      modulatorData.fmGain = fmGain;
       
       // FM routing: modulator oscillator -> fmGain -> carrier frequency parameter
       // Note: The modulator is already connected to its envelope/pan
@@ -512,12 +521,79 @@ export class VoiceManager {
               const newFrequency = voice.baseFrequency * Math.pow(2, value);
               oscData.oscillator.setParameter('frequency', newFrequency);
               break;
+            case 'fmDepth':
+              // Update FM gain node if it exists (for oscillators 2 & 3)
+              if (oscData.fmGain) {
+                oscData.fmGain.gain.value = value;
+              }
+              break;
           }
         }
       });
     });
     
     console.log(`🔧 Updated ${parameterName} to ${value} for osc ${oscNum} on ${this.voiceState.activeVoices.size} active voice(s)`);
+  }
+
+  /**
+   * Toggle FM mode for an oscillator on active voices
+   * When enabling FM, disconnect from audio output and connect to carrier frequency
+   * When disabling FM, disconnect from carrier and reconnect to audio output
+   */
+  updateFMEnabledOnActiveVoices(oscNum: 2 | 3, enabled: boolean, depth: number): void {
+    const context = this.audioEngine.getContext();
+    
+    this.voiceState.activeVoices.forEach((voice) => {
+      // Find the modulator oscillator
+      const modulatorData = voice.oscillators.find(osc => osc.oscNum === oscNum);
+      if (!modulatorData) return;
+      
+      // Find the carrier (oscillator 1)
+      const carrierData = voice.oscillators.find(osc => osc.oscNum === 1);
+      if (!carrierData) return;
+      
+      const carrierNode = carrierData.oscillator.getOscillatorNode();
+      if (!carrierNode || !carrierNode.frequency) return;
+      
+      const oscBus = oscNum === 2 ? this.osc2Bus : this.osc3Bus;
+      
+      if (enabled && depth > 0) {
+        // Enable FM: disconnect from audio output, connect to carrier frequency
+        try {
+          modulatorData.envelope.disconnect();
+        } catch (e) {
+          // Already disconnected
+        }
+        
+        // Create or reuse FM gain node
+        if (!modulatorData.fmGain) {
+          modulatorData.fmGain = context.createGain();
+        }
+        modulatorData.fmGain.gain.value = depth;
+        
+        // Connect FM path
+        modulatorData.oscillator.connect(modulatorData.fmGain);
+        modulatorData.fmGain.connect(carrierNode.frequency);
+        
+        modulatorData.isFMModulator = true;
+        console.log(`🎛️ Enabled FM on osc${oscNum} for active voice (depth: ${depth} Hz)`);
+      } else {
+        // Disable FM: disconnect from carrier frequency, reconnect to audio output
+        if (modulatorData.fmGain) {
+          try {
+            modulatorData.fmGain.disconnect();
+          } catch (e) {
+            // Already disconnected
+          }
+        }
+        
+        // Reconnect to audio output
+        modulatorData.envelope.connect(oscBus);
+        
+        modulatorData.isFMModulator = false;
+        console.log(`🎛️ Disabled FM on osc${oscNum} for active voice`);
+      }
+    });
   }
 
   /**

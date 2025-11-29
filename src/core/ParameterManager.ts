@@ -95,6 +95,7 @@ export class ParameterManager {
   /**
    * Toggle FM modulation on/off for an oscillator (2 or 3)
    * When enabled, the oscillator modulates oscillator 1's frequency
+   * Updates both config and active voices
    */
   updateFMEnabled(oscNum: 2 | 3, enabled: boolean): void {
     const config = this.voiceState.oscillatorConfigs.get(oscNum);
@@ -105,9 +106,10 @@ export class ParameterManager {
 
     config.fmEnabled = enabled;
     
-    // Note: FM routing happens during note creation in VoiceManager
-    // Changing this on active voices would require complex rerouting
-    // So this only affects new notes
+    // Update active voices to enable/disable FM routing dynamically
+    const depth = config.fmDepth ?? 0;
+    this.voiceManager.updateFMEnabledOnActiveVoices(oscNum, enabled, depth);
+    
     console.log(`✅ Updated osc${oscNum}.fmEnabled = ${enabled}`);
   }
 

@@ -21,6 +21,8 @@ export interface Voice {
     panNode: StereoPannerNode;
     envelope: ADSREnvelope;
     oscNum: number; // Which oscillator config this belongs to (1, 2, or 3)
+    fmGain?: GainNode; // FM gain node for real-time FM depth updates (only for osc 2 & 3)
+    isFMModulator?: boolean; // True if this oscillator is being used as FM modulator (not audible output)
   }>;
   isActive: boolean;
   releaseTimeout?: number;

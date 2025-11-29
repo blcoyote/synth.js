@@ -13,6 +13,7 @@ import type { VoiceStateManager, AudioStateManager } from '../../../src/state';
 function createMockVoiceManager(): VoiceManager {
   return {
     updateActiveVoices: vi.fn(),
+    updateFMEnabledOnActiveVoices: vi.fn(),
     playNote: vi.fn(),
     releaseNote: vi.fn(),
     stopAllNotes: vi.fn(),
