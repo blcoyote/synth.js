@@ -1,6 +1,6 @@
 {
   "name": "modular-synthesizer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A learning journey in building a modular synthesizer with reusable components and dynamic effect routing",
   "main": "src/index.ts",
   "type": "module",
