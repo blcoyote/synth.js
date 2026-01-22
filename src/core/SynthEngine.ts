@@ -1,20 +1,20 @@
 /**
  * SynthEngine - Main audio engine coordinator for Synth V2
  * Initializes and manages the core audio system
- * 
+ *
  * Responsibilities:
  * - Initialize AudioEngine
  * - Set up state modules
  * - Coordinate VoiceManager and ParameterManager
  * - Manage audio context lifecycle
- * 
+ *
  * @remarks
  * All dependencies are properly injected for testability.
  * AudioEngine must be initialized before creating VoiceManager.
  */
 
-import { AudioEngine } from "./AudioEngine";
-import { voiceState, audioState, visualizationState, modulationState } from "../state";
+import { AudioEngine } from './AudioEngine';
+import { voiceState, audioState, visualizationState, modulationState } from '../state';
 import { VoiceManager } from './VoiceManager';
 import { ParameterManager } from './ParameterManager';
 import { PresetManager } from './PresetManager';
@@ -53,27 +53,27 @@ export class SynthEngine {
     try {
       // Initialize audio engine
       await this.audioEngine.initialize();
-      
+
       // Create analyser nodes BEFORE VoiceManager (it needs them in constructor)
       const context = this.audioEngine.getContext();
-      
+
       const analyser1 = context.createAnalyser();
       analyser1.fftSize = 2048;
       analyser1.smoothingTimeConstant = 0.9; // More smoothing for stable waveforms
       visualizationState.setAnalyser1(analyser1);
-      
+
       const analyser2 = context.createAnalyser();
       analyser2.fftSize = 2048;
       analyser2.smoothingTimeConstant = 0.9;
       visualizationState.setAnalyser2(analyser2);
-      
+
       const analyser3 = context.createAnalyser();
       analyser3.fftSize = 2048;
       analyser3.smoothingTimeConstant = 0.9;
       visualizationState.setAnalyser3(analyser3);
-      
+
       console.log('📊 Created waveform analyzers for 3 oscillators');
-      
+
       // Initialize oscillator configurations (3 oscillators)
       voiceState.oscillatorConfigs.set(1, {
         enabled: true,
@@ -103,7 +103,7 @@ export class SynthEngine {
       });
 
       console.log(`🎛️ Initialized ${voiceState.oscillatorConfigs.size} oscillator configs`);
-      
+
       // Create master filter (default: lowpass at 20kHz, enabled)
       const masterFilter = context.createBiquadFilter();
       masterFilter.type = 'lowpass';
@@ -114,25 +114,25 @@ export class SynthEngine {
       audioState.filterSettings.cutoff = 20000;
       audioState.filterSettings.resonance = 1.0;
       audioState.filterSettings.enabled = true;
-      
+
       console.log('🎚️ Created master filter (enabled by default)');
-      
+
       // Now create voice manager with initialized audio engine AND analyzers
       // VoiceManager will connect: masterGain -> destination
       // We'll reconnect it to go through filter: masterGain -> filter -> destination
       this.voiceManager = new VoiceManager(this.audioEngine, voiceState);
-      
+
       // Create spectrum analyser (for filter visualization)
       const spectrumAnalyser = context.createAnalyser();
       spectrumAnalyser.fftSize = 8192; // High resolution for frequency visualization
       spectrumAnalyser.smoothingTimeConstant = 0.75;
       visualizationState.setAnalyser(spectrumAnalyser);
-      
+
       // Create effects manager
       this.effectsManager = new EffectsManager(this.audioEngine);
       audioState.setEffectsManager(this.effectsManager);
       console.log('🎛️ Created effects manager');
-      
+
       // Reconnect masterGain through filter -> effects -> analyser
       const masterGainNode = this.voiceManager.getMasterGainNode();
       masterGainNode.disconnect();
@@ -140,54 +140,56 @@ export class SynthEngine {
       masterFilter.connect(this.effectsManager.getInputNode());
       this.effectsManager.getOutputNode().connect(spectrumAnalyser);
       spectrumAnalyser.connect(context.destination);
-      
-      console.log('🔗 Audio chain: oscBuses -> analyzers -> masterGain -> filter -> effects -> spectrumAnalyser -> destination');
+
+      console.log(
+        '🔗 Audio chain: oscBuses -> analyzers -> masterGain -> filter -> effects -> spectrumAnalyser -> destination'
+      );
       console.log('📊 Created spectrum analyser for filter visualization');
-      
+
       // Create parameter manager with dependencies
       this.parameterManager = new ParameterManager(this.voiceManager, voiceState, audioState);
-      
+
       // Create preset manager
       this.presetManager = new PresetManager(voiceState);
-      
+
       // Create LFO manager and start it by default
       this.lfoManager = new LFOManager();
       this.lfoManager.setEnabled(true); // Enable LFO by default
       modulationState.setMultiLFO(this.lfoManager.getLFO());
       console.log('🌊 Created LFO manager (enabled by default)');
-      
+
       // Connect LFO manager to voice manager for voice-level modulation
       this.voiceManager.setLFOManager(this.lfoManager);
       console.log('🔗 Connected LFO manager to voice manager');
-      
+
       // Create Arpeggiator manager with AudioContext for precise timing
       this.arpeggiatorManager = new ArpeggiatorManager(undefined, context);
-      
+
       // Connect arpeggiator to voice manager
       this.arpeggiatorManager.onNote((note) => {
         this.voiceManager?.playNote(note.pitch, note.velocity / 127);
       });
-      
+
       this.arpeggiatorManager.onNoteOff((pitch) => {
         this.voiceManager?.releaseNote(pitch);
       });
-      
+
       console.log('🎹 Created Arpeggiator manager with precise audio timing');
-      
+
       // Create Sequencer manager with AudioContext for precise timing
       this.sequencerManager = new SequencerManager(undefined, context);
-      
+
       // Connect sequencer to voice manager with AudioContext scheduling support
       this.sequencerManager.onNote((pitch: number, velocity: number, time?: number) => {
         this.voiceManager?.playNote(pitch, velocity, time);
       });
-      
+
       this.sequencerManager.onNoteOff((pitch: number, time?: number) => {
         this.voiceManager?.releaseNote(pitch, time);
       });
-      
+
       console.log('🎵 Created Sequencer manager with precise audio timing');
-      
+
       this.isInitialized = true;
       console.log('✅ SynthEngine initialized successfully');
     } catch (error) {
@@ -292,14 +294,16 @@ export class SynthEngine {
    */
   playNote(noteIndex: number, velocity: number = 0.8): void {
     if (!this.voiceManager) return;
-    
+
     const arpEnabled = this.arpeggiatorManager?.isEnabled() || false;
     const seqEnabled = this.sequencerManager?.isEnabled() || false;
     const recording = this.sequencerManager?.getIsRecording() || false;
     const contextState = this.audioEngine.getContext().state;
-    
-    console.log(`🎹 playNote: note=${noteIndex}, arp=${arpEnabled}, seq=${seqEnabled}, rec=${recording}, contextState=${contextState}`);
-    
+
+    console.log(
+      `🎹 playNote: note=${noteIndex}, arp=${arpEnabled}, seq=${seqEnabled}, rec=${recording}, contextState=${contextState}`
+    );
+
     // Priority: Recording > Sequencer > Arpeggiator > Direct
     if (recording) {
       // Recording mode - record note and play it for feedback
@@ -321,9 +325,14 @@ export class SynthEngine {
    */
   releaseNote(noteIndex: number): void {
     if (!this.voiceManager) return;
-    
-    // Priority: Sequencer > Arpeggiator > Direct
-    if (this.sequencerManager?.isEnabled()) {
+
+    const recording = this.sequencerManager?.getIsRecording() || false;
+
+    // Priority: Recording > Sequencer > Arpeggiator > Direct
+    if (recording) {
+      // During recording, release notes directly for immediate feedback
+      this.voiceManager.releaseNote(noteIndex);
+    } else if (this.sequencerManager?.isEnabled()) {
       this.sequencerManager.handleNoteOff(noteIndex);
     } else if (this.arpeggiatorManager?.isEnabled()) {
       this.arpeggiatorManager.handleNoteOff(noteIndex);
@@ -342,6 +351,3 @@ export class SynthEngine {
     console.log('🔌 SynthEngine destroyed');
   }
 }
-
-
-
