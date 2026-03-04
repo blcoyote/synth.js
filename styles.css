@@ -2008,3 +2008,153 @@ section p {
   margin: 0;
   line-height: 1.4;
 }
+
+/* ==================== RESPONSIVE / MOBILE ==================== */
+
+/* Tablets and large phones (≤ 768 px) */
+@media (max-width: 768px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    .synth-app {
+        border-width: 3px;
+        padding: 0.75rem;
+    }
+
+    .synth-title {
+        font-size: 1.8rem;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+        letter-spacing: 2px;
+        padding: 0.75rem;
+    }
+
+    /* Adequate touch target height for buttons */
+    button {
+        min-height: 44px;
+    }
+
+    button.small {
+        min-height: 36px;
+    }
+
+    button.tiny {
+        min-height: 32px;
+    }
+
+    /* Keyboard: smaller keys for touch screens */
+    .keyboard {
+        min-width: unset;
+    }
+
+    .key {
+        height: 100px;
+    }
+
+    .white-key {
+        width: 36px;
+    }
+
+    .black-key {
+        width: 22px;
+        height: 65px;
+        margin: 0 -11px;
+    }
+
+    .key-label.note-name {
+        font-size: 0.7rem;
+    }
+
+    .key-label.computer-key {
+        font-size: 0.55rem;
+    }
+
+    /* Looser mode / transport buttons */
+    .mode-btn {
+        padding: 0.75rem 1rem;
+    }
+
+    .transport-btn {
+        padding: 0.75rem 1rem;
+    }
+
+    .app-header {
+        padding: 1rem 0.75rem 0.75rem;
+    }
+
+    .effects-panel {
+        padding: 12px;
+    }
+}
+
+/* Small phones (≤ 480 px) */
+@media (max-width: 480px) {
+    body {
+        padding: 0.25rem;
+    }
+
+    .synth-app {
+        border-width: 2px;
+        border-radius: 4px;
+        padding: 0.5rem;
+    }
+
+    .synth-title {
+        font-size: 1.3rem;
+        letter-spacing: -0.01em;
+    }
+
+    h1 {
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+        padding: 0.5rem;
+    }
+
+    /* Even smaller keyboard keys */
+    .key {
+        height: 80px;
+    }
+
+    .white-key {
+        width: 28px;
+    }
+
+    .black-key {
+        width: 18px;
+        height: 52px;
+        margin: 0 -9px;
+    }
+
+    .key-label.note-name {
+        font-size: 0.6rem;
+    }
+
+    /* Hide computer key hints on phones — no physical keyboard likely */
+    .key-label.computer-key {
+        display: none;
+    }
+
+    /* Stack LFO targets to single column */
+    .lfo-targets {
+        grid-template-columns: 1fr;
+    }
+
+    /* Waveform buttons: 2 per row on very small screens */
+    .waveform-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Prevent preset menu overflow on very narrow screens */
+    .preset-floating-menu {
+        width: calc(100vw - 2rem);
+        right: -0.5rem;
+    }
+
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.75rem;
+    }
+}
