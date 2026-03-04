@@ -54,9 +54,7 @@ export function LFOPanel() {
   const handleModeChange = useCallback((newMode: LFOMode) => {
     if (!lfoManager) return;
     setMode(newMode);
-    // In trigger mode, LFO starts on note press (handled in VoiceManager)
-    // In free mode, LFO runs continuously
-    // Note: Enable state is now controlled by CollapsiblePanel
+    lfoManager.setMode(newMode);
   }, [lfoManager]);
 
   // Handle rate change
@@ -152,6 +150,7 @@ export function LFOPanel() {
           decay={decay}
           sustain={sustain}
           release={release}
+          mode={mode}
         />
       </div>
 

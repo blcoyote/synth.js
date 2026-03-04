@@ -19,10 +19,13 @@ export interface LFOTargetConfig {
   baseline?: number;
 }
 
+export type LFOMode = 'free' | 'trigger';
+
 export class LFOManager {
   private lfo: MultiTargetLFO;
   private targets: Map<string, LFOTargetConfig> = new Map();
   private enabled: boolean = false;
+  private mode: LFOMode = 'free';
 
   constructor() {
     // Create LFO with default settings
@@ -167,5 +170,31 @@ export class LFOManager {
    */
   getLFO(): MultiTargetLFO {
     return this.lfo;
+  }
+
+  /**
+   * Set LFO mode (free-running or trigger)
+   * In trigger mode the LFO phase resets on every note-on.
+   */
+  setMode(mode: LFOMode): void {
+    this.mode = mode;
+  }
+
+  /**
+   * Get current LFO mode
+   */
+  getMode(): LFOMode {
+    return this.mode;
+  }
+
+  /**
+   * Retrigger the LFO (reset phase to 0).
+   * Only has an effect when mode is 'trigger' and the LFO is enabled.
+   * Called by VoiceManager on each note-on event.
+   */
+  retrigger(): void {
+    if (this.mode === 'trigger' && this.enabled) {
+      this.lfo.retrigger();
+    }
   }
 }
