@@ -519,6 +519,112 @@ describe('LFOManager', () => {
     });
   });
 
+  describe('Amplitude Envelope', () => {
+    it('should set envelope attack and propagate to LFO', () => {
+      const lfo = lfoManager.getLFO();
+      const setEnvelopeParamsSpy = vi.spyOn(lfo, 'setEnvelopeParams');
+
+      lfoManager.setEnvelopeAttack(0.5);
+
+      expect(setEnvelopeParamsSpy).toHaveBeenCalledWith(0.5, 0, 1, 0);
+    });
+
+    it('should set envelope decay and propagate to LFO', () => {
+      const lfo = lfoManager.getLFO();
+      const setEnvelopeParamsSpy = vi.spyOn(lfo, 'setEnvelopeParams');
+
+      lfoManager.setEnvelopeDecay(0.3);
+
+      expect(setEnvelopeParamsSpy).toHaveBeenCalledWith(0, 0.3, 1, 0);
+    });
+
+    it('should set envelope sustain and propagate to LFO', () => {
+      const lfo = lfoManager.getLFO();
+      const setEnvelopeParamsSpy = vi.spyOn(lfo, 'setEnvelopeParams');
+
+      lfoManager.setEnvelopeSustain(0.7);
+
+      expect(setEnvelopeParamsSpy).toHaveBeenCalledWith(0, 0, 0.7, 0);
+    });
+
+    it('should set envelope release and propagate to LFO', () => {
+      const lfo = lfoManager.getLFO();
+      const setEnvelopeParamsSpy = vi.spyOn(lfo, 'setEnvelopeParams');
+
+      lfoManager.setEnvelopeRelease(1.0);
+
+      expect(setEnvelopeParamsSpy).toHaveBeenCalledWith(0, 0, 1, 1.0);
+    });
+
+    it('should accumulate all ADSR values correctly', () => {
+      const lfo = lfoManager.getLFO();
+      const setEnvelopeParamsSpy = vi.spyOn(lfo, 'setEnvelopeParams');
+
+      lfoManager.setEnvelopeAttack(0.1);
+      lfoManager.setEnvelopeDecay(0.2);
+      lfoManager.setEnvelopeSustain(0.8);
+      lfoManager.setEnvelopeRelease(0.5);
+
+      // Last call should have all four values
+      expect(setEnvelopeParamsSpy).toHaveBeenLastCalledWith(0.1, 0.2, 0.8, 0.5);
+    });
+
+    it('should trigger amplitude envelope on retrigger in trigger mode', () => {
+      const lfo = lfoManager.getLFO();
+      const triggerEnvSpy = vi.spyOn(lfo, 'triggerAmplitudeEnvelope');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('trigger');
+      lfoManager.retrigger();
+
+      expect(triggerEnvSpy).toHaveBeenCalled();
+    });
+
+    it('should not trigger amplitude envelope on retrigger in free mode', () => {
+      const lfo = lfoManager.getLFO();
+      const triggerEnvSpy = vi.spyOn(lfo, 'triggerAmplitudeEnvelope');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('free');
+      lfoManager.retrigger();
+
+      expect(triggerEnvSpy).not.toHaveBeenCalled();
+    });
+
+    it('should call releaseAmplitudeEnvelope on triggerRelease when in trigger mode', () => {
+      const lfo = lfoManager.getLFO();
+      const releaseEnvSpy = vi.spyOn(lfo, 'releaseAmplitudeEnvelope');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('trigger');
+      lfoManager.triggerRelease();
+
+      expect(releaseEnvSpy).toHaveBeenCalled();
+    });
+
+    it('should not call releaseAmplitudeEnvelope on triggerRelease when in free mode', () => {
+      const lfo = lfoManager.getLFO();
+      const releaseEnvSpy = vi.spyOn(lfo, 'releaseAmplitudeEnvelope');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('free');
+      lfoManager.triggerRelease();
+
+      expect(releaseEnvSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not call releaseAmplitudeEnvelope when LFO is disabled', () => {
+      const lfo = lfoManager.getLFO();
+      const releaseEnvSpy = vi.spyOn(lfo, 'releaseAmplitudeEnvelope');
+
+      lfoManager.setEnabled(false);
+      lfoManager.setMode('trigger');
+      lfoManager.triggerRelease();
+
+      expect(releaseEnvSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle rapid enable/disable toggles', () => {
       for (let i = 0; i < 10; i++) {

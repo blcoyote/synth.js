@@ -452,6 +452,9 @@ export class VoiceManager {
       envelope.triggerRelease(scheduleTime);
     });
 
+    // Trigger LFO amplitude envelope release (trigger mode only)
+    this.lfoManager?.triggerRelease();
+
     // Mark as inactive
     voice.isActive = false;
 
@@ -646,6 +649,43 @@ export class VoiceManager {
    */
   getActiveVoiceCount(): number {
     return this.voiceState.activeVoices.size;
+  }
+
+  /**
+   * Update the LFO modulation depth for a given target type across all active voices.
+   * @param targetType - 'pitch', 'volume', or 'pan'
+   * @param depthPercent - Depth as a percentage (0-100)
+   */
+  updateLFOTargetDepth(targetType: 'pitch' | 'volume' | 'pan', depthPercent: number): void {
+    if (!this.lfoManager) return;
+
+    this.voiceState.activeVoices.forEach((voice, noteIndex) => {
+      voice.oscillators.forEach((oscData) => {
+        const targetName = `${targetType}_${noteIndex}_${oscData.oscNum}`;
+        if (!this.lfoManager!.hasTarget(targetName)) return;
+
+        let depthValue: number = 0;
+        switch (targetType) {
+          case 'pitch': {
+            const oscNode = oscData.oscillator.getOscillatorNode();
+            if (!oscNode) return;
+            const baseline = oscNode.frequency.value;
+            depthValue = (depthPercent / 100) * baseline * 0.06; // ~100 cents at 100%
+            break;
+          }
+          case 'volume': {
+            const gainNode = oscData.oscillator.getOutputNode() as GainNode;
+            const baseline = gainNode.gain.value;
+            depthValue = (depthPercent / 100) * baseline;
+            break;
+          }
+          case 'pan':
+            depthValue = (depthPercent / 100) * 1.0; // Max ±1.0
+            break;
+        }
+        this.lfoManager!.setTargetDepth(targetName, depthValue);
+      });
+    });
   }
 }
 

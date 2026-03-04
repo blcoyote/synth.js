@@ -32,8 +32,15 @@ export class MultiTargetLFO {
   private enabled: boolean = false;
   private targets: Map<string, LFOTarget> = new Map();
   private gainNodes: Map<string, GainNode> = new Map(); // One gain per target for independent depth
+  private amplitudeGain: GainNode; // Master amplitude envelope control
   private randomInterval: number | null = null;
   private randomValues: Map<string, number> = new Map(); // Store random values per target
+
+  // ADSR amplitude envelope parameters
+  private envelopeAttack: number = 0;
+  private envelopeDecay: number = 0;
+  private envelopeSustain: number = 1;
+  private envelopeRelease: number = 0;
   
   // Precise timing for random LFO
   private nextRandomTime: number = 0;
@@ -44,12 +51,24 @@ export class MultiTargetLFO {
     this.engine = AudioEngine.getInstance();
     this.frequency = config.frequency ?? 5.0;  // 5 Hz default for vibrato
     this.waveform = config.waveform ?? 'sine';
+    // Amplitude envelope gain node – initialized to 1.0 (transparent / full depth)
+    this.amplitudeGain = this.engine.createGain(1.0);
   }
 
   /**
    * Add a modulation target
    */
   public addTarget(name: string, param: AudioParam, depth: number, baseline?: number): void {
+    // Remove any existing target with the same name to prevent dangling connections
+    if (this.targets.has(name)) {
+      const existingGain = this.gainNodes.get(name);
+      if (existingGain) {
+        existingGain.disconnect();
+        this.gainNodes.delete(name);
+      }
+      this.targets.delete(name);
+    }
+
     // Store baseline value (current value if not specified)
     const baselineValue = baseline ?? param.value;
 
@@ -64,11 +83,10 @@ export class MultiTargetLFO {
       baseline: baselineValue,
     });
 
-    // If LFO is already running, connect this new target
-    if (this.enabled && this.oscillator) {
-      this.oscillator.connect(gainNode);
-      gainNode.connect(param);
-    }
+    // Always connect through amplitude gain: amplitudeGain -> gainNode -> param
+    // When the oscillator is running it feeds into amplitudeGain, which drives all targets.
+    this.amplitudeGain.connect(gainNode);
+    gainNode.connect(param);
   }
 
   /**
@@ -182,14 +200,9 @@ export class MultiTargetLFO {
     this.oscillator.frequency.value = this.frequency;
     this.oscillator.type = this.waveform === 'random' ? 'sine' : this.waveform;
 
-    // Connect oscillator to all target gain nodes
-    this.gainNodes.forEach((gainNode, name) => {
-      this.oscillator!.connect(gainNode);
-      const target = this.targets.get(name);
-      if (target) {
-        gainNode.connect(target.param);
-      }
-    });
+    // Connect oscillator into the amplitude gain node.
+    // amplitudeGain is already wired to all per-target gain nodes (via addTarget).
+    this.oscillator.connect(this.amplitudeGain);
 
     this.oscillator.start();
   }
@@ -230,9 +243,12 @@ export class MultiTargetLFO {
   private scheduleRandomUpdate(time: number): void {
     const updateInterval = 1.0 / this.frequency; // Transition time
     
+    // Scale random depth by current amplitude envelope value
+    const amplitudeMultiplier = this.amplitudeGain.gain.value;
+
     // Generate independent random values for each target
     this.targets.forEach((target, name) => {
-      const randomValue = (Math.random() * 2 - 1) * target.depth; // -depth to +depth
+      const randomValue = (Math.random() * 2 - 1) * target.depth * amplitudeMultiplier; // -depth to +depth
       const newValue = target.baseline + randomValue;
       
       // Schedule smooth transition to new random value at exact time
@@ -320,11 +336,72 @@ export class MultiTargetLFO {
   }
 
   /**
+   * Set ADSR parameters for the LFO amplitude envelope.
+   * The envelope shapes how the LFO depth evolves over the course of a note.
+   * It is triggered via triggerAmplitudeEnvelope() (typically on note-on in trigger mode).
+   */
+  public setEnvelopeParams(attack: number, decay: number, sustain: number, release: number): void {
+    this.envelopeAttack = attack;
+    this.envelopeDecay = decay;
+    this.envelopeSustain = sustain;
+    this.envelopeRelease = release;
+  }
+
+  /**
+   * Trigger the amplitude envelope (attack → decay → sustain).
+   * Resets and re-applies ADSR automation to the amplitude gain node.
+   */
+  public triggerAmplitudeEnvelope(): void {
+    const now = this.engine.getCurrentTime();
+    const gain = this.amplitudeGain.gain;
+
+    gain.cancelScheduledValues(now);
+
+    if (this.envelopeAttack > 0) {
+      // Fade in from 0 over the attack period
+      gain.setValueAtTime(0, now);
+      gain.linearRampToValueAtTime(1, now + this.envelopeAttack);
+    } else {
+      // Instant full depth (no attack)
+      gain.setValueAtTime(1, now);
+    }
+
+    if (this.envelopeDecay > 0) {
+      gain.linearRampToValueAtTime(this.envelopeSustain, now + this.envelopeAttack + this.envelopeDecay);
+    } else if (this.envelopeSustain < 1) {
+      // Instant decay to sustain level (no decay time)
+      gain.setValueAtTime(this.envelopeSustain, now + this.envelopeAttack);
+    }
+  }
+
+  /**
+   * Release the amplitude envelope (release phase).
+   * Call on note-off in trigger mode to fade the LFO amplitude out.
+   */
+  public releaseAmplitudeEnvelope(): void {
+    const now = this.engine.getCurrentTime();
+    const gain = this.amplitudeGain.gain;
+
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(gain.value, now);
+
+    if (this.envelopeRelease > 0) {
+      gain.linearRampToValueAtTime(0, now + this.envelopeRelease);
+    } else {
+      // Instant cutoff (no release)
+      gain.setValueAtTime(0, now);
+    }
+  }
+
+  /**
    * Cleanup
    */
   public dispose(): void {
     this.stop();
     
+    // Disconnect amplitude gain
+    this.amplitudeGain.disconnect();
+
     // Disconnect all gain nodes
     this.gainNodes.forEach(gainNode => {
       gainNode.disconnect();

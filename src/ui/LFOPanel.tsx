@@ -73,8 +73,22 @@ export function LFOPanel() {
     if (targets.filter) {
       lfoManager.setTargetDepth('filter', depthValue * 5000); // Max 5000 Hz for filter
     }
-    // Note: Pitch, volume, pan depths would be updated here when implemented
-  }, [lfoManager, targets.filter]);
+    // Update pitch, volume, pan depths for all active voices
+    try {
+      const voiceManager = synthEngine.getVoiceManager();
+      if (targets.pitch) {
+        voiceManager.updateLFOTargetDepth('pitch', value);
+      }
+      if (targets.volume) {
+        voiceManager.updateLFOTargetDepth('volume', value);
+      }
+      if (targets.pan) {
+        voiceManager.updateLFOTargetDepth('pan', value);
+      }
+    } catch {
+      // Voice manager not initialized yet
+    }
+  }, [lfoManager, synthEngine, targets]);
 
   // Handle waveform change
   const handleWaveformChange = useCallback((newWaveform: LFOWaveform) => {
@@ -117,26 +131,26 @@ export function LFOPanel() {
   const handleAttackChange = useCallback((value: number) => {
     const seconds = value / 1000;
     setAttack(seconds);
-    // TODO: Apply envelope to LFO amplitude
-  }, []);
+    if (lfoManager) lfoManager.setEnvelopeAttack(seconds);
+  }, [lfoManager]);
 
   const handleDecayChange = useCallback((value: number) => {
     const seconds = value / 1000;
     setDecay(seconds);
-    // TODO: Apply envelope to LFO amplitude
-  }, []);
+    if (lfoManager) lfoManager.setEnvelopeDecay(seconds);
+  }, [lfoManager]);
 
   const handleSustainChange = useCallback((value: number) => {
     const level = value / 100;
     setSustain(level);
-    // TODO: Apply envelope to LFO amplitude
-  }, []);
+    if (lfoManager) lfoManager.setEnvelopeSustain(level);
+  }, [lfoManager]);
 
   const handleReleaseChange = useCallback((value: number) => {
     const seconds = value / 1000;
     setRelease(seconds);
-    // TODO: Apply envelope to LFO amplitude
-  }, []);
+    if (lfoManager) lfoManager.setEnvelopeRelease(seconds);
+  }, [lfoManager]);
 
   return (
     <div className="lfo-panel">
