@@ -27,6 +27,12 @@ export class LFOManager {
   private enabled: boolean = false;
   private mode: LFOMode = 'free';
 
+  // Amplitude envelope parameters
+  private envelopeAttack: number = 0;
+  private envelopeDecay: number = 0;
+  private envelopeSustain: number = 1;
+  private envelopeRelease: number = 0;
+
   constructor() {
     // Create LFO with default settings
     this.lfo = new MultiTargetLFO({
@@ -188,6 +194,48 @@ export class LFOManager {
   }
 
   /**
+   * Set attack time for the LFO amplitude envelope (seconds)
+   */
+  setEnvelopeAttack(attack: number): void {
+    this.envelopeAttack = attack;
+    this.lfo.setEnvelopeParams(this.envelopeAttack, this.envelopeDecay, this.envelopeSustain, this.envelopeRelease);
+  }
+
+  /**
+   * Set decay time for the LFO amplitude envelope (seconds)
+   */
+  setEnvelopeDecay(decay: number): void {
+    this.envelopeDecay = decay;
+    this.lfo.setEnvelopeParams(this.envelopeAttack, this.envelopeDecay, this.envelopeSustain, this.envelopeRelease);
+  }
+
+  /**
+   * Set sustain level for the LFO amplitude envelope (0–1)
+   */
+  setEnvelopeSustain(sustain: number): void {
+    this.envelopeSustain = sustain;
+    this.lfo.setEnvelopeParams(this.envelopeAttack, this.envelopeDecay, this.envelopeSustain, this.envelopeRelease);
+  }
+
+  /**
+   * Set release time for the LFO amplitude envelope (seconds)
+   */
+  setEnvelopeRelease(release: number): void {
+    this.envelopeRelease = release;
+    this.lfo.setEnvelopeParams(this.envelopeAttack, this.envelopeDecay, this.envelopeSustain, this.envelopeRelease);
+  }
+
+  /**
+   * Trigger LFO amplitude envelope release phase.
+   * Call on note-off when mode is 'trigger'.
+   */
+  triggerRelease(): void {
+    if (this.mode === 'trigger' && this.enabled) {
+      this.lfo.releaseAmplitudeEnvelope();
+    }
+  }
+
+  /**
    * Retrigger the LFO (reset phase to 0).
    * Only has an effect when mode is 'trigger' and the LFO is enabled.
    * Called by VoiceManager on each note-on event.
@@ -195,6 +243,7 @@ export class LFOManager {
   retrigger(): void {
     if (this.mode === 'trigger' && this.enabled) {
       this.lfo.retrigger();
+      this.lfo.triggerAmplitudeEnvelope();
     }
   }
 }
