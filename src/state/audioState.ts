@@ -12,6 +12,7 @@ const DEFAULT_FILTER_CUTOFF = 2000;
 export class AudioStateManager {
   // Audio routing (V2)
   private _effectsManager: EffectsManager | null = null;
+  private _masterOutputNode: AudioNode | null = null;
   
   // Filter instances
   private _masterFilter: BiquadFilterNode | Lowpass12Filter | Lowpass24Filter | null = null;
@@ -57,6 +58,14 @@ export class AudioStateManager {
 
   setEffectsManager(manager: EffectsManager) {
     this._effectsManager = manager;
+  }
+
+  getMasterOutputNodeOrNull(): AudioNode | null {
+    return this._masterOutputNode;
+  }
+
+  setMasterOutputNode(node: AudioNode) {
+    this._masterOutputNode = node;
   }
 }
 

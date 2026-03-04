@@ -109,14 +109,14 @@ export class SynthEngine {
 
       console.log(`🎛️ Initialized ${voiceState.oscillatorConfigs.size} oscillator configs`);
 
-      // Create master filter (default: lowpass at 20kHz, enabled)
+      // Create master filter (default: lowpass at 16kHz, enabled)
       const masterFilter = context.createBiquadFilter();
       masterFilter.type = 'lowpass';
-      masterFilter.frequency.value = 20000; // Wide open by default
+      masterFilter.frequency.value = 16000; // Audible shaping while still mostly open
       masterFilter.Q.value = 1.0;
       audioState.setMasterFilter(masterFilter);
       audioState.filterSettings.type = 'lowpass';
-      audioState.filterSettings.cutoff = 20000;
+      audioState.filterSettings.cutoff = 16000;
       audioState.filterSettings.resonance = 1.0;
       audioState.filterSettings.enabled = true;
 
@@ -129,7 +129,7 @@ export class SynthEngine {
 
       // Create spectrum analyser (for filter visualization)
       const spectrumAnalyser = context.createAnalyser();
-      spectrumAnalyser.fftSize = 8192; // High resolution for frequency visualization
+      spectrumAnalyser.fftSize = 4096; // Balanced resolution and runtime cost
       spectrumAnalyser.smoothingTimeConstant = 0.75;
       visualizationState.setAnalyser(spectrumAnalyser);
 
@@ -138,16 +138,32 @@ export class SynthEngine {
       audioState.setEffectsManager(this.effectsManager);
       console.log('🎛️ Created effects manager');
 
-      // Reconnect masterGain through filter -> effects -> analyser
+      // Create master safety limiter to prevent clipping at high polyphony
+      const masterLimiter = context.createDynamicsCompressor();
+      masterLimiter.threshold.value = -6;
+      masterLimiter.ratio.value = 20;
+      masterLimiter.attack.value = 0.001;
+      masterLimiter.release.value = 0.1;
+      masterLimiter.knee.value = 0;
+      audioState.setMasterOutputNode(masterLimiter);
+
+      // Makeup gain: compensates for the -6dB headroom budget, restoring perceived loudness
+      // Limiter caps peaks at -6dB → +6dB (×2.0) brings the ceiling back to 0dBFS
+      const makeupGain = context.createGain();
+      makeupGain.gain.value = 2.0; // +6dB to match MASTER_HEADROOM_GAIN (-6dB)
+
+      // Reconnect masterGain through effects -> filter -> analyser
       const masterGainNode = this.voiceManager.getMasterGainNode();
       masterGainNode.disconnect();
-      masterGainNode.connect(masterFilter);
-      masterFilter.connect(this.effectsManager.getInputNode());
-      this.effectsManager.getOutputNode().connect(spectrumAnalyser);
-      spectrumAnalyser.connect(context.destination);
+      masterGainNode.connect(this.effectsManager.getInputNode());
+      this.effectsManager.getOutputNode().connect(masterFilter);
+      masterFilter.connect(spectrumAnalyser);
+      spectrumAnalyser.connect(masterLimiter);
+      masterLimiter.connect(makeupGain);
+      makeupGain.connect(context.destination);
 
       console.log(
-        '🔗 Audio chain: oscBuses -> analyzers -> masterGain -> filter -> effects -> spectrumAnalyser -> destination'
+        '🔗 Audio chain: oscBuses -> analyzers -> masterGain -> effects -> filter -> spectrumAnalyser -> limiter -> makeupGain -> destination'
       );
       console.log('📊 Created spectrum analyser for filter visualization');
 

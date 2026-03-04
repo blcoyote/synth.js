@@ -37,11 +37,9 @@ export function SequencerPanel() {
   const [tempo, setTempo] = useState(120);
   const [swing, setSwing] = useState(0);
   const [selectedStep, setSelectedStep] = useState(0);
-  const [visualizationEnabled, setVisualizationEnabled] = useState(true); // Toggle for step visualization
-  const playheadRef = useCallback((node: HTMLDivElement | null) => {
+  const stepGridRef = useCallback((node: HTMLDivElement | null) => {
     if (seqManager) {
-      // Give sequencer direct access to playhead DOM element (no React re-renders)
-      seqManager.setPlayheadElement(node);
+      seqManager.setStepGridElement(node);
     }
   }, [seqManager]);
   
@@ -247,7 +245,7 @@ export function SequencerPanel() {
     <div className="seq-panel">
       {/* Enable/Disable Toggle */}
       <div className="seq-enable-section">
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <div className="enable-section-center">
           <Switch
             checked={enabled}
             onChange={handleToggle}
@@ -257,8 +255,8 @@ export function SequencerPanel() {
           />
         </div>
         {enabled && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <p className="control-hint" style={{ textAlign: 'center', margin: 0 }}>
+          <div className="enable-section-info">
+            <p className="control-hint control-hint--center">
               Play a root note on keyboard to start sequencing
             </p>
             <Switch
@@ -266,12 +264,6 @@ export function SequencerPanel() {
               onChange={handleNoteHoldToggle}
               disabled={!seqManager}
               label="Note Hold (Latch Mode)"
-            />
-            <Switch
-              checked={visualizationEnabled}
-              onChange={() => setVisualizationEnabled(!visualizationEnabled)}
-              disabled={!seqManager}
-              label="Step Visualization (disable for better timing)"
             />
           </div>
         )}
@@ -283,7 +275,6 @@ export function SequencerPanel() {
           className={`transport-btn ${isRecording ? 'danger' : 'info'}`}
           onClick={handleRecordToggle}
           disabled={!seqManager}
-          style={{ fontWeight: isRecording ? 700 : 400 }}
         >
           {isRecording ? 'Stop Recording' : 'Record'}
         </button>
@@ -308,10 +299,10 @@ export function SequencerPanel() {
       {/* Recording Status */}
       {isRecording && (
         <div className="recording-status">
-          <span style={{ color: '#ff4444', fontWeight: 700 }}>
+          <span className="recording-label">
             RECORDING - Step {recordStep + 1}/{stepCount}
           </span>
-          <p className="control-hint" style={{ margin: '0.25rem 0 0 0' }}>
+          <p className="control-hint">
             Play notes on keyboard to record, or press "Add Rest" for empty steps
           </p>
         </div>
@@ -335,34 +326,8 @@ export function SequencerPanel() {
       </div>
 
       {/* Step Grid */}
-      <div className="step-grid-container" style={{ position: 'relative' }}>
-        {/* Moving playhead overlay - no React re-renders, just CSS transform */}
-        {visualizationEnabled && (
-          <div
-            ref={playheadRef}
-            className="playhead-overlay"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: `${100 / stepCount}%`,
-              height: '100%',
-              pointerEvents: 'none',
-              transition: 'transform 0.05s linear',
-              zIndex: 1,
-            }}
-          >
-            <div style={{
-              width: '100%',
-              height: '100%',
-              background: 'rgba(76, 175, 80, 0.3)',
-              border: '2px solid #4caf50',
-              boxSizing: 'border-box',
-            }}></div>
-          </div>
-        )}
-        
-        <div className="step-grid" style={{ gridTemplateColumns: `repeat(${Math.min(stepCount, 16)}, 1fr)` }}>
+      <div className="step-grid-container">
+        <div ref={stepGridRef} className="step-grid" style={{ gridTemplateColumns: `repeat(${Math.min(stepCount, 16)}, 1fr)` }}>
           {Array.from({ length: stepCount }, (_, i) => {
             const step = seqManager?.getStep(i);
             const isActive = step?.gate || false;
@@ -386,7 +351,7 @@ export function SequencerPanel() {
       {/* Mode and Controls - Grouped together */}
       <div className="control-group">
         <div className="controls-row">
-          <div style={{ flex: 1 }}>
+          <div className="controls-row-item">
             <label className="control-label">Mode</label>
             <div className="mode-buttons">
               {SEQUENCER_MODES.map((m) => (

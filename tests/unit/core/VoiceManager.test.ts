@@ -117,7 +117,14 @@ function createMockAudioEngine(): AudioEngine {
   const mockContext = {
     createGain: vi.fn(() => {
       const node = {
-        gain: { value: 0 },
+        gain: {
+          value: 0,
+          setTargetAtTime: vi.fn(),
+          setValueAtTime: vi.fn(),
+          linearRampToValueAtTime: vi.fn(),
+          exponentialRampToValueAtTime: vi.fn(),
+          cancelScheduledValues: vi.fn(),
+        },
         connect: vi.fn(),
         disconnect: vi.fn(),
       };

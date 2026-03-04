@@ -33,7 +33,8 @@ for (let midi = 21; midi <= 108; midi++) {
   NOTE_FREQUENCIES[midi] = 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-const DEFAULT_MASTER_VOLUME = 0.3; // 30% to prevent clipping with multiple oscillators
+const DEFAULT_MASTER_VOLUME = 0.5; // Keep UI and engine defaults in sync
+const MASTER_HEADROOM_GAIN = 0.5; // -6dB headroom target on the master bus
 
 export class VoiceManager {
   private audioEngine: AudioEngine;
@@ -48,6 +49,7 @@ export class VoiceManager {
     volume: boolean;
     pan: boolean;
   } = { pitch: false, volume: false, pan: false };
+  private userMasterVolume: number = DEFAULT_MASTER_VOLUME;
 
   /**
    * Creates a new VoiceManager
@@ -81,6 +83,23 @@ export class VoiceManager {
     visualizationState.analyser3.connect(this.masterGain);
     
     console.log('🎵 VoiceManager created with oscillator buses and analyzers');
+  }
+
+  /**
+   * Set user-facing master volume (0..1).
+   * Final gain is this value multiplied by polyphony compensation.
+   */
+  setMasterVolume(volume: number): void {
+    this.userMasterVolume = Math.max(0, Math.min(1, volume));
+    this.applyMasterGain();
+  }
+
+  private applyMasterGain(): void {
+    const context = this.audioEngine.getContext();
+    const activeVoices = Math.max(1, this.voiceState.activeVoices.size);
+    const polyphonyCompensation = 1 / activeVoices;
+    const targetGain = this.userMasterVolume * MASTER_HEADROOM_GAIN * polyphonyCompensation;
+    this.masterGain.gain.setTargetAtTime(targetGain, context.currentTime, 0.01);
   }
 
   /**
@@ -218,24 +237,36 @@ export class VoiceManager {
     
     // If note is already playing, clean it up SYNCHRONOUSLY to allow instant retrigger
     if (this.voiceState.activeVoices.has(noteIndex)) {
-      const existingVoice = this.voiceState.activeVoices.get(noteIndex);
+      const existingVoice = this.voiceState.activeVoices.get(noteIndex)!;
       
       // Cancel any pending cleanup timeout
-      if (existingVoice?.releaseTimeout) {
+      if (existingVoice.releaseTimeout) {
         clearTimeout(existingVoice.releaseTimeout);
       }
       
       // Stop oscillators at the scheduled time (sample-accurate)
-      existingVoice?.oscillators.forEach(({ oscillator }) => {
+      existingVoice.oscillators.forEach(({ oscillator }) => {
         try {
           oscillator.stop(startTime);
         } catch (e) {
           // Ignore if already stopped
         }
       });
+
+      // Schedule graph cleanup after the old oscillators have stopped
+      const cleanupDelay = Math.max(0, (startTime - context.currentTime) * 1000) + 50;
+      setTimeout(() => {
+        existingVoice.oscillators.forEach(({ oscillator, panNode, envelope, fmGain }) => {
+          oscillator.disconnect();
+          panNode.disconnect();
+          envelope.disconnect();
+          if (fmGain) fmGain.disconnect();
+        });
+      }, cleanupDelay);
       
       // Remove from active voices immediately
       this.voiceState.activeVoices.delete(noteIndex);
+      this.applyMasterGain();
     }
 
     const baseFrequency = NOTE_FREQUENCIES[noteIndex];
@@ -319,6 +350,7 @@ export class VoiceManager {
     
     // Store the voice
     this.voiceState.activeVoices.set(noteIndex, voice);
+    this.applyMasterGain();
 
     console.log(`🎹 Playing note ${noteIndex} (${baseFrequency.toFixed(2)} Hz) with ${voice.oscillators.length} oscillator(s)`);
   }
@@ -450,7 +482,8 @@ export class VoiceManager {
     this.removeLFOTargetsForVoice(voice, noteIndex);
 
     // Stop and disconnect all oscillators
-    voice.oscillators.forEach(({ oscillator, panNode, envelope }) => {
+    voice.oscillators.forEach((oscData) => {
+      const { oscillator, panNode, envelope, fmGain } = oscData;
       try {
         oscillator.stop();
       } catch (e) {
@@ -459,10 +492,14 @@ export class VoiceManager {
       oscillator.disconnect();
       panNode.disconnect();
       envelope.disconnect();
+      if (fmGain) {
+        fmGain.disconnect();
+      }
     });
 
     // Remove from active voices
     this.voiceState.activeVoices.delete(noteIndex);
+    this.applyMasterGain();
     
     console.log(`🧹 Cleaned up note ${noteIndex}`);
   }
@@ -496,6 +533,7 @@ export class VoiceManager {
     });
     
     this.voiceState.clearActiveVoices();
+    this.applyMasterGain();
   }
 
   /**
