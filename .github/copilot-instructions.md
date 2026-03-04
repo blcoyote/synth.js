@@ -28,6 +28,23 @@ This is a **polyphonic synthesizer** built with React/TypeScript and Web Audio A
 - Use dependency injection: pass `AudioEngine` to constructors, don't import globally
 - All audio components implement standard interface: `connect()`, `disconnect()`, `setParameter()`
 
+**Mounting vs. Initialization (CRITICAL):**
+- React UI components mount **immediately** when the app loads — before `SynthEngine.initialize()` is called
+- `SynthEngine.initialize()` is deferred until the user dismisses the init dialog (required for AudioContext)
+- **Consequence:** any manager created inside `initialize()` will be `null` when hooks/components first run
+- **Rule:** managers that React components read must be created in the **`SynthEngine` constructor**, not in `initialize()`
+- Their expensive async setup (e.g. `requestMIDIAccess`, Web Audio context) still happens inside `initialize()`, but the object itself must exist earlier
+- Expose async-completion via a callback (e.g. `onInitialized`) so hooks can update state reactively:
+  ```typescript
+  // Hook pattern for deferred initialization
+  useEffect(() => {
+    const manager = engine.getMyManager(); // always non-null (created in constructor)
+    manager.onInitialized((ready) => {
+      setState(prev => ({ ...prev, isReady: ready }));
+    });
+  }, [engine]);
+  ```
+
 **Testing:**
 - Mock Web Audio API (see `tests/setup.ts`)
 - Test OUR logic, not browser APIs

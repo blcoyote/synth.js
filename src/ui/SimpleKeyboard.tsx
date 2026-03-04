@@ -73,6 +73,8 @@ export function SimpleKeyboard({ startOctave = 3, octaves = 2, extraKeys = 0 }: 
             onMouseDown={() => handleNoteOn(key.noteIndex)}
             onMouseUp={() => handleNoteOff(key.noteIndex)}
             onMouseLeave={() => handleNoteOff(key.noteIndex)}
+            onTouchStart={(e) => { e.preventDefault(); handleNoteOn(key.noteIndex); }}
+            onTouchEnd={(e) => { e.preventDefault(); handleNoteOff(key.noteIndex); }}
           >
             <span className="key-label computer-key">{key.keyLabel || '\u00A0'}</span>
             <span className="key-label note-name">{key.noteName}</span>

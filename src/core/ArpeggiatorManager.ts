@@ -313,13 +313,13 @@ export class ArpeggiatorManager {
       this.schedulerTimerId = null;
     }
     
-    // Cancel all scheduled note-offs
+    // Cancel all scheduled note-offs and release the current note regardless of hold mode
     this.scheduledNoteOffs.forEach((timeoutId) => {
       clearTimeout(timeoutId);
     });
     this.scheduledNoteOffs.clear();
-    
-    // Stop currently playing note if in hold mode
+
+    // Release currently playing note (covers both hold and non-hold mode)
     if (this.currentlyPlayingNote !== null && this.onNoteOffCallback) {
       this.onNoteOffCallback(this.currentlyPlayingNote);
       this.currentlyPlayingNote = null;
@@ -407,7 +407,19 @@ export class ArpeggiatorManager {
   }
 
   public setNoteHold(hold: boolean): void {
+    const wasHold = this.noteHold;
     this.noteHold = hold;
+
+    // When turning latch off, release the currently held note and stop if no keys are down
+    if (wasHold && !hold && this.isPlaying) {
+      if (this.currentlyPlayingNote !== null && this.onNoteOffCallback) {
+        this.onNoteOffCallback(this.currentlyPlayingNote);
+        this.currentlyPlayingNote = null;
+      }
+      if (this.heldNotes.size === 0) {
+        this.stop();
+      }
+    }
   }
 
   public getNoteHold(): boolean {

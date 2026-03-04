@@ -24,6 +24,7 @@ export class ADSREnvelope implements AudioComponent {
   private release: number;
   private isActive: boolean = false;
   private releaseStartTime: number = 0;
+  private lastVelocity: number = 1.0;
 
   constructor(config: EnvelopeConfig = {}) {
     this.engine = AudioEngine.getInstance();
@@ -97,6 +98,7 @@ export class ADSREnvelope implements AudioComponent {
     }
 
     this.isActive = true;
+    this.lastVelocity = velocity;
   }
 
   /**
@@ -112,7 +114,7 @@ export class ADSREnvelope implements AudioComponent {
     param.cancelScheduledValues(now);
     
     // Start release from current value (or scheduled value for future releases)
-    const currentValue = scheduleTime ? this.sustain : param.value;
+    const currentValue = scheduleTime ? this.sustain * this.lastVelocity : param.value;
     param.setValueAtTime(currentValue, now);
 
     // Release phase: use exponential ramp for smoother, more natural decay

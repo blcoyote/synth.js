@@ -1864,3 +1864,71 @@ section p {
     border-radius: 4px;
     font-weight: 500;
 }
+/* ── MIDI Panel ──────────────────────────────────────────────────── */
+.midi-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.25rem 0;
+}
+
+.midi-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.midi-activity-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #374151;
+  border: 1px solid #4b5563;
+  transition: background 80ms ease, box-shadow 80ms ease;
+  flex-shrink: 0;
+}
+
+.midi-activity-dot.active {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+
+.midi-status-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.midi-control-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.midi-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  width: 56px;
+  flex-shrink: 0;
+}
+
+.midi-select {
+  flex: 1;
+  background: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.midi-select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.midi-unsupported-note {
+  font-size: 0.72rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
