@@ -49,22 +49,22 @@ This project is designed as a learning journey to understand:
 ### Prerequisites
 
 - Node.js (v18 or higher)
-- npm or yarn
+- pnpm
 
 ### Installation
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start development server
-npm run dev
+pnpm run dev
 
 # Build for production
-npm run build
+pnpm run build
 
 # Run tests
-npm test
+pnpm test
 ```
 
 ## Architecture
@@ -154,9 +154,9 @@ The project includes a comprehensive test suite with 346 passing tests covering:
 
 Run tests with:
 ```bash
-npm test              # Run all tests
-npm run test:ui       # Run with UI
-npm run test:coverage # Generate coverage report
+pnpm test              # Run all tests
+pnpm run test:ui       # Run with UI
+pnpm run test:coverage # Generate coverage report
 ```
 
 CI/CD is automated via GitHub Actions on every pull request.
