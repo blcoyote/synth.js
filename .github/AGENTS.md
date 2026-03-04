@@ -24,8 +24,8 @@ This workspace includes specialized agents for different synthesis tasks.
 ```
 
 **Resources:**
-- [TROUBLESHOOTING.md](.github/agents/audio-bus-chain/TROUBLESHOOTING.md) — 10 common issues + solutions
-- [BUS-CONFIGS.md](.github/agents/audio-bus-chain/BUS-CONFIGS.md) — 7 production-ready configurations
+- [TROUBLESHOOTING.md](./agents/audio-bus-chain/TROUBLESHOOTING.md) — 10 common issues + solutions
+- [BUS-CONFIGS.md](./agents/audio-bus-chain/BUS-CONFIGS.md) — 7 production-ready configurations
 
 ---
 
@@ -170,9 +170,9 @@ You: The reverb sounds too bright. Can you filter the highs?
 
 ## Resources
 
-- **Synthesis Theory** → [.github/skills/synthesis/SKILL.md](.github/skills/synthesis/SKILL.md)
-- **Audio Bus Troubleshooting** → [.github/agents/audio-bus-chain/TROUBLESHOOTING.md](.github/agents/audio-bus-chain/TROUBLESHOOTING.md)
-- **Ready-to-Use Configurations** → [.github/agents/audio-bus-chain/BUS-CONFIGS.md](.github/agents/audio-bus-chain/BUS-CONFIGS.md)
+- **Synthesis Theory** → [skills/synthesis/SKILL.md](./skills/synthesis/SKILL.md)
+- **Audio Bus Troubleshooting** → [agents/audio-bus-chain/TROUBLESHOOTING.md](./agents/audio-bus-chain/TROUBLESHOOTING.md)
+- **Ready-to-Use Configurations** → [agents/audio-bus-chain/BUS-CONFIGS.md](./agents/audio-bus-chain/BUS-CONFIGS.md)
 
 ---
 
