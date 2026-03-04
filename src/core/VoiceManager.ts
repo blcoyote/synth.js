@@ -422,8 +422,8 @@ export class VoiceManager {
 
     // Schedule cleanup after release time
     const maxRelease = Math.max(
-      ...voice.oscillators.map((_, idx) => 
-        this.voiceState.envelopeSettings[(idx + 1) as 1 | 2 | 3].release
+      ...voice.oscillators.map((oscData) =>
+        this.voiceState.envelopeSettings[oscData.oscNum as 1 | 2 | 3].release
       )
     );
 
@@ -451,7 +451,11 @@ export class VoiceManager {
 
     // Stop and disconnect all oscillators
     voice.oscillators.forEach(({ oscillator, panNode, envelope }) => {
-      oscillator.stop();
+      try {
+        oscillator.stop();
+      } catch (e) {
+        // Ignore if already stopped (e.g. stopped during retrigger)
+      }
       oscillator.disconnect();
       panNode.disconnect();
       envelope.disconnect();

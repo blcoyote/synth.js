@@ -16,6 +16,7 @@ import { LFOPanel } from './ui/LFOPanel';
 import { ArpeggiatorPanel } from './ui/ArpeggiatorPanel';
 import { SequencerPanel } from './ui/SequencerPanel';
 import { MasterOutputPanel } from './ui/MasterOutputPanel';
+import { MIDIPanel } from './ui/MIDIPanel';
 import { CollapsiblePanel } from './ui/common/CollapsiblePanel';
 import { voiceState } from './state';
 import { SynthInitDialog } from './ui/SynthInitDialog';
@@ -202,6 +203,7 @@ function SynthControls() {
                 <CollapsiblePanel title="Effects Chain" defaultOpen={true}>
                   <EffectsPanel />
                 </CollapsiblePanel>
+                <MIDIPanel />
               </div>
             </div>
           </div>

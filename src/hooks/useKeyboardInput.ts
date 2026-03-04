@@ -12,14 +12,16 @@ export function useKeyboardInput(
 ) {
   const pressedKeys = useRef<Set<string>>(new Set());
   
-  // Stable references to callbacks
+  // Stable references to callbacks and startNote
   const onNotePressRef = useRef(onNotePress);
   const onNoteReleaseRef = useRef(onNoteRelease);
+  const startNoteRef = useRef(startNote);
   
   useEffect(() => {
     onNotePressRef.current = onNotePress;
     onNoteReleaseRef.current = onNoteRelease;
-  }, [onNotePress, onNoteRelease]);
+    startNoteRef.current = startNote;
+  }, [onNotePress, onNoteRelease, startNote]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -33,7 +35,7 @@ export function useKeyboardInput(
       const relativeIndex = getKeyMapping(key);
       if (relativeIndex !== null) {
         pressedKeys.current.add(key);
-        onNotePressRef.current(startNote + relativeIndex);
+        onNotePressRef.current(startNoteRef.current + relativeIndex);
         e.preventDefault();
       }
     };
@@ -45,7 +47,7 @@ export function useKeyboardInput(
         pressedKeys.current.delete(key);
         const relativeIndex = getKeyMapping(key);
         if (relativeIndex !== null) {
-          onNoteReleaseRef.current(startNote + relativeIndex);
+          onNoteReleaseRef.current(startNoteRef.current + relativeIndex);
           e.preventDefault();
         }
       }
@@ -56,7 +58,7 @@ export function useKeyboardInput(
       pressedKeys.current.forEach((key) => {
         const relativeIndex = getKeyMapping(key);
         if (relativeIndex !== null) {
-          onNoteReleaseRef.current(startNote + relativeIndex);
+          onNoteReleaseRef.current(startNoteRef.current + relativeIndex);
         }
       });
       pressedKeys.current.clear();
@@ -71,7 +73,7 @@ export function useKeyboardInput(
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [onNotePress, onNoteRelease, enabled, startNote]);
+  }, [enabled]);
 }
 
 /**

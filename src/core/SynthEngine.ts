@@ -22,6 +22,7 @@ import { EffectsManager } from './EffectsManager';
 import { LFOManager } from './LFOManager';
 import { ArpeggiatorManager } from './ArpeggiatorManager';
 import { SequencerManager } from './SequencerManager';
+import { MIDIManager } from './MIDIManager';
 
 export class SynthEngine {
   private audioEngine: AudioEngine;
@@ -32,12 +33,16 @@ export class SynthEngine {
   private lfoManager: LFOManager | null = null;
   private arpeggiatorManager: ArpeggiatorManager | null = null;
   private sequencerManager: SequencerManager | null = null;
+  private midiManager: MIDIManager | null = null;
   private isInitialized: boolean = false;
+  // Notes started directly via voiceManager during recording (need direct release)
+  private recordingDirectNotes: Set<number> = new Set();
 
   constructor() {
     this.audioEngine = AudioEngine.getInstance();
-    // VoiceManager and ParameterManager are created in initialize()
-    // after AudioEngine is ready
+    // MIDIManager is created eagerly so getMIDIManager() is always non-null
+    // after construction. initialize() is still called later inside SynthEngine.initialize().
+    this.midiManager = new MIDIManager();
   }
 
   /**
@@ -190,6 +195,18 @@ export class SynthEngine {
 
       console.log('🎵 Created Sequencer manager with precise audio timing');
 
+      // Initialize MIDI (non-blocking – failure is graceful)
+      const midiReady = await this.midiManager!.initialize();
+      if (midiReady) {
+        this.midiManager!.onNoteOn((note, velocity) => {
+          this.playNote(note, velocity);
+        });
+        this.midiManager!.onNoteOff((note) => {
+          this.releaseNote(note);
+        });
+        console.log('🎹 MIDI input ready');
+      }
+
       this.isInitialized = true;
       console.log('✅ SynthEngine initialized successfully');
     } catch (error) {
@@ -283,6 +300,13 @@ export class SynthEngine {
   }
 
   /**
+   * Get the MIDIManager instance (always non-null after construction)
+   */
+  getMIDIManager(): MIDIManager {
+    return this.midiManager!;
+  }
+
+  /**
    * Check if engine is initialized
    */
   isReady(): boolean {
@@ -309,6 +333,8 @@ export class SynthEngine {
       // Recording mode - record note and play it for feedback
       this.sequencerManager!.recordNote(noteIndex, Math.floor(velocity * 127));
       this.voiceManager.playNote(noteIndex, velocity);
+      // Track so release is always routed directly, even if recording ends before key-up
+      this.recordingDirectNotes.add(noteIndex);
     } else if (seqEnabled) {
       this.sequencerManager!.handleNoteOn(noteIndex);
     } else if (arpEnabled) {
@@ -329,7 +355,11 @@ export class SynthEngine {
     const recording = this.sequencerManager?.getIsRecording() || false;
 
     // Priority: Recording > Sequencer > Arpeggiator > Direct
-    if (recording) {
+    if (this.recordingDirectNotes.has(noteIndex)) {
+      // Note was started directly during recording – always release directly
+      this.voiceManager.releaseNote(noteIndex);
+      this.recordingDirectNotes.delete(noteIndex);
+    } else if (recording) {
       // During recording, release notes directly for immediate feedback
       this.voiceManager.releaseNote(noteIndex);
     } else if (this.sequencerManager?.isEnabled()) {
@@ -346,7 +376,11 @@ export class SynthEngine {
    * Cleanup and destroy the synth engine
    */
   destroy(): void {
-    // TODO: Cleanup voices, disconnect nodes, etc.
+    this.arpeggiatorManager?.setEnabled(false);
+    this.sequencerManager?.disable();
+    this.voiceManager?.stopAllNotes();
+    this.midiManager?.disable();
+    this.recordingDirectNotes.clear();
     this.isInitialized = false;
     console.log('🔌 SynthEngine destroyed');
   }

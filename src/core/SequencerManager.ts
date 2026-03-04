@@ -137,7 +137,15 @@ export class SequencerManager {
    * Set note hold mode
    */
   public setNoteHold(enabled: boolean): void {
+    const wasHold = this.noteHoldEnabled;
     this.noteHoldEnabled = enabled;
+
+    // When turning latch off while the sequencer is playing, stop it immediately
+    // (we can't tell if a key is still physically held, so safest to stop)
+    if (wasHold && !enabled && this.isPlaying) {
+      this.stop();
+      this.rootNote = null;
+    }
   }
 
   /**
@@ -237,7 +245,7 @@ export class SequencerManager {
    * Toggle note hold (public method for UI)
    */
   public toggleNoteHold(): void {
-    this.noteHoldEnabled = !this.noteHoldEnabled;
+    this.setNoteHold(!this.noteHoldEnabled);
   }
 
   /**
