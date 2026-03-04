@@ -375,6 +375,23 @@ export class MultiTargetLFO {
   }
 
   /**
+   * Trigger one-shot envelope: amplitude is immediately set to 1 for exactly one full LFO
+   * period (1 / frequency seconds) and then drops to 0.
+   * Used in 'one-shot' mode so the LFO modulates exactly once per note press.
+   */
+  public triggerOneShot(): void {
+    if (!this.enabled) return;
+
+    const now = this.engine.getCurrentTime();
+    const period = 1.0 / this.frequency;
+    const gain = this.amplitudeGain.gain;
+
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(1, now);
+    gain.setValueAtTime(0, now + period);
+  }
+
+  /**
    * Release the amplitude envelope (release phase).
    * Call on note-off in trigger mode to fade the LFO amplitude out.
    */
