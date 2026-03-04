@@ -13,7 +13,7 @@ import { EnvelopeVisualizer } from './EnvelopeVisualizer';
 import './LFOPanel.css';
 
 type LFOWaveform = 'sine' | 'triangle' | 'square' | 'sawtooth' | 'random';
-type LFOMode = 'free' | 'trigger';
+type LFOMode = 'free' | 'trigger' | 'one-shot';
 
 interface LFOTargets {
   pitch: boolean;
@@ -184,6 +184,12 @@ export function LFOPanel() {
               onClick={() => handleModeChange('trigger')}
             >
               Trigger
+            </button>
+            <button
+              className={`lfo-mode-btn primary ${mode === 'one-shot' ? 'active' : ''}`}
+              onClick={() => handleModeChange('one-shot')}
+            >
+              One-Shot
             </button>
           </div>
         </div>

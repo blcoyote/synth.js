@@ -10,7 +10,7 @@ interface LFOVisualizerProps {
   decay?: number;
   sustain?: number;
   release?: number;
-  mode?: 'free' | 'trigger';
+  mode?: 'free' | 'trigger' | 'one-shot';
   width?: number;
   height?: number;
 }
@@ -123,8 +123,8 @@ export const LFOVisualizer = memo(function LFOVisualizer({
         // Get base waveform value (-1 to 1)
         let value = generateWaveform(phase / cycles);
         
-        // Apply envelope if present
-        if (hasEnvelope) {
+        // Apply envelope if present (trigger mode)
+        if (hasEnvelope && mode !== 'one-shot') {
           const timeInCycle = (progress * cycles) / rate; // Time in seconds
           
           let envelopeValue = 1;
@@ -145,6 +145,14 @@ export const LFOVisualizer = memo(function LFOVisualizer({
           }
           
           value *= envelopeValue;
+        }
+
+        // In one-shot mode: show only the first cycle (progress 0–0.5 = one cycle),
+        // rest is silent (amplitude = 0)
+        if (mode === 'one-shot') {
+          // First half of canvas = one full cycle; second half = silence
+          const oneShotAmplitude = progress < 0.5 ? 1 : 0;
+          value *= oneShotAmplitude;
         }
         
         // Apply depth (0-100% -> 0-1)
@@ -168,7 +176,7 @@ export const LFOVisualizer = memo(function LFOVisualizer({
       ctx.textAlign = 'left';
       ctx.fillText(`${waveform.toUpperCase()} ${rate.toFixed(1)}Hz ${depth}%`, padding + 2, 12);
 
-      // Update time for animation (free mode only; trigger mode stays at phase 0)
+      // Update time for animation (free mode only; trigger/one-shot modes stay at phase 0)
       if (mode === 'free') {
         currentTime += 0.016; // ~60fps
       }

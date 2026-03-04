@@ -519,6 +519,93 @@ describe('LFOManager', () => {
     });
   });
 
+  describe('One-Shot Mode', () => {
+    it('should set mode to one-shot', () => {
+      lfoManager.setMode('one-shot');
+      expect(lfoManager.getMode()).toBe('one-shot');
+    });
+
+    it('should not retrigger LFO when mode is one-shot but LFO is disabled', () => {
+      const lfo = lfoManager.getLFO();
+      const retriggerSpy = vi.spyOn(lfo, 'retrigger');
+
+      lfoManager.setEnabled(false);
+      lfoManager.setMode('one-shot');
+      lfoManager.retrigger();
+
+      expect(retriggerSpy).not.toHaveBeenCalled();
+    });
+
+    it('should retrigger LFO when mode is one-shot and LFO is enabled', () => {
+      const lfo = lfoManager.getLFO();
+      const retriggerSpy = vi.spyOn(lfo, 'retrigger');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('one-shot');
+      lfoManager.retrigger();
+
+      expect(retriggerSpy).toHaveBeenCalled();
+    });
+
+    it('should call triggerOneShot on retrigger in one-shot mode', () => {
+      const lfo = lfoManager.getLFO();
+      const triggerOneShotSpy = vi.spyOn(lfo, 'triggerOneShot');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('one-shot');
+      lfoManager.retrigger();
+
+      expect(triggerOneShotSpy).toHaveBeenCalled();
+    });
+
+    it('should not call triggerAmplitudeEnvelope in one-shot mode', () => {
+      const lfo = lfoManager.getLFO();
+      const triggerEnvSpy = vi.spyOn(lfo, 'triggerAmplitudeEnvelope');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('one-shot');
+      lfoManager.retrigger();
+
+      expect(triggerEnvSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not call triggerOneShot when mode is trigger', () => {
+      const lfo = lfoManager.getLFO();
+      const triggerOneShotSpy = vi.spyOn(lfo, 'triggerOneShot');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('trigger');
+      lfoManager.retrigger();
+
+      expect(triggerOneShotSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not call releaseAmplitudeEnvelope on triggerRelease in one-shot mode', () => {
+      const lfo = lfoManager.getLFO();
+      const releaseEnvSpy = vi.spyOn(lfo, 'releaseAmplitudeEnvelope');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('one-shot');
+      lfoManager.triggerRelease();
+
+      expect(releaseEnvSpy).not.toHaveBeenCalled();
+    });
+
+    it('should switch between all three modes', () => {
+      lfoManager.setMode('free');
+      expect(lfoManager.getMode()).toBe('free');
+
+      lfoManager.setMode('trigger');
+      expect(lfoManager.getMode()).toBe('trigger');
+
+      lfoManager.setMode('one-shot');
+      expect(lfoManager.getMode()).toBe('one-shot');
+
+      lfoManager.setMode('free');
+      expect(lfoManager.getMode()).toBe('free');
+    });
+  });
+
   describe('Amplitude Envelope', () => {
     it('should set envelope attack and propagate to LFO', () => {
       const lfo = lfoManager.getLFO();

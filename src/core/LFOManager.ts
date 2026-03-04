@@ -19,7 +19,7 @@ export interface LFOTargetConfig {
   baseline?: number;
 }
 
-export type LFOMode = 'free' | 'trigger';
+export type LFOMode = 'free' | 'trigger' | 'one-shot';
 
 export class LFOManager {
   private lfo: MultiTargetLFO;
@@ -237,13 +237,19 @@ export class LFOManager {
 
   /**
    * Retrigger the LFO (reset phase to 0).
-   * Only has an effect when mode is 'trigger' and the LFO is enabled.
+   * In 'trigger' mode: resets phase and triggers the amplitude envelope.
+   * In 'one-shot' mode: resets phase and plays exactly one full LFO cycle then stops.
+   * Has no effect in 'free' mode or when the LFO is disabled.
    * Called by VoiceManager on each note-on event.
    */
   retrigger(): void {
-    if (this.mode === 'trigger' && this.enabled) {
+    if (!this.enabled) return;
+    if (this.mode === 'trigger') {
       this.lfo.retrigger();
       this.lfo.triggerAmplitudeEnvelope();
+    } else if (this.mode === 'one-shot') {
+      this.lfo.retrigger();
+      this.lfo.triggerOneShot();
     }
   }
 }

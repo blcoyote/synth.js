@@ -14,7 +14,7 @@ class ModulationStateManager {
   // LFO configuration
   public lfoState = {
     enabled: false,
-    mode: 'free' as 'free' | 'trigger',
+    mode: 'free' as 'free' | 'trigger' | 'one-shot',
     targets: {
       pitch: true,
       volume: false,
