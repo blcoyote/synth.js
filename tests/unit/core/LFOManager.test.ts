@@ -606,7 +606,7 @@ describe('LFOManager', () => {
     });
   });
 
-
+  describe('Amplitude Envelope', () => {
     it('should set envelope attack and propagate to LFO', () => {
       const lfo = lfoManager.getLFO();
       const setEnvelopeParamsSpy = vi.spyOn(lfo, 'setEnvelopeParams');
