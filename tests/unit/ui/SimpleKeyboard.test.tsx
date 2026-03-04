@@ -191,7 +191,55 @@ import { SynthProvider } from '../../../src/context/SynthContext';
 
       expect(playCallArgs[0]).toBe(releaseCallArgs[0]); // Same note index
     });
-  });  describe('Multiple Keys', () => {
+  });
+
+  describe('Touch Interaction', () => {
+    it('should play note on touch start', () => {
+      renderKeyboard();
+
+      const firstKey = screen.getAllByRole('button')[0];
+      fireEvent.touchStart(firstKey);
+
+      expect(mockEngine.playNote).toHaveBeenCalledTimes(1);
+      expect(mockEngine.playNote).toHaveBeenCalledWith(expect.any(Number), 0.8);
+    });
+
+    it('should release note on touch end', () => {
+      renderKeyboard();
+
+      const firstKey = screen.getAllByRole('button')[0];
+      fireEvent.touchStart(firstKey);
+      fireEvent.touchEnd(firstKey);
+
+      expect(mockEngine.releaseNote).toHaveBeenCalledTimes(1);
+    });
+
+    it('should pass the same note index to playNote and releaseNote on touch', () => {
+      renderKeyboard({ startOctave: 3, octaves: 1 });
+
+      const cKey = screen.getByText('C3').closest('button')!;
+      fireEvent.touchStart(cKey);
+      fireEvent.touchEnd(cKey);
+
+      const playCallArgs = mockEngine.playNote.mock.calls[0];
+      const releaseCallArgs = mockEngine.releaseNote.mock.calls[0];
+
+      expect(playCallArgs[0]).toBe(releaseCallArgs[0]);
+    });
+
+    it('should handle simultaneous touch on multiple keys', () => {
+      renderKeyboard();
+
+      const keys = screen.getAllByRole('button');
+      fireEvent.touchStart(keys[0]);
+      fireEvent.touchStart(keys[4]);
+      fireEvent.touchStart(keys[7]);
+
+      expect(mockEngine.playNote).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('Multiple Keys', () => {
     it('should handle multiple simultaneous key presses', () => {
       renderKeyboard();
       
