@@ -347,6 +347,9 @@ export class VoiceManager {
     
     // Add LFO targets for this voice (if enabled)
     this.addLFOTargetsForVoice(voice, noteIndex);
+
+    // Retrigger LFO in trigger mode so the phase resets on each note-on
+    this.lfoManager?.retrigger();
     
     // Store the voice
     this.voiceState.activeVoices.set(noteIndex, voice);

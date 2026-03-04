@@ -276,6 +276,29 @@ export class MultiTargetLFO {
   }
 
   /**
+   * Retrigger the LFO – resets the oscillator phase to 0.
+   * Used in trigger mode so the LFO restarts from the beginning on each note-on.
+   * Has no effect when the LFO is not running.
+   */
+  public retrigger(): void {
+    if (!this.enabled) return;
+
+    if (this.waveform === 'random') {
+      // Reset the random scheduler to fire an immediate new value
+      const now = this.engine.getCurrentTime();
+      this.nextRandomTime = now;
+    } else {
+      // Stop the current oscillator and start a fresh one (resets phase to 0)
+      if (this.oscillator) {
+        this.oscillator.stop();
+        this.oscillator.disconnect();
+        this.oscillator = null;
+      }
+      this.startOscillatorLFO();
+    }
+  }
+
+  /**
    * Check if LFO is enabled
    */
   public isEnabled(): boolean {

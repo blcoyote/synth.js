@@ -469,6 +469,56 @@ describe('LFOManager', () => {
     });
   });
 
+  describe('Trigger Mode', () => {
+    it('should default to free mode', () => {
+      expect(lfoManager.getMode()).toBe('free');
+    });
+
+    it('should set mode to trigger', () => {
+      lfoManager.setMode('trigger');
+      expect(lfoManager.getMode()).toBe('trigger');
+    });
+
+    it('should set mode back to free', () => {
+      lfoManager.setMode('trigger');
+      lfoManager.setMode('free');
+      expect(lfoManager.getMode()).toBe('free');
+    });
+
+    it('should not retrigger LFO when mode is free', () => {
+      const lfo = lfoManager.getLFO();
+      const retriggerSpy = vi.spyOn(lfo, 'retrigger');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('free');
+      lfoManager.retrigger();
+
+      expect(retriggerSpy).not.toHaveBeenCalled();
+    });
+
+    it('should retrigger LFO when mode is trigger and LFO is enabled', () => {
+      const lfo = lfoManager.getLFO();
+      const retriggerSpy = vi.spyOn(lfo, 'retrigger');
+
+      lfoManager.setEnabled(true);
+      lfoManager.setMode('trigger');
+      lfoManager.retrigger();
+
+      expect(retriggerSpy).toHaveBeenCalled();
+    });
+
+    it('should not retrigger LFO when mode is trigger but LFO is disabled', () => {
+      const lfo = lfoManager.getLFO();
+      const retriggerSpy = vi.spyOn(lfo, 'retrigger');
+
+      lfoManager.setEnabled(false);
+      lfoManager.setMode('trigger');
+      lfoManager.retrigger();
+
+      expect(retriggerSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle rapid enable/disable toggles', () => {
       for (let i = 0; i < 10; i++) {

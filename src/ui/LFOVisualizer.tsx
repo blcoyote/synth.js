@@ -10,6 +10,7 @@ interface LFOVisualizerProps {
   decay?: number;
   sustain?: number;
   release?: number;
+  mode?: 'free' | 'trigger';
   width?: number;
   height?: number;
 }
@@ -26,6 +27,7 @@ export const LFOVisualizer = memo(function LFOVisualizer({
   decay = 0,
   sustain = 1,
   release = 0,
+  mode = 'free',
   width = 250,
   height = 100,
 }: LFOVisualizerProps) {
@@ -166,8 +168,10 @@ export const LFOVisualizer = memo(function LFOVisualizer({
       ctx.textAlign = 'left';
       ctx.fillText(`${waveform.toUpperCase()} ${rate.toFixed(1)}Hz ${depth}%`, padding + 2, 12);
 
-      // Update time for animation
-      currentTime += 0.016; // ~60fps
+      // Update time for animation (free mode only; trigger mode stays at phase 0)
+      if (mode === 'free') {
+        currentTime += 0.016; // ~60fps
+      }
 
       animationFrameRef.current = requestAnimationFrame(draw);
     };
@@ -179,7 +183,7 @@ export const LFOVisualizer = memo(function LFOVisualizer({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [waveform, rate, depth, attack, decay, sustain, release, width, height, generateWaveform]);
+  }, [waveform, rate, depth, attack, decay, sustain, release, mode, width, height, generateWaveform]);
 
   return (
     <div className="lfo-visualizer">
