@@ -66,17 +66,30 @@ export class MyEffect extends BaseEffect {
 }
 ```
 
+## Audio Chain & Signal Flow
+
+⚠️ **IMPORTANT:** The audio chain has been analyzed and now has several fixes applied. Before implementing features that affect audio output, consult:
+
+- **[AUDIO-CHAIN-ANALYSIS.md](../../AUDIO-CHAIN-ANALYSIS.md)** - Full analysis and issue tracking
+- **[AUDIO-CHAIN-FIX-GUIDE.md](../../AUDIO-CHAIN-FIX-GUIDE.md)** - Applied and pending fixes
+- **`@audio-bus-chain` agent** - For audio routing help and problem-solving
+
+  **Current audio path:**
+  ```
+  Voices (polyphonic) → Master gain → Effects chain → Master filter → Spectrum analyzer → Limiter → Speakers
+  ```
+
+  **Current status:**
+  - ✅ Master limiter added
+  - ✅ Polyphony compensation and headroom policy applied
+  - ✅ Effect order normalized (effects before master filter)
+  - ⚠️ Continue monitoring voice cleanup and output loudness tuning
+
 ### 2. State Module Pattern
+  See analysis docs before working on voice/effects/gain-related features.
 ```typescript
 // state/myState.ts
 class MyStateManager {
-  private _data: SomeType | null = null;
-  public settings = { param1: 0, param2: 100 };
-  
-  get data(): SomeType {
-    if (!this._data) throw new Error('Not initialized');
-    return this._data;
-  }
   
   setData(data: SomeType) { this._data = data; }
 }

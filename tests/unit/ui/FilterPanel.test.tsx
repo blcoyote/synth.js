@@ -42,6 +42,11 @@ vi.mock('../../../src/state', () => {
     getOutputNode: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() }))
   };
 
+  const mockMasterOutputNode = {
+    connect: vi.fn(),
+    disconnect: vi.fn()
+  } as any;
+
   return {
     audioState: {
       filterSettings: mockFilterSettings,
@@ -51,7 +56,9 @@ vi.mock('../../../src/state', () => {
       setCurrentCustomFilter: vi.fn(),
       getEffectsManager: vi.fn(() => mockEffectsManager),
       getEffectsManagerOrNull: vi.fn(() => mockEffectsManager),
-      setEffectsManager: vi.fn()
+      setEffectsManager: vi.fn(),
+      setMasterOutputNode: vi.fn(),
+      getMasterOutputNodeOrNull: vi.fn(() => mockMasterOutputNode)
     },
     visualizationState: {
       analyser: mockAnalyser,

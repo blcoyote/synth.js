@@ -86,7 +86,12 @@ export function FilterPanel() {
 
     // Disconnect old filter
     const masterGainNode = engine.getVoiceManager().getMasterGainNode();
+    const effectsManager = audioState.getEffectsManager();
+    const spectrumAnalyser = visualizationState.analyser;
+
     masterGainNode.disconnect();
+    effectsManager.getOutputNode().disconnect();
+    spectrumAnalyser.disconnect();
     
     if (audioState.currentCustomFilter) {
       audioState.currentCustomFilter.disconnect();
@@ -95,29 +100,28 @@ export function FilterPanel() {
     }
 
     const context = audioEngine.getContext();
-    const spectrumAnalyser = visualizationState.analyser;
-    const effectsManager = audioState.getEffectsManager();
+    const masterOutputNode = audioState.getMasterOutputNodeOrNull() ?? context.destination;
     
     // Create new filter and reconnect through effects and analyser
-    // Signal chain: masterGain -> filter -> effects -> analyser -> destination
+    // Signal chain: masterGain -> effects -> filter -> analyser -> destination/limiter
     if (newType === 'lowpass12') {
       const filter = new Lowpass12Filter(cutoff);
       filter.setParameter('resonance', resonance);
       audioState.setCurrentCustomFilter(filter);
       audioState.setMasterFilter(filter);
-      masterGainNode.connect(filter.getInputNode());
-      filter.getOutputNode().connect(effectsManager.getInputNode());
-      effectsManager.getOutputNode().connect(spectrumAnalyser);
-      spectrumAnalyser.connect(context.destination);
+      masterGainNode.connect(effectsManager.getInputNode());
+      effectsManager.getOutputNode().connect(filter.getInputNode());
+      filter.getOutputNode().connect(spectrumAnalyser);
+      spectrumAnalyser.connect(masterOutputNode);
     } else if (newType === 'lowpass24') {
       const filter = new Lowpass24Filter(cutoff);
       filter.setParameter('resonance', resonance);
       audioState.setCurrentCustomFilter(filter);
       audioState.setMasterFilter(filter);
-      masterGainNode.connect(filter.getInputNode());
-      filter.getOutputNode().connect(effectsManager.getInputNode());
-      effectsManager.getOutputNode().connect(spectrumAnalyser);
-      spectrumAnalyser.connect(context.destination);
+      masterGainNode.connect(effectsManager.getInputNode());
+      effectsManager.getOutputNode().connect(filter.getInputNode());
+      filter.getOutputNode().connect(spectrumAnalyser);
+      spectrumAnalyser.connect(masterOutputNode);
     } else {
       audioState.setCurrentCustomFilter(null);
       const filter = context.createBiquadFilter();
@@ -125,10 +129,10 @@ export function FilterPanel() {
       filter.frequency.value = audioState.filterSettings.enabled ? cutoff : MAX_CUTOFF;
       filter.Q.value = resonance;
       audioState.setMasterFilter(filter);
-      masterGainNode.connect(filter);
-      filter.connect(effectsManager.getInputNode());
-      effectsManager.getOutputNode().connect(spectrumAnalyser);
-      spectrumAnalyser.connect(context.destination);
+      masterGainNode.connect(effectsManager.getInputNode());
+      effectsManager.getOutputNode().connect(filter);
+      filter.connect(spectrumAnalyser);
+      spectrumAnalyser.connect(masterOutputNode);
     }
   }, [audioEngine, engine, cutoff, resonance]);
 
@@ -202,7 +206,7 @@ export function FilterPanel() {
           />
 
           {/* Filter Type */}
-          <label htmlFor="filter-type">Filter Type</label>
+          <label htmlFor="filter-type" className="control-label">Filter Type</label>
           <select 
             id="filter-type"
             value={filterType}

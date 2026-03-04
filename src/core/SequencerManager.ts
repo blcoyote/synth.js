@@ -59,7 +59,8 @@ export class SequencerManager {
   private onStepCallback: ((stepIndex: number) => void) | null = null;
   
   // Direct DOM manipulation for visualization (no React re-renders)
-  private playheadElement: HTMLElement | null = null;
+  private stepGridElement: HTMLElement | null = null;
+  private lastHighlightedStep: number = -1;
   
   // Track currently playing notes for cleanup
   private activeNotes: Set<number> = new Set();
@@ -596,20 +597,27 @@ export class SequencerManager {
   }
 
   /**
-   * Set playhead element for direct DOM manipulation (no React re-renders)
+   * Set step grid element for direct DOM step highlighting (no React re-renders)
    */
-  public setPlayheadElement(element: HTMLElement | null): void {
-    this.playheadElement = element;
+  public setStepGridElement(element: HTMLElement | null): void {
+    this.stepGridElement = element;
+    this.lastHighlightedStep = -1;
   }
 
   /**
-   * Update playhead position using CSS transform (no React re-render)
+   * Highlight the current step by toggling the .current CSS class directly on the
+   * step button DOM node. No React re-render, no CSS transition/animation.
    */
   private updatePlayheadPosition(stepIndex: number): void {
-    if (this.playheadElement) {
-      const position = (stepIndex / this.stepCount) * 100;
-      this.playheadElement.style.transform = `translateX(${position * this.stepCount}%)`;
+    if (!this.stepGridElement) return;
+    const children = this.stepGridElement.children;
+    if (this.lastHighlightedStep >= 0 && this.lastHighlightedStep < children.length) {
+      children[this.lastHighlightedStep].classList.remove('current');
     }
+    if (stepIndex >= 0 && stepIndex < children.length) {
+      children[stepIndex].classList.add('current');
+    }
+    this.lastHighlightedStep = stepIndex;
   }
 
   /**

@@ -120,7 +120,7 @@ export function ArpeggiatorPanel() {
   return (
     <div className="arp-panel">
       {/* Enable/Disable Toggle */}
-      <div className="arp-enable-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="arp-enable-section">
         <Switch
           checked={enabled}
           onChange={handleToggle}
@@ -129,7 +129,7 @@ export function ArpeggiatorPanel() {
           labelPosition="right"
         />
         {enabled && (
-          <p className="control-hint" style={{ textAlign: 'center' }}>
+          <p className="control-hint control-hint--center">
             Play notes on the keyboard to arpeggiate them
           </p>
         )}
@@ -184,7 +184,7 @@ export function ArpeggiatorPanel() {
             unit="%"
             onChange={handleGateLengthChange}
           />
-          <div style={{ flex: 1 }}>
+          <div className="controls-row-item">
             <label className="control-label">Division</label>
             <div className="division-buttons">
               {NOTE_DIVISIONS.map((d) => (
@@ -223,7 +223,7 @@ export function ArpeggiatorPanel() {
         />
         
         {!enabled && (
-          <p className="control-hint" style={{ color: '#ff6b6b' }}>
+          <p className="control-hint control-hint--warning">
             Enable arpeggiator first to use progressions
           </p>
         )}
@@ -278,7 +278,7 @@ export function ArpeggiatorPanel() {
               </div>
             </div>
             
-            <p className="control-hint" style={{ color: '#00ff88' }}>
+            <p className="control-hint control-hint--success">
               Press ANY key to start the progression - chords will change automatically every {barsPerChord} bar{barsPerChord > 1 ? 's' : ''}
             </p>
           </>

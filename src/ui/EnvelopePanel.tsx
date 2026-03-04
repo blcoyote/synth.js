@@ -3,6 +3,7 @@ import { useSynthEngine } from '../context/SynthContext';
 import { voiceState } from "../state";
 import { Slider } from './common/Slider';
 import { EnvelopeVisualizer } from './EnvelopeVisualizer';
+import './EnvelopePanel.css';
 
 interface EnvelopePanelProps {
   envNum: 1 | 2 | 3;
