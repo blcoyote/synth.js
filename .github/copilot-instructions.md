@@ -70,8 +70,6 @@ export class MyEffect extends BaseEffect {
 
 ⚠️ **IMPORTANT:** The audio chain has been analyzed and now has several fixes applied. Before implementing features that affect audio output, consult:
 
-- **[AUDIO-CHAIN-ANALYSIS.md](../../AUDIO-CHAIN-ANALYSIS.md)** - Full analysis and issue tracking
-- **[AUDIO-CHAIN-FIX-GUIDE.md](../../AUDIO-CHAIN-FIX-GUIDE.md)** - Applied and pending fixes
 - **`@audio-bus-chain` agent** - For audio routing help and problem-solving
 
   **Current audio path:**
