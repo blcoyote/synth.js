@@ -48,6 +48,11 @@ export class LFOManager {
     this.enabled = enabled;
     if (enabled) {
       this.lfo.start();
+      // In trigger/one-shot modes the LFO must be silent until a note fires it.
+      // amplitudeGain is initialised to 1, so zero it here to prevent pre-note modulation.
+      if (this.mode === 'trigger' || this.mode === 'one-shot') {
+        this.lfo.resetAmplitudeGain(0);
+      }
     } else {
       this.lfo.stop();
     }
@@ -184,6 +189,15 @@ export class LFOManager {
    */
   setMode(mode: LFOMode): void {
     this.mode = mode;
+    if (!this.enabled) return;
+    if (mode === 'trigger' || mode === 'one-shot') {
+      // Silence the LFO until the next note-on so switching modes doesn't
+      // leave residual modulation audible.
+      this.lfo.resetAmplitudeGain(0);
+    } else {
+      // Free mode: restore full amplitude immediately.
+      this.lfo.resetAmplitudeGain(1);
+    }
   }
 
   /**
@@ -245,9 +259,16 @@ export class LFOManager {
   retrigger(): void {
     if (!this.enabled) return;
     if (this.mode === 'trigger') {
+      // Zero amplitude before stopping the oscillator so that the phase
+      // discontinuity of the old oscillator doesn't cause an audible snap.
+      this.lfo.resetAmplitudeGain(0);
       this.lfo.retrigger();
       this.lfo.triggerAmplitudeEnvelope();
     } else if (this.mode === 'one-shot') {
+      // Zero amplitude first: prevents the "double-tap" artefact where the
+      // old oscillator (possibly at a non-zero phase with amplitude 1) snaps
+      // the filter back to baseline before the new one-shot cycle begins.
+      this.lfo.resetAmplitudeGain(0);
       this.lfo.retrigger();
       this.lfo.triggerOneShot();
     }

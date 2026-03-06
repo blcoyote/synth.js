@@ -375,6 +375,17 @@ export class MultiTargetLFO {
   }
 
   /**
+   * Immediately cancel all amplitude automation and set the amplitude gain to the given value.
+   * Used to silence the LFO (value = 0) before an oscillator retrigger so that stopping the
+   * old oscillator doesn't produce a phase-discontinuity snap in the modulation target.
+   */
+  public resetAmplitudeGain(value: number = 0): void {
+    const now = this.engine.getCurrentTime();
+    this.amplitudeGain.gain.cancelScheduledValues(now);
+    this.amplitudeGain.gain.setValueAtTime(value, now);
+  }
+
+  /**
    * Trigger one-shot envelope: amplitude is immediately set to 1 for exactly one full LFO
    * period (1 / frequency seconds) and then drops to 0.
    * Used in 'one-shot' mode so the LFO modulates exactly once per note press.
