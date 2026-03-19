@@ -163,21 +163,21 @@ When implementing changes:
 ## Reference Resources
 
 ### Workspace Agent Documentation
-See [../.github/AGENTS.md](../../AGENTS.md) for:
+See [../AGENTS.md](../AGENTS.md) for:
 - When to use this agent vs. the default agent
 - How agents are invoked (automatic delegation, manual selection)
 - Quick reference table for agent selection
 - Testing agent discovery
 
 ### Usage Examples
-See [./USAGE-EXAMPLES.md](./USAGE-EXAMPLES.md) for:
+See [./audio-bus-chain/USAGE-EXAMPLES.md](./audio-bus-chain/USAGE-EXAMPLES.md) for:
 - Common workflow examples (poor vs. good prompts)
 - Automatic delegation keyword recognition
 - Prompt structure templates
 - Signs of successful agent involvement
 
 ### Troubleshooting
-See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for solutions to common audio issues:
+See [./audio-bus-chain/TROUBLESHOOTING.md](./audio-bus-chain/TROUBLESHOOTING.md) for solutions to common audio issues:
 - No sound / silent output
 - Clipping / distortion at high volumes
 - Clicking / popping sounds
@@ -186,7 +186,7 @@ See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for solutions to common audio iss
 - And 6 more common problems with diagnosis & solutions
 
 ### Common Bus Configurations
-See [BUS-CONFIGS.md](./BUS-CONFIGS.md) for ready-to-use signal chains:
+See [./audio-bus-chain/BUS-CONFIGS.md](./audio-bus-chain/BUS-CONFIGS.md) for ready-to-use signal chains:
 1. **Clean / Transparent** - Preserve original tone
 2. **Warmth / Analog Character** - Vintage saturation
 3. **Bright / Crystal Clear** - Modern, detailed

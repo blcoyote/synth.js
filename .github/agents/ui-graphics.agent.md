@@ -1,7 +1,7 @@
 ---
 description: 'Build and maintain React UI components and canvas graphics for the synthesizer. Use when: creating or editing panels (oscillator, filter, envelope, effects, LFO, sequencer), styling with CSS, building visualizers (envelope curve, LFO waveform, filter frequency response, waveform display), designing common controls (Slider, Switch, CollapsiblePanel), or improving keyboard layout and responsive layout.'
 name: 'UI & Graphics'
-tools: [read, edit, search, run_in_terminal]
+tools: [read, edit, search]
 user-invocable: true
 ---
 
