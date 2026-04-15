@@ -225,7 +225,7 @@ export class SequencerManager {
     }
     
     if (this.schedulerTimerId !== null) {
-      cancelAnimationFrame(this.schedulerTimerId);
+      clearTimeout(this.schedulerTimerId);
       this.schedulerTimerId = null;
     }
     
@@ -790,13 +790,20 @@ export class SequencerManager {
       
       // Schedule note off with PRECISE AudioContext time
       if (this.onNoteOffCallback) {
+        // Cancel any previously scheduled note-off for this pitch (retrigger safety)
+        const existing = this.scheduledNotes.get(absolutePitch);
+        if (existing) {
+          clearTimeout(existing.timeoutId);
+        }
         // Use setTimeout only to trigger the callback, but pass the precise time
-        window.setTimeout(() => {
+        const noteOffTimeoutId = window.setTimeout(() => {
           if (this.isPlaying && this.activeNotes.has(absolutePitch)) {
             this.onNoteOffCallback!(absolutePitch, noteOffTime);
             this.activeNotes.delete(absolutePitch);
           }
+          this.scheduledNotes.delete(absolutePitch);
         }, delay + (stepDuration * step.length * 1000));
+        this.scheduledNotes.set(absolutePitch, { timeoutId: noteOffTimeoutId, pitch: absolutePitch });
       }
     } else {
       // If no note, just update visualization

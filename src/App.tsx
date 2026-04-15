@@ -74,6 +74,15 @@ function SynthControls() {
     return () => clearInterval(interval);
   }, [engine, isInitialized]);
 
+  // Destroy audio engine on unmount to release all audio nodes and timers
+  useEffect(() => {
+    return () => {
+      if (isInitialized) {
+        engine.destroy();
+      }
+    };
+  }, [engine, isInitialized]);
+
   return (
     <>
       <SynthInitDialog

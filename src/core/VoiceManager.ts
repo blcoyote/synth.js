@@ -50,6 +50,7 @@ export class VoiceManager {
     pan: boolean;
   } = { pitch: false, volume: false, pan: false };
   private userMasterVolume: number = DEFAULT_MASTER_VOLUME;
+  private pendingCleanups: Map<number, ReturnType<typeof setTimeout>> = new Map();
 
   /**
    * Creates a new VoiceManager
@@ -255,7 +256,13 @@ export class VoiceManager {
 
       // Schedule graph cleanup after the old oscillators have stopped
       const cleanupDelay = Math.max(0, (startTime - context.currentTime) * 1000) + 50;
-      setTimeout(() => {
+      // Cancel any pending cleanup for this note to prevent double-disconnect on rapid retrigger
+      const existingCleanup = this.pendingCleanups.get(noteIndex);
+      if (existingCleanup !== undefined) {
+        clearTimeout(existingCleanup);
+      }
+      const cleanupId = setTimeout(() => {
+        this.pendingCleanups.delete(noteIndex);
         existingVoice.oscillators.forEach(({ oscillator, panNode, envelope, fmGain }) => {
           oscillator.disconnect();
           panNode.disconnect();
@@ -263,6 +270,7 @@ export class VoiceManager {
           if (fmGain) fmGain.disconnect();
         });
       }, cleanupDelay);
+      this.pendingCleanups.set(noteIndex, cleanupId);
       
       // Remove from active voices immediately
       this.voiceState.activeVoices.delete(noteIndex);
@@ -636,7 +644,11 @@ export class VoiceManager {
         }
         
         // Reconnect to audio output
-        modulatorData.envelope.connect(oscBus);
+        try {
+          modulatorData.envelope.connect(oscBus);
+        } catch (e) {
+          // Already connected
+        }
         
         modulatorData.isFMModulator = false;
         console.log(`🎛️ Disabled FM on osc${oscNum} for active voice`);

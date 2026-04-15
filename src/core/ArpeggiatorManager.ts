@@ -309,7 +309,7 @@ export class ArpeggiatorManager {
     }
     
     if (this.schedulerTimerId !== null) {
-      cancelAnimationFrame(this.schedulerTimerId);
+      clearTimeout(this.schedulerTimerId);
       this.schedulerTimerId = null;
     }
     
